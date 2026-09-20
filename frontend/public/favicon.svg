@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="somakGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="50%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#4F46E5" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <!-- Rounded Base Tile -->
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="url(#somakGrad)" filter="url(#shadow)" />
+  <!-- Inner Subtle Border -->
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="8" />
+  
+  <!-- Modern Somak AI Robot / Shield Geometry -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Outer Shield / Head Contour -->
+    <path d="M160 180 C160 150 190 140 256 140 C322 140 352 150 352 180 L352 280 C352 350 256 385 256 385 C256 385 160 350 160 280 Z" />
+    <!-- Antennas / Tech Sensor Nodes -->
+    <line x1="256" y1="140" x2="256" y2="95" />
+    <circle cx="256" cy="95" r="14" fill="#FFFFFF" />
+    <!-- Glowing Eyes / Radar Scan Line -->
+    <line x1="205" y1="230" x2="235" y2="230" stroke-width="24" />
+    <line x1="277" y1="230" x2="307" y2="230" stroke-width="24" />
+    <!-- Core Pulse Arc -->
+    <path d="M210 295 Q256 330 302 295" stroke-width="20" />
+  </g>
+</svg>
