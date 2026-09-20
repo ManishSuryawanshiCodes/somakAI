@@ -286,22 +286,22 @@ export default function OnCallPage() {
                 <Radio className="w-5 h-5" />
               </span>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                On-Call Schedule & Rotations
+                On-Call Rotations
                 {pagingCount > 0 ? (
                   <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
-                    {pagingCount} Service Paging
+                    {pagingCount} Paging
                   </span>
                 ) : (
                   <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    All Nominal
+                    Nominal
                   </span>
                 )}
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Current responder coverage and escalation schedules across all production services.
+              Responder coverage and escalation schedules.
             </p>
           </div>
 

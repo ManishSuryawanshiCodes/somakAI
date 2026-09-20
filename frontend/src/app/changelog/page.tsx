@@ -100,11 +100,11 @@ export default function ChangelogPage() {
                 <Sparkles className="w-5 h-5" />
               </span>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Platform Changelog & Release Notes
+                Changelog
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Recent updates, AST engine enhancements, and platform release notes.
+              Recent platform updates and release notes.
             </p>
           </div>
         </div>

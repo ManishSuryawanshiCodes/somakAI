@@ -181,7 +181,7 @@ export default function LandingPage() {
       step: '01',
       title: 'Detect',
       short: 'Sentry Webhook Ingestion',
-      desc: 'Sentry webhook captures stack trace and latency spikes with zero ingestion delay.',
+      desc: 'Stack traces and latency spikes captured instantly via Sentry webhooks.',
       icon: Activity,
       color: 'text-rose-500',
       borderColor: 'border-rose-500/30',
@@ -191,7 +191,7 @@ export default function LandingPage() {
       step: '02',
       title: 'Triage',
       short: 'Nemotron-3 30B Fingerprinting',
-      desc: 'Classifies root cause and isolates impacted microservice dependencies in 8ms.',
+      desc: 'Root cause classified and blast radius isolated in 8ms.',
       icon: Zap,
       color: 'text-amber-500',
       borderColor: 'border-amber-500/30',
@@ -201,7 +201,7 @@ export default function LandingPage() {
       step: '03',
       title: 'Ground',
       short: 'Tavily Codebase Search',
-      desc: 'Correlates local AST with external CVE advisories & library documentation.',
+      desc: 'AST correlated with CVE advisories and library docs.',
       icon: Code2,
       color: 'text-violet-500',
       borderColor: 'border-violet-500/30',
@@ -211,7 +211,7 @@ export default function LandingPage() {
       step: '04',
       title: 'Synthesize',
       short: '550B MoE AST Syntax Patch',
-      desc: 'Generates zero-hallucination syntax tree patches with verified language grammar.',
+      desc: 'Syntax-verified AST patches with zero hallucination.',
       icon: Terminal,
       color: 'text-indigo-500',
       borderColor: 'border-indigo-500/30',
@@ -221,7 +221,7 @@ export default function LandingPage() {
       step: '05',
       title: 'Verify',
       short: 'Firecracker MicroVM Sandbox',
-      desc: 'Spins up isolated microVM to execute full regression test suites in ~3.8s.',
+      desc: 'Isolated microVM regression tests complete in ~3.8s.',
       icon: Shield,
       color: 'text-cyan-500',
       borderColor: 'border-cyan-500/30',
@@ -231,7 +231,7 @@ export default function LandingPage() {
       step: '06',
       title: 'Deploy',
       short: 'Canary Gate & Auto-Rollback',
-      desc: '5% → 25% → 100% autonomous promotion with instant rollback on SLO anomaly.',
+      desc: 'Progressive traffic promotion with instant SLO-aware rollback.',
       icon: Gauge,
       color: 'text-emerald-500',
       borderColor: 'border-emerald-500/30',
@@ -242,56 +242,56 @@ export default function LandingPage() {
   const FEATURES = [
     {
       title: 'AST-Level Auto-Remediation',
-      desc: 'Modifies abstract syntax trees directly rather than blind regex replacements, guaranteeing 100% valid grammar.',
+      desc: 'Direct AST modifications guarantee 100% valid grammar — no regex guessing.',
       icon: Terminal,
       badge: 'Core Engine',
       accent: 'emerald',
     },
     {
       title: 'Canary Rollouts with Auto-Rollback',
-      desc: 'Automated stepped traffic promotion (5% → 25% → 100%) that instantly rolls back if 5-minute error rates spike.',
+      desc: 'Stepped 5% → 25% → 100% traffic promotion with auto-rollback on error spikes.',
       icon: Gauge,
       badge: 'Zero Risk',
       accent: 'cyan',
     },
     {
       title: 'SOC-2 Ready Audit Trail',
-      desc: 'Cryptographically hashed immutable timeline recording every LLM reasoning step, AST diff, and operator sign-off.',
+      desc: 'Immutable, hashed audit trail of every reasoning step and operator action.',
       icon: Shield,
       badge: 'Compliance',
       accent: 'violet',
     },
     {
       title: 'Role-Based Access Control',
-      desc: 'Granular Admin, Operator, and Viewer permission tiers with dual-approval policies for production deployments.',
+      desc: 'Admin, Operator, Viewer roles with dual-approval for production deploys.',
       icon: Lock,
       badge: 'Security',
       accent: 'amber',
     },
     {
       title: 'On-Call & Escalation Routing',
-      desc: 'Automated multi-tier PagerDuty & SMS escalation ladders with live paging indicators and shift handoffs.',
+      desc: 'Multi-tier PagerDuty escalation with live paging and shift handoffs.',
       icon: Radio,
       badge: 'Operations',
       accent: 'rose',
     },
     {
       title: 'Error Budget & SLO Tracking',
-      desc: 'Real-time burn-down rate telemetry with automated canary freezes when 30-day budgets drop below 10%.',
+      desc: 'Real-time burn rate with automated freezes when budgets drop below 10%.',
       icon: Activity,
       badge: 'Reliability',
       accent: 'indigo',
     },
     {
       title: 'Runbook Pattern Library',
-      desc: 'Continuously synthesized catalog of verified AST remediation patterns applied with zero regression incidents.',
+      desc: 'Verified AST fix patterns cataloged from past incidents — zero regressions.',
       icon: BookOpen,
       badge: 'Knowledge',
       accent: 'cyan',
     },
     {
       title: 'Real-Time Public Status Page',
-      desc: 'Transparent 90-day component uptime history and real-time subscriber incident notifications for external users.',
+      desc: '90-day uptime history with real-time incident notifications.',
       icon: Server,
       badge: 'Transparency',
       accent: 'emerald',
@@ -950,7 +950,7 @@ export default function LandingPage() {
               Watch production error rates collapse in real-time.
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-              Deterministic recovery trajectories recorded across 14,000+ autonomous remediation simulations.
+              Recovery metrics from 14,000+ autonomous remediation runs.
             </p>
           </div>
 
@@ -1223,11 +1223,11 @@ export default function LandingPage() {
             From Sev-1 alert to verified canary fix in 6 steps.
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-            A closed-loop safety architecture ensuring that unverified LLM output never touches production users.
+            Unverified LLM output never touches production — every step is gated.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
           {HOW_IT_WORKS.map((step, idx) => {
             const Icon = step.icon;
             const isStepActive = pipelineStep === idx;
@@ -1239,10 +1239,10 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ duration: 0.4, delay: idx * 0.08 }}
-                className={`liquid-glass p-6 rounded-2xl shadow-xs space-y-4 transition-all duration-300 relative group ${
+                className={`liquid-glass p-6 rounded-2xl shadow-xs space-y-4 transition-all duration-300 relative group border-2 ${
                   isStepActive
                     ? `${step.borderColor} ring-2 ring-emerald-500/20 shadow-lg`
-                    : 'hover:border-slate-300 dark:hover:border-white/20'
+                    : 'border-[#D8D2C6] dark:border-white/20 hover:border-indigo-500/50 dark:hover:border-white/35'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -1307,7 +1307,7 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {FEATURES.map((f, idx) => {
               const Icon = f.icon;
               return (
@@ -1317,7 +1317,7 @@ export default function LandingPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-40px' }}
                   transition={{ duration: 0.4, delay: idx * 0.05 }}
-                  className="liquid-glass p-5 rounded-2xl shadow-xs space-y-3 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-emerald-500/40 flex flex-col justify-between group"
+                  className="liquid-glass p-6 rounded-2xl shadow-xs space-y-3 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg border-2 border-[#E8E3D9] dark:border-white/15 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 flex flex-col justify-between group"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">

@@ -97,25 +97,25 @@ export default function Sidebar({
       items: [
         {
           id: 'radar',
-          label: 'Incident Radar',
+          label: 'Radar',
           href: '/',
           icon: Radar,
         },
         {
           id: 'slo',
-          label: 'Error Budgets & SLOs',
+          label: 'SLO Budgets',
           href: '/slo',
           icon: Target,
         },
         {
           id: 'history',
-          label: 'Audit History',
+          label: 'History',
           href: '/history',
           icon: History,
         },
         {
           id: 'status',
-          label: 'Public Status',
+          label: 'Status',
           href: '/status',
           icon: Activity,
         },
@@ -126,7 +126,7 @@ export default function Sidebar({
       items: [
         {
           id: 'studio',
-          label: 'Remediation Studio',
+          label: 'Studio',
           href: `/remediation/${incidentId}`,
           icon: Terminal,
           badge: 'SEV-1',
@@ -134,19 +134,19 @@ export default function Sidebar({
         },
         {
           id: 'canary',
-          label: 'Canary Verification',
+          label: 'Canary',
           href: `/canary/${incidentId}`,
           icon: Gauge,
         },
         {
           id: 'postmortem',
-          label: 'Post-Mortem & Audit',
+          label: 'Post-Mortem',
           href: `/postmortem/${incidentId}`,
           icon: FileText,
         },
         {
           id: 'oncall',
-          label: 'On-Call Rotation',
+          label: 'On-Call',
           href: '/oncall',
           icon: Radio,
           badge: 'LIVE',
@@ -154,7 +154,7 @@ export default function Sidebar({
         },
         {
           id: 'runbooks',
-          label: 'Runbook Library',
+          label: 'Runbooks',
           href: '/runbooks',
           icon: BookOpen,
         },
@@ -165,7 +165,7 @@ export default function Sidebar({
       items: [
         {
           id: 'settings',
-          label: 'Settings & RBAC',
+          label: 'Settings',
           href: '/settings',
           icon: Settings,
         },
@@ -177,13 +177,13 @@ export default function Sidebar({
         },
         {
           id: 'audit',
-          label: 'Admin Audit Log',
+          label: 'Audit Log',
           href: '/audit',
           icon: ShieldCheck,
         },
         {
           id: 'usage',
-          label: 'Usage & Quotas',
+          label: 'Usage',
           href: '/usage',
           icon: Cpu,
         },
@@ -195,7 +195,7 @@ export default function Sidebar({
         },
         {
           id: 'docs',
-          label: 'Documentation',
+          label: 'Docs',
           href: '/docs',
           icon: HelpCircle,
         },
@@ -252,9 +252,7 @@ export default function Sidebar({
                       SRE
                     </span>
                   </span>
-                  <span className="text-[10px] text-slate-400 truncate">
-                    Autonomous Reliability
-                  </span>
+
                 </div>
               )}
             </Link>
@@ -469,7 +467,7 @@ export default function Sidebar({
                 {/* Quick Role Switcher */}
                 <div className="p-1 space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-1">
-                    Quick Role (RBAC)
+                    Switch Role
                   </span>
                   {(['Admin', 'Operator', 'Viewer'] as UserRole[]).map((r) => (
                     <button

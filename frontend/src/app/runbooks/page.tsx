@@ -272,21 +272,21 @@ export default function RunbooksPage() {
                 <BookOpen className="w-5 h-5" />
               </span>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
-                Runbook Library & Learned AST Patterns
+                Runbooks
                 <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
                   {RUNBOOKS.length} Verified Patterns
                 </span>
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Patterns the AI has learned from past fixes — it checks this list before writing new code.
+              Learned AST patterns from past incident resolutions.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-mono font-bold border border-emerald-500/20 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5" />
-              100% Zero-Regression Record
+              0 Regressions
             </span>
           </div>
         </div>
@@ -298,10 +298,10 @@ export default function RunbooksPage() {
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                No AST remediation runbooks synthesized yet
+                No AST runbooks synthesized yet
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
-                Runbooks are automatically cataloged as Somak AI remediates code regressions and infrastructure anomalies for {currentOrg?.name || 'this organization'}.
+                Runbooks will be automatically cataloged as incidents are remediated.
               </p>
             </div>
             <div className="pt-2 flex items-center justify-center gap-3">

@@ -321,9 +321,9 @@ export default function ExecutiveIncidentRadar() {
                   </div>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl font-medium">
                     <Link href="/onboarding/setup" className="text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1 font-semibold">
-                      Connect Sentry to start monitoring →
+                      Connect Sentry →
                     </Link>{' '}
-                    or simulate a crash below to preview autonomous AST patch synthesis.
+                    or simulate a crash to preview.
                   </p>
                 </div>
               </div>
@@ -335,7 +335,7 @@ export default function ExecutiveIncidentRadar() {
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/25 transition-all active:scale-95 btn-glow-primary"
                 >
                   <Zap className={`w-3.5 h-3.5 ${simulating ? 'animate-spin' : ''}`} />
-                  <span>{simulating ? 'Synthesizing...' : 'Simulate Sev-1 Crash (Demo Action)'}</span>
+                  <span>{simulating ? 'Simulating...' : 'Simulate Crash'}</span>
                 </button>
               </div>
             </div>
@@ -357,7 +357,7 @@ export default function ExecutiveIncidentRadar() {
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl font-medium">
-                    All 4 production services nominal across us-east-1 and us-west-2. Zero active alerts or SLO burn.
+                    All services nominal. Zero active alerts.
                   </p>
                 </div>
               </div>
@@ -369,7 +369,7 @@ export default function ExecutiveIncidentRadar() {
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
                   <Zap className={`w-3.5 h-3.5 ${simulating ? 'animate-spin' : ''}`} />
-                  <span>Simulate Sev-1 Crash (Demo Action)</span>
+                  <span>Simulate Crash</span>
                 </button>
               </div>
             </div>
@@ -391,11 +391,8 @@ export default function ExecutiveIncidentRadar() {
               </div>
               <div>
                 <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                  Cluster Health & Business Impact KPIs
+                  System Overview
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Continuous multi-cluster availability, autonomous MTTR reduction, and outage downtime cost mitigation.
-                </p>
               </div>
             </div>
 
@@ -525,15 +522,12 @@ export default function ExecutiveIncidentRadar() {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                    Telemetry Ingestion & Spike Correlation
+                    Telemetry
                   </h2>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/60 dark:border-rose-900/50 dark:text-rose-400 font-bold">
-                    Spike Detected at 14:02 UTC
+                    Spike at 14:02 UTC
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Correlating V8 heap exhaustion against P99 ingress authentication latency in real-time.
-                </p>
               </div>
             </div>
 
@@ -717,7 +711,7 @@ export default function ExecutiveIncidentRadar() {
                   </span>
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Select a node to inspect health or jump to its matching incident below.
+                  Click a node to inspect or jump to its incident.
                 </p>
               </div>
             </div>
@@ -761,14 +755,14 @@ export default function ExecutiveIncidentRadar() {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                    Active Incident Remediation Queue
+                    Incident Queue
                   </h2>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 font-bold border border-rose-200 dark:border-rose-900/50">
                     {sortedIncidents.length} Ready for Operator Review
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Prioritized by severity and arrival time. Hover a card to highlight its node in the topology above.
+                  Sorted by severity. Hover to highlight in topology.
                 </p>
               </div>
             </div>
@@ -803,7 +797,7 @@ export default function ExecutiveIncidentRadar() {
                 className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all flex items-center gap-1.5"
               >
                 <Zap className={`w-3.5 h-3.5 ${simulating ? 'animate-spin' : ''}`} />
-                <span>Simulate Sev-1 Crash (Demo Action)</span>
+                <span>Simulate Crash</span>
               </button>
             </div>
           ) : (

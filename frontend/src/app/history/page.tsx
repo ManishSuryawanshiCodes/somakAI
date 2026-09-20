@@ -150,17 +150,17 @@ export default function HistoryPage() {
                 <History className="w-5 h-5" />
               </span>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Historical Incident Audit & Analytics
+                Incident History
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Past resolved incidents, MTTR benchmarks, and autonomous remediation outcomes for {currentOrg?.name || 'Workspace'}.
+              Resolved incidents and autonomous MTTR benchmarks.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-mono font-bold border border-emerald-500/20">
-              {isAcme ? '95.2% Autonomous Resolution Rate' : 'Clean Audit Trail'}
+              {isAcme ? '95.2% Resolution Rate' : 'Clean Audit Trail'}
             </span>
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function HistoryPage() {
                 No past incidents recorded yet for {currentOrg?.name || 'this organization'}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
-                Once telemetry anomalies are detected and resolved via autonomous AST patches or canary verification, full audit histories and MTTR benchmarks will be cataloged here.
+                Resolved incidents and performance benchmarks will be recorded here.
               </p>
             </div>
             <div className="pt-2">

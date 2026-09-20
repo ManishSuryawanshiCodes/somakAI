@@ -151,7 +151,7 @@ export default function IntegrationsPage() {
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Connected monitoring sources, notification channels, and cloud infrastructure providers.
+              Connected telemetry sources, alert channels, and cloud infrastructure.
             </p>
           </div>
         </div>

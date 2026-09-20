@@ -192,7 +192,7 @@ export default function DocsPage() {
                 </span>
                 <span className="text-slate-400 font-normal">/</span>
                 <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                  Docs Hub
+                  Docs
                 </span>
               </div>
             </Link>
@@ -384,10 +384,10 @@ export default function DocsPage() {
             <article className="space-y-10 leading-relaxed text-sm">
               <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-slate-800">
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                  Getting Started with Somak AI
+                  Getting Started with SOMAK AI
                 </h1>
                 <p className="text-base text-slate-600 dark:text-slate-300">
-                  Follow this 5-step guided path to configure autonomous incident remediation for your production engineering organization.
+                  Quick start guide to configure autonomous incident remediation.
                 </p>
               </header>
 

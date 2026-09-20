@@ -131,14 +131,14 @@ export default function AuditPage() {
                 <ShieldCheck className="w-5 h-5" />
               </span>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                Admin Audit Log
+                Audit Log
                 <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  SOC-2 / ISO 27001 Immutable Vault
+                  SOC-2 Immutable Vault
                 </span>
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Immutable audit log of all human approvals, automated canary deployments, and system rollbacks.
+              Immutable log of approvals, deployments, and rollbacks.
             </p>
           </div>
 
