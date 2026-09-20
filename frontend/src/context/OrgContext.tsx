@@ -41,7 +41,7 @@ export const DEFAULT_ACME_ORG: Organization = {
   setup_checklist: {
     sentry_connected: true,
     sentry_dsn: 'https://o4505@sentry.io/450582',
-    sentry_inbound_url: 'https://api.sentryops.io/v1/webhook/ingest/acme-prod',
+    sentry_inbound_url: 'https://api.somak.ai/v1/webhook/ingest/acme-prod',
     ai_connected: true,
     ai_api_key: 'neb-tok-live-89f4b321',
     ai_model_tier: 'nvidia/nemotron-3-ultra-550b',
@@ -84,6 +84,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
 
       // If user is a demo user, ensure Acme Corp is present
       const isDemoUser = ['usr_mv492', 'usr_elena', 'usr_observer'].includes(user.id) ||
+        user.email.includes('somak.internal') ||
         user.email.includes('sentryops.internal');
       
       if (isDemoUser && !localOrgs.some((o) => o.organization.id === DEFAULT_ACME_ORG.id)) {
@@ -200,7 +201,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         setup_checklist: {
           sentry_connected: false,
           sentry_dsn: '',
-          sentry_inbound_url: `https://api.sentryops.io/v1/webhook/ingest/${data.slug}`,
+          sentry_inbound_url: `https://api.somak.ai/v1/webhook/ingest/${data.slug}`,
           ai_connected: false,
           ai_api_key: '',
           ai_model_tier: 'nvidia/nemotron-3-nano-30b-a3b',

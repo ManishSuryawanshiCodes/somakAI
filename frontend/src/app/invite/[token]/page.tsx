@@ -192,7 +192,7 @@ export default function InviteAcceptancePage() {
               href="/login"
               className="inline-flex items-center justify-center w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all"
             >
-              <span>Return to SentryOps Sign In</span>
+              <span>Return to Somak AI Sign In</span>
             </Link>
           </div>
         </motion.div>
@@ -218,7 +218,7 @@ export default function InviteAcceptancePage() {
           </div>
           <div className="text-left">
             <div className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-              SentryOps
+              Somak AI
               <span className="text-[11px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
                 Workspace Invite
               </span>

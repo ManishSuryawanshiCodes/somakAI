@@ -31,6 +31,7 @@ import {
   ChevronRight,
   AlertTriangle,
   Play,
+  Pause,
   RotateCcw,
   Check,
   Server,
@@ -38,6 +39,8 @@ import {
   Bot,
   Flame,
   ArrowUpRight,
+  Sliders,
+  Filter,
 } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/context/AuthContext';
@@ -74,7 +77,6 @@ function StatCounter({
     const step = (timestamp: number) => {
       if (!startTimestamp) startTimestamp = timestamp;
       const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      // Ease out cubic
       const easeOut = 1 - Math.pow(1 - progress, 3);
       setCount(easeOut * target);
 
@@ -105,15 +107,19 @@ export default function LandingPage() {
   const [activeShowcaseTab, setActiveShowcaseTab] = useState<'radar' | 'studio' | 'canary' | 'postmortem'>('radar');
   const [isDemoLaunching, setIsDemoLaunching] = useState(false);
 
-  // Hero interactive simulation loop stage (0 to 3)
-  const [simStage, setSimStage] = useState(0);
+  // Interactive Live Demo Simulator State
+  const [simStep, setSimStep] = useState<number>(0);
+  const [isSimPlaying, setIsSimPlaying] = useState<boolean>(true);
+  const [canarySliderValue, setCanarySliderValue] = useState<number>(100);
 
-  // How it works pipeline traveling active step (0 to 5)
+  // Active Telemetry Chart Tab
+  const [activeGraphTab, setActiveGraphTab] = useState<'errorRate' | 'latency' | 'mttr'>('errorRate');
+
+  // How it works pipeline active step (0 to 5)
   const [pipelineStep, setPipelineStep] = useState(0);
 
   // 3D Parallax tilt coordinates for hero mockup
   const [heroTilt, setHeroTilt] = useState({ x: 0, y: 0 });
-  const [showcaseTilt, setShowcaseTilt] = useState({ x: 0, y: 0 });
 
   // 1-click demo login
   const handleLaunchDemo = async () => {
@@ -126,48 +132,48 @@ export default function LandingPage() {
     }
   };
 
-  // Hero incident simulation loop (4 stages, 4.5s cycle)
+  // Auto-play simulator loop
   useEffect(() => {
-    if (shouldReduceMotion) return;
-    const interval = setInterval(() => {
-      setSimStage((prev) => (prev + 1) % 4);
-    }, 2800);
-    return () => clearInterval(interval);
-  }, [shouldReduceMotion]);
+    if (!isSimPlaying || shouldReduceMotion) return;
+    const timer = setInterval(() => {
+      setSimStep((prev) => (prev + 1) % 4);
+    }, 3600);
+    return () => clearInterval(timer);
+  }, [isSimPlaying, shouldReduceMotion]);
 
-  // How it works sequential highlight loop (steps 0-5)
+  // Adjust canary slider automatically when reaching step 3
+  useEffect(() => {
+    if (simStep === 3) {
+      setCanarySliderValue(100);
+    } else if (simStep === 2) {
+      setCanarySliderValue(25);
+    } else if (simStep === 1) {
+      setCanarySliderValue(5);
+    } else {
+      setCanarySliderValue(0);
+    }
+  }, [simStep]);
+
+  // Pipeline step loop
   useEffect(() => {
     if (shouldReduceMotion) return;
     const interval = setInterval(() => {
       setPipelineStep((prev) => (prev + 1) % 6);
-    }, 2400);
+    }, 2500);
     return () => clearInterval(interval);
   }, [shouldReduceMotion]);
 
-  // Handle subtle mouse parallax for hero
+  // Parallax handlers
   const handleHeroMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (shouldReduceMotion || window.innerWidth < 1024) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setHeroTilt({ x: x * 8, y: -y * 8 });
+    setHeroTilt({ x: x * 6, y: -y * 6 });
   };
 
   const handleHeroMouseLeave = () => {
     setHeroTilt({ x: 0, y: 0 });
-  };
-
-  // Handle subtle mouse parallax for showcase
-  const handleShowcaseMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (shouldReduceMotion || window.innerWidth < 1024) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setShowcaseTilt({ x: x * 6, y: -y * 6 });
-  };
-
-  const handleShowcaseMouseLeave = () => {
-    setShowcaseTilt({ x: 0, y: 0 });
   };
 
   const HOW_IT_WORKS = [
@@ -175,8 +181,11 @@ export default function LandingPage() {
       step: '01',
       title: 'Detect',
       short: 'Sentry Webhook Ingestion',
-      desc: 'Sentry webhook captures stack trace and latency spikes at sub-second speeds.',
+      desc: 'Sentry webhook captures stack trace and latency spikes with zero ingestion delay.',
       icon: Activity,
+      color: 'text-rose-500',
+      borderColor: 'border-rose-500/30',
+      bgGlow: 'bg-rose-500/10',
     },
     {
       step: '02',
@@ -184,13 +193,19 @@ export default function LandingPage() {
       short: 'Nemotron-3 30B Fingerprinting',
       desc: 'Classifies root cause and isolates impacted microservice dependencies in 8ms.',
       icon: Zap,
+      color: 'text-amber-500',
+      borderColor: 'border-amber-500/30',
+      bgGlow: 'bg-amber-500/10',
     },
     {
       step: '03',
       title: 'Ground',
-      short: 'Tavily Codebase & Docs Search',
+      short: 'Tavily Codebase Search',
       desc: 'Correlates local AST with external CVE advisories & library documentation.',
       icon: Code2,
+      color: 'text-violet-500',
+      borderColor: 'border-violet-500/30',
+      bgGlow: 'bg-violet-500/10',
     },
     {
       step: '04',
@@ -198,6 +213,9 @@ export default function LandingPage() {
       short: '550B MoE AST Syntax Patch',
       desc: 'Generates zero-hallucination syntax tree patches with verified language grammar.',
       icon: Terminal,
+      color: 'text-indigo-500',
+      borderColor: 'border-indigo-500/30',
+      bgGlow: 'bg-indigo-500/10',
     },
     {
       step: '05',
@@ -205,6 +223,9 @@ export default function LandingPage() {
       short: 'Firecracker MicroVM Sandbox',
       desc: 'Spins up isolated microVM to execute full regression test suites in ~3.8s.',
       icon: Shield,
+      color: 'text-cyan-500',
+      borderColor: 'border-cyan-500/30',
+      bgGlow: 'bg-cyan-500/10',
     },
     {
       step: '06',
@@ -212,6 +233,9 @@ export default function LandingPage() {
       short: 'Canary Gate & Auto-Rollback',
       desc: '5% → 25% → 100% autonomous promotion with instant rollback on SLO anomaly.',
       icon: Gauge,
+      color: 'text-emerald-500',
+      borderColor: 'border-emerald-500/30',
+      bgGlow: 'bg-emerald-500/10',
     },
   ];
 
@@ -221,56 +245,56 @@ export default function LandingPage() {
       desc: 'Modifies abstract syntax trees directly rather than blind regex replacements, guaranteeing 100% valid grammar.',
       icon: Terminal,
       badge: 'Core Engine',
-      gradient: 'from-indigo-500/10 to-violet-500/10',
+      accent: 'emerald',
     },
     {
       title: 'Canary Rollouts with Auto-Rollback',
       desc: 'Automated stepped traffic promotion (5% → 25% → 100%) that instantly rolls back if 5-minute error rates spike.',
       icon: Gauge,
       badge: 'Zero Risk',
-      gradient: 'from-emerald-500/10 to-teal-500/10',
+      accent: 'cyan',
     },
     {
       title: 'SOC-2 Ready Audit Trail',
       desc: 'Cryptographically hashed immutable timeline recording every LLM reasoning step, AST diff, and operator sign-off.',
       icon: Shield,
       badge: 'Compliance',
-      gradient: 'from-blue-500/10 to-indigo-500/10',
+      accent: 'violet',
     },
     {
       title: 'Role-Based Access Control',
       desc: 'Granular Admin, Operator, and Viewer permission tiers with dual-approval policies for production deployments.',
       icon: Lock,
       badge: 'Security',
-      gradient: 'from-purple-500/10 to-pink-500/10',
+      accent: 'amber',
     },
     {
       title: 'On-Call & Escalation Routing',
       desc: 'Automated multi-tier PagerDuty & SMS escalation ladders with live paging indicators and shift handoffs.',
       icon: Radio,
       badge: 'Operations',
-      gradient: 'from-amber-500/10 to-orange-500/10',
+      accent: 'rose',
     },
     {
       title: 'Error Budget & SLO Tracking',
       desc: 'Real-time burn-down rate telemetry with automated canary freezes when 30-day budgets drop below 10%.',
       icon: Activity,
       badge: 'Reliability',
-      gradient: 'from-rose-500/10 to-red-500/10',
+      accent: 'indigo',
     },
     {
       title: 'Runbook Pattern Library',
       desc: 'Continuously synthesized catalog of verified AST remediation patterns applied with zero regression incidents.',
       icon: BookOpen,
-      badge: 'Learned Knowledge',
-      gradient: 'from-cyan-500/10 to-blue-500/10',
+      badge: 'Knowledge',
+      accent: 'cyan',
     },
     {
       title: 'Real-Time Public Status Page',
       desc: 'Transparent 90-day component uptime history and real-time subscriber incident notifications for external users.',
       icon: Server,
       badge: 'Transparency',
-      gradient: 'from-emerald-500/10 to-green-500/10',
+      accent: 'emerald',
     },
   ];
 
@@ -355,30 +379,31 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-transparent text-slate-900 dark:text-white transition-colors relative selection:bg-indigo-500/25 overflow-x-hidden">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#030306] text-[#181614] dark:text-white transition-colors duration-300 relative selection:bg-indigo-500/25 overflow-x-hidden">
       
-      {/* Dynamic Floating Aurora Mesh Background for Landing Page */}
+      {/* Dynamic Floating Liquid Aurora Mesh Background */}
       <div
         aria-hidden="true"
         className="fixed inset-0 pointer-events-none -z-10 overflow-hidden select-none"
       >
-        <div className="absolute inset-0 bg-[#F8FAFC] dark:bg-[#090D16] transition-colors duration-300" />
+        {/* Pure Black in Dark Mode, Cream in Light Mode */}
+        <div className="absolute inset-0 bg-[#FAF8F5] dark:bg-[#030306] transition-colors duration-300" />
         
-        {/* Deep Indigo Drifting Blob */}
-        <div className="absolute -top-40 left-1/4 w-[750px] sm:w-[900px] h-[750px] sm:h-[900px] rounded-full bg-gradient-to-tr from-indigo-500/30 to-indigo-600/15 dark:from-indigo-600/25 dark:to-indigo-500/10 blur-[130px] animate-aurora-1 opacity-90 dark:opacity-80" />
+        {/* Neon Emerald Glowing Caustic */}
+        <div className="absolute -top-40 left-1/4 w-[700px] sm:w-[850px] h-[700px] sm:h-[850px] rounded-full bg-gradient-to-tr from-emerald-500/25 to-teal-500/10 dark:from-emerald-500/15 dark:to-transparent blur-[140px] animate-aurora-1 opacity-90 dark:opacity-75" />
         
-        {/* Soft Violet Drifting Blob */}
-        <div className="absolute top-1/4 -right-32 w-[650px] sm:w-[850px] h-[650px] sm:h-[850px] rounded-full bg-gradient-to-bl from-purple-500/25 via-violet-500/20 to-transparent dark:from-violet-600/20 dark:via-purple-700/12 dark:to-transparent blur-[150px] animate-aurora-2 opacity-85 dark:opacity-75" />
+        {/* Neon Cyan Drifting Caustic */}
+        <div className="absolute top-1/4 -right-32 w-[650px] sm:w-[850px] h-[650px] sm:h-[850px] rounded-full bg-gradient-to-bl from-cyan-500/25 via-indigo-500/15 to-transparent dark:from-cyan-500/15 dark:via-indigo-600/10 dark:to-transparent blur-[150px] animate-aurora-2 opacity-85 dark:opacity-75" />
         
-        {/* Soft Cyan/Teal Drifting Blob */}
-        <div className="absolute top-2/3 left-1/5 w-[600px] sm:w-[800px] h-[600px] sm:h-[800px] rounded-full bg-gradient-to-tr from-cyan-500/22 to-teal-500/15 dark:from-teal-600/15 dark:to-cyan-600/10 blur-[140px] animate-aurora-3 opacity-80 dark:opacity-65" />
+        {/* Neon Violet / Indigo Core */}
+        <div className="absolute top-2/3 left-1/6 w-[600px] sm:w-[800px] h-[600px] sm:h-[800px] rounded-full bg-gradient-to-tr from-violet-600/20 to-purple-600/10 dark:from-violet-600/15 dark:to-transparent blur-[150px] animate-aurora-3 opacity-80 dark:opacity-70" />
         
-        {/* Subtle dot-grid texture overlay */}
-        <div className="absolute inset-0 bg-[radial-gradient(rgba(99,102,241,0.06)_1px,transparent_1px)] dark:bg-[radial-gradient(rgba(148,163,184,0.07)_1px,transparent_1px)] [background-size:24px_24px] opacity-70" />
+        {/* Micro-dot grid with liquid glass texture */}
+        <div className="absolute inset-0 bg-[radial-gradient(rgba(100,116,139,0.08)_1px,transparent_1px)] dark:bg-[radial-gradient(rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:24px_24px] opacity-70" />
       </div>
 
-      {/* 1. Public Top Navigation */}
-      <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/75 dark:bg-slate-950/75 border-b border-slate-200/80 dark:border-slate-800 transition-colors">
+      {/* 1. Public Top Navigation (Liquid Glass Header) */}
+      <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#FAF8F5]/85 dark:bg-[#030306]/85 border-b border-[#E8E3D9] dark:border-white/10 transition-colors shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           
           {/* Brand Logo */}
@@ -387,19 +412,21 @@ export default function LandingPage() {
               <Bot className="w-4 h-4" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              <span className="font-extrabold text-base tracking-tight text-[#181614] dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                 SOMAK AI
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 AUTONOMOUS SRE
               </span>
             </div>
           </Link>
 
-          {/* Navigation Links with Animated Expanding Underlines */}
+          {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-slate-600 dark:text-slate-300">
             {[
+              { label: 'Live Demo', href: '#demo' },
+              { label: 'Telemetry Graphs', href: '#telemetry' },
               { label: 'How It Works', href: '#how-it-works' },
               { label: 'Features', href: '#features' },
               { label: 'Showcase', href: '#showcase' },
@@ -411,7 +438,7 @@ export default function LandingPage() {
                 className="relative py-1 hover:text-slate-900 dark:hover:text-white transition-colors group"
               >
                 <span>{link.label}</span>
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-200 group-hover:w-full rounded-full" />
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-500 via-cyan-500 to-indigo-500 transition-all duration-200 group-hover:w-full rounded-full" />
               </a>
             ))}
             <Link
@@ -419,24 +446,24 @@ export default function LandingPage() {
               className="relative py-1 hover:text-slate-900 dark:hover:text-white transition-colors group flex items-center gap-1"
             >
               <span>Docs</span>
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-200 group-hover:w-full rounded-full" />
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-500 to-indigo-500 transition-all duration-200 group-hover:w-full rounded-full" />
             </Link>
             <Link
               href="/status"
               className="relative py-1 hover:text-slate-900 dark:hover:text-white transition-colors group"
             >
               <span>Status</span>
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-200 group-hover:w-full rounded-full" />
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-500 to-indigo-500 transition-all duration-200 group-hover:w-full rounded-full" />
             </Link>
           </nav>
 
           {/* Right Action Controls */}
           <div className="flex items-center gap-3">
-            {/* Animated Sun/Moon Theme Toggle */}
+            {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
               aria-label="Toggle theme"
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative overflow-hidden"
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 transition-colors relative overflow-hidden"
             >
               <AnimatePresence mode="wait">
                 <motion.div
@@ -458,15 +485,15 @@ export default function LandingPage() {
             {/* Log in Button */}
             <Link
               href="/login"
-              className="hidden sm:inline-flex items-center px-3.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition-all"
+              className="hidden sm:inline-flex items-center px-3.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10 rounded-xl transition-all"
             >
               Log in
             </Link>
 
-            {/* Primary Sign up Button with Subtle Glow */}
+            {/* Primary Sign up Button */}
             <Link
               href="/signup"
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/25 hover:shadow-indigo-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all btn-glow-primary"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/25 hover:shadow-indigo-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all btn-glow-primary"
             >
               <span>Get Started</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -475,8 +502,8 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* 2. Hero Section with Staggered Entrance & Interactive Live Mockup */}
-      <section className="relative pt-16 pb-20 sm:pt-24 sm:pb-28 overflow-hidden">
+      {/* 2. Hero Section */}
+      <section className="relative pt-16 pb-16 sm:pt-24 sm:pb-24 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8 relative z-10">
           
           {/* Eyebrow Pill Badge */}
@@ -484,12 +511,12 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-xs font-semibold text-indigo-700 dark:text-indigo-300 shadow-xs backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-xs font-semibold text-emerald-700 dark:text-emerald-300 shadow-xs backdrop-blur-sm"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
             <span>SOMAK AI • Zero-Human-Latency Cloud SRE</span>
-            <span className="text-slate-300 dark:text-slate-700">•</span>
-            <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">95.2% Auto-Resolved</span>
+            <span className="text-slate-400 dark:text-slate-600">•</span>
+            <span className="font-mono text-[11px] text-cyan-600 dark:text-cyan-400 font-bold">95.2% Auto-Resolved</span>
           </motion.div>
 
           {/* Main Outcome Headline */}
@@ -497,7 +524,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight max-w-4xl mx-auto leading-[1.08] text-slate-900 dark:text-white"
+            className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight max-w-4xl mx-auto leading-[1.08] text-[#181614] dark:text-white"
           >
             Incidents fix themselves before your team wakes up.
           </motion.h1>
@@ -512,7 +539,7 @@ export default function LandingPage() {
             SOMAK AI ingests crash telemetry, synthesizes zero-hallucination AST hotfixes in Firecracker microVMs, and executes canary rollouts with automated rollbacks.
           </motion.p>
 
-          {/* CTAs with Subtle Hover Lift & Pulsing Aura */}
+          {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -520,8 +547,7 @@ export default function LandingPage() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2"
           >
             <div className="relative group w-full sm:w-auto">
-              {/* Soft Pulsing Aura Glow Behind CTA */}
-              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 opacity-60 blur-md group-hover:opacity-100 transition-opacity duration-300 animate-pulse" />
+              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 via-cyan-500 to-indigo-600 opacity-60 blur-md group-hover:opacity-100 transition-opacity duration-300 animate-pulse" />
               <Link
                 href="/signup"
                 className="relative w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-md transition-all duration-200 active:scale-95"
@@ -534,9 +560,9 @@ export default function LandingPage() {
             <button
               onClick={handleLaunchDemo}
               disabled={isDemoLaunching}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 font-bold text-sm shadow-xs hover:border-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white dark:bg-[#0B0F19] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-[#E8E3D9] dark:border-white/10 font-bold text-sm shadow-xs hover:border-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all liquid-glass"
             >
-              <Play className="w-3.5 h-3.5 text-indigo-500 fill-indigo-500" />
+              <Play className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500" />
               <span>{isDemoLaunching ? 'Starting Demo Session...' : 'View Live Demo'}</span>
             </button>
           </motion.div>
@@ -549,187 +575,591 @@ export default function LandingPage() {
           >
             Free during public beta • No credit card required • 5-minute setup
           </motion.p>
+        </div>
+      </section>
 
-          {/* HERO VISUAL: Live Animated Incident Simulation Loop with 3D Parallax Tilt */}
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
-            onMouseMove={handleHeroMouseMove}
-            onMouseLeave={handleHeroMouseLeave}
-            className="pt-6 max-w-5xl mx-auto perspective-1000"
-          >
-            <div
-              style={{
-                transform: `rotateX(${heroTilt.y}deg) rotateY(${heroTilt.x}deg)`,
-                transition: 'transform 180ms ease-out',
-              }}
-              className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-2xl overflow-hidden text-left ring-1 ring-slate-900/5 dark:ring-white/10"
-            >
-              {/* Browser Window Header */}
-              <div className="px-4 py-3 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-red-400/80 inline-block" />
-                  <span className="w-3 h-3 rounded-full bg-amber-400/80 inline-block" />
-                  <span className="w-3 h-3 rounded-full bg-emerald-400/80 inline-block" />
-                </div>
-                <div className="px-3.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5 shadow-xs">
-                  <Lock className="w-3 h-3 text-emerald-500" />
-                  <span>https://app.somak.ai/radar</span>
-                </div>
-                <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  SOMAK AUTONOMOUS ENGINE: ACTIVE
-                </div>
-              </div>
+      {/* 3. INTERACTIVE LIVE REMEDIATION SIMULATOR (DEMO IN THE LANDING PAGE) */}
+      <section id="demo" className="py-12 sm:py-16 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.6 }}
+          className="liquid-glass rounded-3xl border border-[#E8E3D9] dark:border-white/10 overflow-hidden shadow-2xl relative"
+        >
+          {/* Window Chrome Header */}
+          <div className="px-5 py-3.5 bg-slate-100/90 dark:bg-[#07090F]/90 border-b border-[#E8E3D9] dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-rose-500/90 inline-block" />
+              <span className="w-3 h-3 rounded-full bg-amber-400/90 inline-block" />
+              <span className="w-3 h-3 rounded-full bg-emerald-400/90 inline-block" />
+              <span className="ml-2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                SOMAK AI Sandbox Simulator • Interactive Live Walkthrough
+              </span>
+            </div>
 
-              {/* Mockup Dashboard Content Area with Live Animated Loop */}
-              <div className="p-6 space-y-5 bg-radial-gradient">
-                
-                {/* Looping Incident Simulation Card */}
-                <div
-                  className={`p-4 rounded-xl border transition-all duration-300 ${
-                    simStage === 0
-                      ? 'bg-red-500/10 border-red-500/30 shadow-md shadow-red-500/10'
-                      : simStage === 1
-                      ? 'bg-amber-500/10 border-amber-500/30 shadow-md shadow-amber-500/10'
-                      : simStage === 2
-                      ? 'bg-indigo-500/10 border-indigo-500/30 shadow-md shadow-indigo-500/10'
-                      : 'bg-emerald-500/10 border-emerald-500/30 shadow-md shadow-emerald-500/10'
-                  }`}
+            {/* Play/Pause & Step Controls */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsSimPlaying((prev) => !prev)}
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 flex items-center gap-1.5 transition-all"
+              >
+                {isSimPlaying ? <Pause className="w-3 h-3 text-amber-500" /> : <Play className="w-3 h-3 text-emerald-500 fill-emerald-500" />}
+                <span>{isSimPlaying ? 'Pause Auto' : 'Auto Play'}</span>
+              </button>
+
+              <button
+                onClick={() => setSimStep((prev) => (prev + 1) % 4)}
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1 transition-all"
+              >
+                <span>Step Forward</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+
+              <button
+                onClick={() => setSimStep(0)}
+                title="Restart simulation"
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Stepper Navigation Bar */}
+          <div className="grid grid-cols-2 md:grid-cols-4 border-b border-[#E8E3D9] dark:border-white/10 bg-slate-50/50 dark:bg-black/30">
+            {[
+              { idx: 0, label: '1. Crash Detected', tag: 'Sentry Webhook', color: 'text-rose-500', activeBg: 'border-b-2 border-rose-500 bg-rose-500/10' },
+              { idx: 1, label: '2. AST Synthesized', tag: 'Nemotron 550B', color: 'text-indigo-500', activeBg: 'border-b-2 border-indigo-500 bg-indigo-500/10' },
+              { idx: 2, label: '3. Sandbox Verified', tag: 'MicroVM Jest', color: 'text-cyan-500', activeBg: 'border-b-2 border-cyan-500 bg-cyan-500/10' },
+              { idx: 3, label: '4. Canary 100% Live', tag: 'Zero Regression', color: 'text-emerald-500', activeBg: 'border-b-2 border-emerald-500 bg-emerald-500/10' },
+            ].map((step) => (
+              <button
+                key={step.idx}
+                onClick={() => {
+                  setSimStep(step.idx);
+                  setIsSimPlaying(false);
+                }}
+                className={`p-3 text-left transition-all ${
+                  simStep === step.idx ? step.activeBg : 'hover:bg-slate-100/50 dark:hover:bg-white/5 opacity-70'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-bold ${simStep === step.idx ? step.color : 'text-slate-700 dark:text-slate-300'}`}>
+                    {step.label}
+                  </span>
+                  {simStep === step.idx && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                </div>
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 block mt-0.5">
+                  {step.tag}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Interactive Stage Content */}
+          <div className="p-6 md:p-8 space-y-6">
+            <AnimatePresence mode="wait">
+              {/* STAGE 0: CRASH DETECTED */}
+              {simStep === 0 && (
+                <motion.div
+                  key="sim-0"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-4"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-start sm:items-center gap-3">
-                      <div
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-white font-bold transition-colors ${
-                          simStage === 0
-                            ? 'bg-red-500 animate-pulse'
-                            : simStage === 1
-                            ? 'bg-amber-500'
-                            : simStage === 2
-                            ? 'bg-indigo-600'
-                            : 'bg-emerald-500'
-                        }`}
-                      >
-                        {simStage === 0 && <AlertTriangle className="w-5 h-5" />}
-                        {simStage === 1 && <Terminal className="w-5 h-5" />}
-                        {simStage === 2 && <Shield className="w-5 h-5" />}
-                        {simStage === 3 && <CheckCircle2 className="w-5 h-5" />}
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 animate-pulse">
+                        <AlertTriangle className="w-5 h-5" />
                       </div>
-
                       <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase transition-colors ${
-                              simStage === 0
-                                ? 'bg-red-500 text-white'
-                                : simStage === 1
-                                ? 'bg-amber-500 text-white'
-                                : simStage === 2
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-emerald-600 text-white'
-                            }`}
-                          >
-                            {simStage === 0 && 'SEV-1 DETECTED'}
-                            {simStage === 1 && 'AST SYNTHESIS'}
-                            {simStage === 2 && 'SANDBOX VERIFYING'}
-                            {simStage === 3 && 'FIX VERIFIED & DEPLOYED'}
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-rose-500 text-white">
+                            SEV-1 CRITICAL
                           </span>
-                          <span className="text-xs font-bold text-slate-900 dark:text-white">
-                            auth-service: V8 Heap Limit OOM Spike
+                          <span className="font-bold text-[#181614] dark:text-white">
+                            auth-service: Unhandled TypeError Exception
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          {simStage === 0 && 'Sentry webhook fired • Unhandled exception in token-cache.ts:42'}
-                          {simStage === 1 && 'Nemotron-3 550B synthesized TTL LRU Cache • Confidence 99.4%'}
-                          {simStage === 2 && 'Booting Firecracker microVM #2819 • Running 14 integration test suites'}
-                          {simStage === 3 && 'Canary 100% Promoted • Latency 14ms (healthy) • Total MTTR: 2m 14s'}
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                          Sentry webhook alert received • Latency spike to 890ms • Ingested by Somak AI in 14ms
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                        {simStage === 0 && 'Progress: 15%'}
-                        {simStage === 1 && 'Progress: 50%'}
-                        {simStage === 2 && 'Progress: 80%'}
-                        {simStage === 3 && 'Progress: 100%'}
+                    <div className="text-right font-mono">
+                      <span className="text-rose-500 font-bold text-sm block">14.8% Error Rate</span>
+                      <span className="text-[10px] text-slate-400">Pod memory: 94.2%</span>
+                    </div>
+                  </div>
+
+                  {/* Terminal Crash Snippet */}
+                  <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-[#0B0F19] text-slate-300 font-mono text-xs">
+                    <div className="px-4 py-2 bg-black/60 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Stack Trace • src/services/tokenService.ts:68</span>
+                      <span className="text-rose-400">Crash Code 137 (OOM / NullRef)</span>
+                    </div>
+                    <pre className="p-4 overflow-x-auto text-[11px] text-rose-300 leading-relaxed">
+{`TypeError: Cannot read properties of undefined (reading 'tenantId')
+    at verifySessionToken (src/services/tokenService.ts:68:24)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async authMiddleware (src/middleware/auth.ts:31:12)
+[Somak AI Ingestion] Fingerprint extracted: ERR_TENANT_NULL_REF (8.1ms)`}
+                    </pre>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* STAGE 1: AST SYNTHESIZED */}
+              {simStep === 1 && (
+                <motion.div
+                  key="sim-1"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                        <Terminal className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-indigo-600 text-white">
+                            AST REASONING
+                          </span>
+                          <span className="font-bold text-[#181614] dark:text-white">
+                            NVIDIA Nemotron-3 550B MoE • Syntactic AST Diff
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                          Extracted Abstract Syntax Tree • Validated syntax grammar • Grounded via Tavily API
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right font-mono">
+                      <span className="text-indigo-500 font-bold text-sm block">99.4% Confidence</span>
+                      <span className="text-[10px] text-slate-400">AST Nodes: +12, -4</span>
+                    </div>
+                  </div>
+
+                  {/* Unified AST Diff View */}
+                  <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-[#0B0F19] text-slate-300 font-mono text-xs">
+                    <div className="px-4 py-2 bg-black/60 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Unified Diff • tokenService.ts</span>
+                      <span className="text-indigo-400">Verified Grammar: PASS</span>
+                    </div>
+                    <pre className="p-4 overflow-x-auto text-[11px] leading-relaxed">
+<span className="text-slate-500">@@ -66,6 +66,11 @@ export async function verifySessionToken(token: string) &#123;</span>
+<span className="text-slate-400">   const payload = decodeJwt(token);</span>
+<span className="text-rose-400 bg-rose-500/10 block">-  const tenant = payload.organization.tenantId;</span>
+<span className="text-emerald-400 bg-emerald-500/10 block">+  const tenant = payload?.organization?.tenantId || 'default-tenant';</span>
+<span className="text-emerald-400 bg-emerald-500/10 block">+  if (!tenant) &#123;</span>
+<span className="text-emerald-400 bg-emerald-500/10 block">+    logger.warn('Missing tenantId in token, falling back to isolation pool');</span>
+<span className="text-emerald-400 bg-emerald-500/10 block">+  &#125;</span>
+<span className="text-slate-400">   return sessionCache.get(tenant);</span>
+                    </pre>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* STAGE 2: SANDBOX VERIFIED */}
+              {simStep === 2 && (
+                <motion.div
+                  key="sim-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-cyan-600 text-white flex items-center justify-center shrink-0">
+                        <Shield className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-cyan-600 text-white">
+                            MICROVM SANDBOX
+                          </span>
+                          <span className="font-bold text-[#181614] dark:text-white">
+                            Firecracker VM #8841 • Isolated Regression Verification
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                          Ephemeral container booted in 48ms • Zero access to production DB • Test suite executed
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right font-mono">
+                      <span className="text-cyan-500 font-bold text-sm block">18/18 Tests Passed</span>
+                      <span className="text-[10px] text-slate-400">Time: 2.14s</span>
+                    </div>
+                  </div>
+
+                  {/* Terminal Sandbox Execution */}
+                  <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-[#0B0F19] text-slate-300 font-mono text-xs">
+                    <div className="px-4 py-2 bg-black/60 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Sandbox Terminal • yarn test:regression</span>
+                      <span className="text-emerald-400">Exit Code: 0 (PASS)</span>
+                    </div>
+                    <pre className="p-4 overflow-x-auto text-[11px] text-slate-300 leading-relaxed">
+<span className="text-emerald-400 font-bold">PASS</span> src/services/__tests__/tokenService.test.ts (1.42s)
+  ✓ resolves session when organization is present (12ms)
+  ✓ gracefully handles malformed token payload without throwing (8ms)
+  ✓ isolates undefined tenantId to default tenant pool (15ms)
+  ✓ passes high-concurrency rate test (10k ops/sec) (410ms)
+<span className="text-slate-400">Test Suites: 1 passed, 1 total</span>
+<span className="text-slate-400">Tests:       18 passed, 18 total</span>
+<span className="text-cyan-400 font-bold">Snapshots:   0 total</span>
+<span className="text-emerald-400 font-bold">Safe-Deploy Gate: APPROVED FOR CANARY PROMOTION</span>
+                    </pre>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* STAGE 3: CANARY 100% LIVE */}
+              {simStep === 3 && (
+                <motion.div
+                  key="sim-3"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-emerald-600 text-white">
+                            CANARY PROMOTION
+                          </span>
+                          <span className="font-bold text-[#181614] dark:text-white">
+                            Traffic Promoted: {canarySliderValue}% • Zero Regressions Detected
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                          Envoy dynamic weight split • Error rate collapsed from 14.8% → 0.00% • MTTR: 2m 07s
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right font-mono">
+                      <span className="text-emerald-500 font-bold text-sm block">0.00% Error Rate</span>
+                      <span className="text-[10px] text-slate-400">P99 Latency: 38ms</span>
+                    </div>
+                  </div>
+
+                  {/* Interactive Traffic Split Slider */}
+                  <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black/40 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <Sliders className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Interactive Canary Traffic Promotion Slider</span>
+                      </span>
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {canarySliderValue}% Traffic to Hotfix
                       </span>
                     </div>
-                  </div>
 
-                  {/* Animated Progress Filling Bar */}
-                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mt-3 overflow-hidden">
-                    <motion.div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        simStage === 0
-                          ? 'bg-red-500 w-[15%]'
-                          : simStage === 1
-                          ? 'bg-amber-500 w-[50%]'
-                          : simStage === 2
-                          ? 'bg-indigo-600 w-[80%]'
-                          : 'bg-emerald-500 w-[100%]'
-                      }`}
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={canarySliderValue}
+                      onChange={(e) => setCanarySliderValue(Number(e.target.value))}
+                      className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                     />
+
+                    <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                      <span>0% (Standby)</span>
+                      <span>5% (Initial Gate)</span>
+                      <span>25% (Soak Test)</span>
+                      <span>50% (High Load)</span>
+                      <span className="text-emerald-500 font-bold">100% (Full GA)</span>
+                    </div>
                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* 4 Minimalist Colored Status Pills */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2">
+              <div className="p-3 rounded-xl border border-rose-500/20 bg-rose-500/5 space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-rose-500 font-mono">
+                  <span>Detection</span>
+                  <Check className="w-3.5 h-3.5" />
                 </div>
+                <div className="font-bold text-slate-800 dark:text-slate-200">Sub-second</div>
+                <div className="text-[10px] font-mono text-slate-400">Sentry Webhook</div>
+              </div>
 
-                {/* 4 Multi-stage Diagnostic Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>Root Cause Triage</span>
-                      <Check className="w-3.5 h-3.5 text-emerald-500" />
-                    </div>
-                    <div className="font-bold text-slate-800 dark:text-slate-200">Nemotron 30B</div>
-                    <div className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">8.2ms elapsed</div>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>AST Syntax Patch</span>
-                      <Check className="w-3.5 h-3.5 text-emerald-500" />
-                    </div>
-                    <div className="font-bold text-slate-800 dark:text-slate-200">+7 / -3 lines</div>
-                    <div className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400">99.4% confidence</div>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>MicroVM Sandbox</span>
-                      <Check className="w-3.5 h-3.5 text-emerald-500" />
-                    </div>
-                    <div className="font-bold text-slate-800 dark:text-slate-200">14/14 Tests Passed</div>
-                    <div className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">0 regressions</div>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>Canary Rollout</span>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                    </div>
-                    <div className="font-bold text-slate-800 dark:text-slate-200">5% → 25% → 100%</div>
-                    <div className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">SLO Burn Nominal</div>
-                  </div>
+              <div className="p-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-indigo-500 font-mono">
+                  <span>Nemotron AST</span>
+                  <Check className="w-3.5 h-3.5" />
                 </div>
+                <div className="font-bold text-slate-800 dark:text-slate-200">99.4% Syntactic</div>
+                <div className="text-[10px] font-mono text-slate-400">550B MoE Engine</div>
+              </div>
 
+              <div className="p-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5 space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-cyan-500 font-mono">
+                  <span>MicroVM Sandbox</span>
+                  <Check className="w-3.5 h-3.5" />
+                </div>
+                <div className="font-bold text-slate-800 dark:text-slate-200">Zero Blast Radius</div>
+                <div className="text-[10px] font-mono text-slate-400">18 Tests Passed</div>
+              </div>
+
+              <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-emerald-500 font-mono">
+                  <span>Auto-Rollback</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                </div>
+                <div className="font-bold text-slate-800 dark:text-slate-200">Active Guardrail</div>
+                <div className="text-[10px] font-mono text-slate-400">&lt;0.5% SLO Burn</div>
               </div>
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
+      </section>
 
+      {/* 4. LIVE ANIMATED SVG TELEMETRY GRAPHS */}
+      <section id="telemetry" className="py-16 sm:py-24 bg-slate-50/70 dark:bg-black/40 border-y border-[#E8E3D9] dark:border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          
+          <div className="text-center space-y-3 max-w-2xl mx-auto">
+            <span className="text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest">
+              Autonomous Performance Metrics
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#181614] dark:text-white">
+              Watch production error rates collapse in real-time.
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              Deterministic recovery trajectories recorded across 14,000+ autonomous remediation simulations.
+            </p>
+          </div>
+
+          {/* Metric Selector Tabs */}
+          <div className="flex items-center justify-center gap-2">
+            {[
+              { id: 'errorRate', label: 'Error Rate Collapse (%)', icon: Activity, color: 'text-rose-500' },
+              { id: 'latency', label: 'P99 Latency Recovery (ms)', icon: Gauge, color: 'text-indigo-500' },
+              { id: 'mttr', label: 'MTTR Benchmark (vs Human)', icon: Clock, color: 'text-emerald-500' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveGraphTab(tab.id as any)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+                  activeGraphTab === tab.id
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25 scale-102'
+                    : 'bg-white dark:bg-[#0B0F19] text-slate-600 dark:text-slate-300 border border-[#E8E3D9] dark:border-white/10 hover:border-indigo-500'
+                }`}
+              >
+                <tab.icon className={`w-3.5 h-3.5 ${activeGraphTab === tab.id ? 'text-white' : tab.color}`} />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Animated SVG Chart Card */}
+          <div className="liquid-glass p-6 sm:p-8 rounded-3xl border border-[#E8E3D9] dark:border-white/10 shadow-xl space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-[#181614] dark:text-white">
+                  {activeGraphTab === 'errorRate' && '5-Minute Production Error Rate Drop (14.8% → 0.01%)'}
+                  {activeGraphTab === 'latency' && 'P99 API Latency Curve (850ms → 42ms)'}
+                  {activeGraphTab === 'mttr' && 'Mean Time to Resolution: Human SRE vs Somak AI Engine'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Real-time telemetry sample rate: 100ms • Autonomous promotion timeline
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4 text-xs font-mono">
+                <span className="flex items-center gap-1.5 text-rose-500">
+                  <span className="w-2 h-2 rounded-full bg-rose-500" />
+                  Alert Threshold
+                </span>
+                <span className="flex items-center gap-1.5 text-emerald-500">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  Canary Verified
+                </span>
+              </div>
+            </div>
+
+            {/* SVG Visual Graph Container */}
+            <div className="w-full h-64 sm:h-72 relative">
+              {activeGraphTab === 'errorRate' && (
+                <svg viewBox="0 0 800 240" className="w-full h-full overflow-visible">
+                  <defs>
+                    <linearGradient id="errorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#F43F5E" stopOpacity="0.35" />
+                      <stop offset="60%" stopColor="#06B6D4" stopOpacity="0.15" />
+                      <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+                    </linearGradient>
+                    <linearGradient id="strokeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#F43F5E" />
+                      <stop offset="35%" stopColor="#F59E0B" />
+                      <stop offset="65%" stopColor="#6366F1" />
+                      <stop offset="100%" stopColor="#10B981" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Horizontal Grid lines */}
+                  <line x1="0" y1="40" x2="800" y2="40" stroke="currentColor" strokeOpacity="0.1" strokeDasharray="4 4" />
+                  <line x1="0" y1="100" x2="800" y2="100" stroke="currentColor" strokeOpacity="0.1" strokeDasharray="4 4" />
+                  <line x1="0" y1="160" x2="800" y2="160" stroke="currentColor" strokeOpacity="0.1" strokeDasharray="4 4" />
+                  <line x1="0" y1="220" x2="800" y2="220" stroke="currentColor" strokeOpacity="0.15" />
+
+                  {/* Shaded Area under Curve */}
+                  <motion.path
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1 }}
+                    d="M 40 50 C 140 50, 200 60, 280 110 C 360 160, 480 210, 760 218 L 760 220 L 40 220 Z"
+                    fill="url(#errorGrad)"
+                  />
+
+                  {/* Dynamic Glowing Curve */}
+                  <motion.path
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 2, ease: "easeInOut" }}
+                    d="M 40 50 C 140 50, 200 60, 280 110 C 360 160, 480 210, 760 218"
+                    fill="none"
+                    stroke="url(#strokeGrad)"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Marker 1: Outage Peak */}
+                  <circle cx="40" cy="50" r="5" className="fill-rose-500 animate-ping" />
+                  <circle cx="40" cy="50" r="5" className="fill-rose-500" />
+                  <text x="50" y="44" className="text-[10px] font-mono fill-rose-500 font-bold">14.8% Outage Triggered</text>
+
+                  {/* Marker 2: AST Patch */}
+                  <circle cx="280" cy="110" r="4.5" className="fill-indigo-500" />
+                  <text x="290" y="105" className="text-[10px] font-mono fill-indigo-400 font-bold">Nemotron AST Deployed</text>
+
+                  {/* Marker 3: Canary Promotion */}
+                  <circle cx="480" cy="180" r="4.5" className="fill-cyan-500" />
+                  <text x="490" y="175" className="text-[10px] font-mono fill-cyan-400 font-bold">Canary 50% Verified</text>
+
+                  {/* Marker 4: Zero Error Recovery */}
+                  <circle cx="760" cy="218" r="5" className="fill-emerald-400 animate-pulse" />
+                  <text x="690" y="210" className="text-[10px] font-mono fill-emerald-400 font-bold">0.01% Nominal</text>
+                </svg>
+              )}
+
+              {activeGraphTab === 'latency' && (
+                <svg viewBox="0 0 800 240" className="w-full h-full overflow-visible">
+                  <defs>
+                    <linearGradient id="latencyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#6366F1" stopOpacity="0.35" />
+                      <stop offset="100%" stopColor="#06B6D4" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+
+                  <line x1="0" y1="40" x2="800" y2="40" stroke="currentColor" strokeOpacity="0.1" strokeDasharray="4 4" />
+                  <line x1="0" y1="120" x2="800" y2="120" stroke="currentColor" strokeOpacity="0.1" strokeDasharray="4 4" />
+                  <line x1="0" y1="200" x2="800" y2="200" stroke="currentColor" strokeOpacity="0.15" />
+
+                  <motion.path
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1 }}
+                    d="M 40 45 C 160 55, 260 90, 420 180 C 560 205, 680 205, 760 205 L 760 205 L 40 205 Z"
+                    fill="url(#latencyGrad)"
+                  />
+
+                  <motion.path
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 2, ease: "easeInOut" }}
+                    d="M 40 45 C 160 55, 260 90, 420 180 C 560 205, 680 205, 760 205"
+                    fill="none"
+                    stroke="#06B6D4"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                  />
+
+                  <circle cx="40" cy="45" r="5" className="fill-rose-500" />
+                  <text x="50" y="38" className="text-[10px] font-mono fill-rose-500 font-bold">850ms P99 Spike</text>
+
+                  <circle cx="760" cy="205" r="5" className="fill-emerald-400 animate-pulse" />
+                  <text x="690" y="195" className="text-[10px] font-mono fill-emerald-400 font-bold">42ms Restored</text>
+                </svg>
+              )}
+
+              {activeGraphTab === 'mttr' && (
+                <div className="h-full flex flex-col justify-center gap-6 px-4">
+                  {/* Human Baseline Bar */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className="text-slate-600 dark:text-slate-400">Industry Human SRE Baseline (PagerDuty On-Call)</span>
+                      <span className="text-rose-500 font-bold">48m 12s</span>
+                    </div>
+                    <div className="w-full h-4 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="w-[100%] h-full bg-gradient-to-r from-rose-500 to-amber-500 rounded-full" />
+                    </div>
+                  </div>
+
+                  {/* Somak AI Bar */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">SOMAK AI Autonomous Engine</span>
+                      <span className="text-emerald-500 font-bold">2m 07s (95.3% reduction)</span>
+                    </div>
+                    <div className="w-full h-4 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        whileInView={{ width: '4.4%' }}
+                        transition={{ duration: 1.2, ease: "easeOut" }}
+                        className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 rounded-full shadow-lg shadow-emerald-500/50"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Time Marker Labels */}
+            <div className="flex justify-between text-[11px] font-mono text-slate-400 border-t border-[#E8E3D9] dark:border-white/10 pt-3">
+              <span>T+0s (Crash Triggered)</span>
+              <span>T+8ms (Nemotron Triage)</span>
+              <span>T+3.8s (Sandbox AST Pass)</span>
+              <span>T+45s (Canary Verification)</span>
+              <span className="text-emerald-500 font-bold">T+127s (Full Resolution)</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* 3. Stats Bar with Animated Number Count-Up */}
-      <section className="py-14 border-y border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/30 backdrop-blur-sm">
+      {/* 5. Stats Bar */}
+      <section className="py-14 border-y border-[#E8E3D9] dark:border-white/10 bg-slate-50/60 dark:bg-black/30 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             
             <div className="space-y-1.5">
-              <div className="text-3xl sm:text-5xl font-extrabold tracking-tight font-mono text-indigo-600 dark:text-indigo-400">
+              <div className="text-3xl sm:text-5xl font-extrabold tracking-tight font-mono text-emerald-600 dark:text-emerald-400">
                 <StatCounter target={95.2} decimals={1} suffix="%" />
               </div>
-              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+              <div className="text-xs sm:text-sm font-bold text-[#181614] dark:text-white">
                 Autonomous Resolution
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -738,10 +1168,10 @@ export default function LandingPage() {
             </div>
 
             <div className="space-y-1.5">
-              <div className="text-3xl sm:text-5xl font-extrabold tracking-tight font-mono text-indigo-600 dark:text-indigo-400">
+              <div className="text-3xl sm:text-5xl font-extrabold tracking-tight font-mono text-cyan-600 dark:text-cyan-400">
                 <span>3m 42s</span>
               </div>
-              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+              <div className="text-xs sm:text-sm font-bold text-[#181614] dark:text-white">
                 Avg MTTR (-78%)
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -753,7 +1183,7 @@ export default function LandingPage() {
               <div className="text-3xl sm:text-5xl font-extrabold tracking-tight font-mono text-indigo-600 dark:text-indigo-400">
                 <StatCounter target={418} prefix="$" suffix="K" />
               </div>
-              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+              <div className="text-xs sm:text-sm font-bold text-[#181614] dark:text-white">
                 Downtime Saved
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -762,14 +1192,14 @@ export default function LandingPage() {
             </div>
 
             <div className="space-y-1.5">
-              <div className="text-3xl sm:text-5xl font-extrabold tracking-tight font-mono text-indigo-600 dark:text-indigo-400">
-                <StatCounter target={14} suffix="/14" />
+              <div className="text-3xl sm:text-5xl font-extrabold tracking-tight font-mono text-violet-600 dark:text-violet-400">
+                <StatCounter target={0} suffix=" regr" />
               </div>
-              <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                Sandbox Tests Passed
+              <div className="text-xs sm:text-sm font-bold text-[#181614] dark:text-white">
+                Zero Regressions
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                100% zero-regression track record
+                Guaranteed by Firecracker test gates
               </div>
             </div>
 
@@ -777,7 +1207,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 4. "How It Works" Animated Sequenced Flow */}
+      {/* 6. How It Works Pipeline */}
       <section id="how-it-works" className="py-20 sm:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -786,84 +1216,78 @@ export default function LandingPage() {
           transition={{ duration: 0.5 }}
           className="text-center space-y-3 max-w-2xl mx-auto"
         >
-          <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
-            Automated Pipeline Sequence
+          <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
+            Autonomous Pipeline
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            From crash to verified fix in under 4 minutes.
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#181614] dark:text-white">
+            From Sev-1 alert to verified canary fix in 6 steps.
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-            A non-engineer friendly look at how SOMAK AI safeguards your production environment without awake humans.
+            A closed-loop safety architecture ensuring that unverified LLM output never touches production users.
           </p>
         </motion.div>
 
-        {/* Sequenced Connecting Pipeline Flow */}
-        <div className="relative">
-          {/* Subtle connecting path bar for desktop */}
-          <div className="hidden lg:block absolute top-10 left-8 right-8 h-0.5 bg-slate-200 dark:bg-slate-800 -z-10" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {HOW_IT_WORKS.map((step, idx) => {
+            const Icon = step.icon;
+            const isStepActive = pipelineStep === idx;
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {HOW_IT_WORKS.map((step, idx) => {
-              const Icon = step.icon;
-              const isStepActive = pipelineStep === idx;
-
-              return (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-40px' }}
-                  transition={{ duration: 0.4, delay: idx * 0.08 }}
-                  className={`glass-panel p-6 rounded-2xl shadow-xs space-y-4 transition-all duration-300 relative group ${
-                    isStepActive
-                      ? 'border-indigo-500 ring-2 ring-indigo-500/20 shadow-lg shadow-indigo-500/10'
-                      : 'hover:border-slate-300 dark:hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
-                        isStepActive
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 scale-105'
-                          : 'bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <span
-                      className={`text-xs font-mono font-bold transition-colors ${
-                        isStepActive
-                          ? 'text-indigo-600 dark:text-indigo-400'
-                          : 'text-slate-400 dark:text-slate-600'
-                      }`}
-                    >
-                      STEP {step.step}
-                    </span>
+            return (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.4, delay: idx * 0.08 }}
+                className={`liquid-glass p-6 rounded-2xl shadow-xs space-y-4 transition-all duration-300 relative group ${
+                  isStepActive
+                    ? `${step.borderColor} ring-2 ring-emerald-500/20 shadow-lg`
+                    : 'hover:border-slate-300 dark:hover:border-white/20'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+                      isStepActive
+                        ? `${step.bgGlow} ${step.color} shadow-md scale-105`
+                        : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
                   </div>
+                  <span
+                    className={`text-xs font-mono font-bold transition-colors ${
+                      isStepActive
+                        ? step.color
+                        : 'text-slate-400 dark:text-slate-600'
+                    }`}
+                  >
+                    STEP {step.step}
+                  </span>
+                </div>
 
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <span>{step.title}</span>
-                      {isStepActive && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />
-                      )}
-                    </h3>
-                    <div className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
-                      {step.short}
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
-                      {step.desc}
-                    </p>
+                <div>
+                  <h3 className="text-base font-bold text-[#181614] dark:text-white flex items-center gap-2">
+                    <span>{step.title}</span>
+                    {isStepActive && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                    )}
+                  </h3>
+                  <div className={`text-[11px] font-mono font-semibold mt-0.5 ${step.color}`}>
+                    {step.short}
                   </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+                    {step.desc}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 
-      {/* 5. Feature Grid with Hover Gradient Border & Micro-Interactions */}
-      <section id="features" className="py-20 sm:py-28 bg-slate-50/60 dark:bg-slate-900/40 border-y border-slate-200/80 dark:border-slate-800">
+      {/* 7. Feature Grid */}
+      <section id="features" className="py-20 sm:py-28 bg-slate-50/60 dark:bg-black/40 border-y border-[#E8E3D9] dark:border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -875,7 +1299,7 @@ export default function LandingPage() {
             <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
               Enterprise Resilience
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#181614] dark:text-white">
               Engineered for high-velocity site reliability.
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
@@ -893,19 +1317,19 @@ export default function LandingPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-40px' }}
                   transition={{ duration: 0.4, delay: idx * 0.05 }}
-                  className="glass-panel p-5 rounded-2xl shadow-xs space-y-3 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-indigo-500/40 flex flex-col justify-between group"
+                  className="liquid-glass p-5 rounded-2xl shadow-xs space-y-3 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-emerald-500/40 flex flex-col justify-between group"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform">
+                      <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform">
                         <Icon className="w-4 h-4" />
                       </div>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
                         {f.badge}
                       </span>
                     </div>
 
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                    <h3 className="text-sm font-bold text-[#181614] dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                       {f.title}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -919,7 +1343,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 6. Product Showcase with Smooth Crossfade & Desktop 3D Tilt */}
+      {/* 8. Showcase Tabs */}
       <section id="showcase" className="py-20 sm:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -928,10 +1352,10 @@ export default function LandingPage() {
           transition={{ duration: 0.5 }}
           className="text-center space-y-3 max-w-2xl mx-auto"
         >
-          <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
+          <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
             Interactive Product Showcase
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#181614] dark:text-white">
             Experience the SOMAK AI operator studio.
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
@@ -948,7 +1372,7 @@ export default function LandingPage() {
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                 activeShowcaseTab === tab.id
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 scale-102'
-                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700'
+                  : 'bg-white dark:bg-[#0B0F19] text-slate-600 dark:text-slate-300 border border-[#E8E3D9] dark:border-white/10 hover:border-indigo-500'
               }`}
             >
               {tab.name}
@@ -956,128 +1380,66 @@ export default function LandingPage() {
           ))}
         </div>
 
-        {/* Showcase Frame with Desktop Parallax */}
+        {/* Tab Content Display */}
         <motion.div
-          onMouseMove={handleShowcaseMouseMove}
-          onMouseLeave={handleShowcaseMouseLeave}
-          className="max-w-4xl mx-auto perspective-1000"
+          key={activeShowcaseTab}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="liquid-glass rounded-3xl border border-[#E8E3D9] dark:border-white/10 p-6 sm:p-8 space-y-6 shadow-xl"
         >
-          <div
-            style={{
-              transform: `rotateX(${showcaseTilt.y}deg) rotateY(${showcaseTilt.x}deg)`,
-              transition: 'transform 180ms ease-out',
-            }}
-            className="glass-panel rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl overflow-hidden ring-1 ring-slate-900/5 dark:ring-white/10"
-          >
-            {/* Mockup Header */}
-            <div className="px-4 py-3 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                <span className="font-semibold text-slate-700 dark:text-slate-300 ml-2">
-                  {SHOWCASE_TABS.find((t) => t.id === activeShowcaseTab)?.title}
-                </span>
+          <div className="space-y-1">
+            <h3 className="text-xl font-bold text-[#181614] dark:text-white">
+              {SHOWCASE_TABS.find((t) => t.id === activeShowcaseTab)?.title}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              {SHOWCASE_TABS.find((t) => t.id === activeShowcaseTab)?.desc}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[#0B0F19] text-slate-300 font-mono text-xs border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 pb-2 border-b border-slate-800">
+              <span>Cluster Endpoint: https://api.somak.ai/v1/{activeShowcaseTab}</span>
+              <span className="text-emerald-400">SSE Stream: Active</span>
+            </div>
+
+            {activeShowcaseTab === 'radar' && (
+              <div className="space-y-2 text-[11px]">
+                <div className="text-emerald-400 font-bold">14/14 Services Nominal • 0 Unhandled Outages</div>
+                <div className="text-slate-400">auth-service (14ms) • billing-api (28ms) • stream-ingest (11ms)</div>
+                <div className="text-indigo-400">Autonomous Monitor: Active 24/7 with zero threshold regressions</div>
               </div>
-              <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
-                SOMAK SRE Engine v1.4
-              </span>
-            </div>
+            )}
 
-            {/* Tabbed Content Crossfade */}
-            <div className="p-6 sm:p-8 min-h-[340px] flex flex-col justify-center">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeShowcaseTab}
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {activeShowcaseTab === 'radar' && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                          <Activity className="w-4 h-4 text-indigo-500" />
-                          <span>Real-Time Incident Radar & Topology</span>
-                        </h4>
-                        <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                          ● Cluster Nominal
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-1">
-                          <div className="text-[11px] text-slate-400 font-mono">auth-service</div>
-                          <div className="text-xs font-bold text-emerald-500">Autonomous Hotfix Deployed</div>
-                          <div className="text-[10px] font-mono text-slate-400">MTTR: 2m 14s • 0 Regressions</div>
-                        </div>
-                        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-1">
-                          <div className="text-[11px] text-slate-400 font-mono">payment-gateway</div>
-                          <div className="text-xs font-bold text-emerald-500">Nominal</div>
-                          <div className="text-[10px] font-mono text-slate-400">0.2% burn rate</div>
-                        </div>
-                        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-1">
-                          <div className="text-[11px] text-slate-400 font-mono">user-service</div>
-                          <div className="text-xs font-bold text-emerald-500">Nominal</div>
-                          <div className="text-[10px] font-mono text-slate-400">0.4% burn rate</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+            {activeShowcaseTab === 'studio' && (
+              <div className="space-y-2 text-[11px]">
+                <div className="text-indigo-400 font-bold">Nemotron-3 550B AST Synthesis Sandbox: PASS</div>
+                <div className="text-emerald-400">+12 lines modified • 0 syntax defects • 18/18 Jest tests passed</div>
+                <div className="text-slate-400">Firecracker microVM #8841 destroyed safely with zero leaked artifacts</div>
+              </div>
+            )}
 
-                  {activeShowcaseTab === 'studio' && (
-                    <div className="space-y-4 font-mono text-xs">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800 font-sans">
-                        <span className="font-bold text-slate-900 dark:text-white">AST Diff: auth-service.ts</span>
-                        <span className="text-indigo-600 dark:text-indigo-400 text-xs">Confidence 99.4%</span>
-                      </div>
-                      <div className="p-4 rounded-xl bg-slate-900 text-slate-200 text-xs leading-relaxed overflow-x-auto">
-                        <div className="text-red-400">{'- const tokenCache = new Map<string, any>();'}</div>
-                        <div className="text-red-400">{'- tokenCache.set(token, payload); // Unbounded heap leak'}</div>
-                        <div className="text-emerald-400">{'+ const tokenCache = new LRUCache({ max: 5000, ttl: 1000 * 60 * 5 });'}</div>
-                        <div className="text-emerald-400">{'+ tokenCache.set(token, payload); // Auto-evicted TTL'}</div>
-                      </div>
-                    </div>
-                  )}
+            {activeShowcaseTab === 'canary' && (
+              <div className="space-y-2 text-[11px]">
+                <div className="text-cyan-400 font-bold">Canary Stepped Promotion: 5% → 25% → 50% → 100% (COMPLETE)</div>
+                <div className="text-emerald-400">Error rate: 0.00% • P99 Latency: 38ms • Burn rate: 0.0x</div>
+                <div className="text-slate-400">Auto-Rollback Trigger: Inactive (nominal error parameters)</div>
+              </div>
+            )}
 
-                  {activeShowcaseTab === 'canary' && (
-                    <div className="space-y-4 text-xs">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-                        <span className="font-bold text-slate-900 dark:text-white">Canary Deployment Gate Status</span>
-                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">25% Traffic Evaluated</span>
-                      </div>
-                      <div className="w-full h-3.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 w-1/4 rounded-full" />
-                      </div>
-                      <div className="flex justify-between text-[11px] text-slate-500 font-mono">
-                        <span className="text-emerald-600 font-bold">Step 1: 5% (Healthy)</span>
-                        <span className="text-indigo-600 font-bold">Step 2: 25% (Evaluating)</span>
-                        <span>Step 3: 50%</span>
-                        <span>Step 4: 100%</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeShowcaseTab === 'postmortem' && (
-                    <div className="space-y-3 text-xs">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-                        <span className="font-bold text-slate-900 dark:text-white">Automated Incident Retrospective</span>
-                        <span className="text-indigo-600 dark:text-indigo-400 text-[11px] font-mono font-bold">SOC-2 Export Ready</span>
-                      </div>
-                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                        <strong>Executive Summary:</strong> At 14:02 UTC, auth-service experienced a sudden heap spike following a cache leak in token validation. SOMAK AI detected the anomaly within 300ms, synthesized an LRU cache fix via Nemotron MoE, and verified the fix in Firecracker sandbox with zero regressions. Total MTTR: 3m 42s.
-                      </p>
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+            {activeShowcaseTab === 'postmortem' && (
+              <div className="space-y-2 text-[11px]">
+                <div className="text-violet-400 font-bold">SOC-2 Type II Audit Log Recorded (SHA-256 Verified)</div>
+                <div className="text-slate-300">Executive Incident Summary synthesized in 1.4s with root-cause graph</div>
+                <div className="text-emerald-400">Runbook Pattern #2041 cataloged to prevent recurrence</div>
+              </div>
+            )}
           </div>
         </motion.div>
       </section>
 
-      {/* 7. Transparent Pricing Section */}
-      <section id="pricing" className="py-20 sm:py-28 bg-slate-50/60 dark:bg-slate-900/40 border-y border-slate-200/80 dark:border-slate-800">
+      {/* 9. Pricing Section */}
+      <section id="pricing" className="py-20 sm:py-28 bg-slate-50/60 dark:bg-black/40 border-y border-[#E8E3D9] dark:border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1086,18 +1448,18 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
             className="text-center space-y-3 max-w-2xl mx-auto"
           >
-            <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
-              Transparent Pricing
+            <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
+              Predictable Pricing
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Predictable pricing for resilient engineering.
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#181614] dark:text-white">
+              Start free. Scale with confidence.
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-              Get started free during our beta. Scale smoothly as your service footprint expands.
+              Free during public beta with full autonomous capabilities. No credit card required.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {PRICING_PLANS.map((plan, idx) => (
               <motion.div
                 key={idx}
@@ -1105,40 +1467,31 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ duration: 0.4, delay: idx * 0.1 }}
-                className={`glass-panel rounded-2xl p-6 sm:p-8 flex flex-col justify-between space-y-6 relative transition-all ${
+                className={`liquid-glass p-8 rounded-3xl shadow-lg space-y-6 flex flex-col justify-between relative group ${
                   plan.highlighted
-                    ? 'border-indigo-500/80 shadow-xl shadow-indigo-500/10 ring-1 ring-indigo-500/50 scale-102'
-                    : 'hover:border-slate-300 dark:hover:border-slate-700'
+                    ? 'border-indigo-500 ring-2 ring-indigo-500/30'
+                    : 'border-[#E8E3D9] dark:border-white/10'
                 }`}
               >
                 {plan.highlighted && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full bg-indigo-600 text-white font-mono font-bold text-[10px] tracking-wider uppercase shadow-xs">
-                    Recommended
-                  </div>
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-indigo-600 text-white uppercase tracking-wider shadow-md">
+                    Most Popular
+                  </span>
                 )}
 
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      {plan.name}
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      {plan.desc}
-                    </p>
+                    <h3 className="text-lg font-bold text-[#181614] dark:text-white">{plan.name}</h3>
+                    <div className="flex items-baseline gap-1 mt-2">
+                      <span className="text-3xl sm:text-4xl font-extrabold text-[#181614] dark:text-white">{plan.price}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{plan.period}</span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">{plan.desc}</p>
                   </div>
 
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl sm:text-4xl font-extrabold font-mono text-slate-900 dark:text-white">
-                      {plan.price}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      / {plan.period}
-                    </span>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800 space-y-2.5">
-                    {plan.features.map((feat, fidx) => (
-                      <div key={fidx} className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                  <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                    {plan.features.map((feat, fIdx) => (
+                      <div key={fIdx} className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
                         <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         <span>{feat}</span>
                       </div>
@@ -1162,20 +1515,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 8. Final CTA Section */}
+      {/* 10. Final CTA Section */}
       <section className="py-20 sm:py-28 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.5 }}
-          className="glass-panel p-10 sm:p-16 rounded-3xl border border-indigo-500/30 shadow-2xl space-y-6 relative overflow-hidden"
+          className="liquid-glass p-10 sm:p-16 rounded-3xl border border-indigo-500/30 shadow-2xl space-y-6 relative overflow-hidden"
         >
           <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/30">
             <Sparkles className="w-6 h-6" />
           </div>
 
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white max-w-2xl mx-auto">
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#181614] dark:text-white max-w-2xl mx-auto">
             Ready to eliminate 3 AM pages forever?
           </h2>
 
@@ -1207,14 +1560,14 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* 9. Footer */}
-      <footer className="border-t border-slate-200/80 dark:border-slate-800 py-12 text-xs text-slate-500 dark:text-slate-400">
+      {/* 11. Footer */}
+      <footer className="border-t border-[#E8E3D9] dark:border-white/10 py-12 text-xs text-slate-500 dark:text-slate-400">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
               <Bot className="w-3.5 h-3.5" />
             </div>
-            <span className="font-bold text-slate-900 dark:text-white">
+            <span className="font-bold text-[#181614] dark:text-white">
               SOMAK AI
             </span>
             <span className="text-slate-400">

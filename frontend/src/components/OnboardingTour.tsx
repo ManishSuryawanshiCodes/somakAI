@@ -88,7 +88,7 @@ export default function OnboardingTour({
       title: 'Autonomous Remediation Studio',
       subtitle: 'NVIDIA Nemotron-3 + Tavily AST Synthesis',
       description:
-        'When an incident triggers, SentryOps diagnoses the root cause using web intelligence and synthesizes verified AST patches inside isolated sandboxes.',
+        'When an incident triggers, Somak AI diagnoses the root cause using web intelligence and synthesizes verified AST patches inside isolated sandboxes.',
       features: [
         'Dual-model reasoning trace (Ultra 550B & Nano 30B)',
         'Unified AST code diff viewer with syntax highlighting',

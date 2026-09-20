@@ -227,10 +227,10 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
       action: () => router.push('/postmortem/INC-2041'),
     },
     {
-      id: 'act-tour',
+      id: 'nav-tour',
       category: 'Actions',
-      title: 'Start 4-Step Product Tour',
-      subtitle: 'Guided walkthrough of SentryOps architecture',
+      title: 'Start Architecture Tour',
+      subtitle: 'Guided walkthrough of Somak AI architecture',
       icon: Sparkles,
       action: () => setTourOpen(true),
     },
@@ -248,7 +248,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
       id: 'act-theme',
       category: 'Actions',
       title: `Toggle Theme (Currently ${theme === 'dark' ? 'Dark' : 'Light'})`,
-      subtitle: 'Switch between Obsidian Dark and Porcelain Light',
+      subtitle: 'Switch between Pure Obsidian and Liquid Glass Cream',
       icon: theme === 'dark' ? Sun : Moon,
       action: () => toggleTheme(),
     },
@@ -287,7 +287,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
 
   return (
     <>
-      <header className="sticky top-0 z-30 h-16 backdrop-blur-none md:backdrop-blur-2xl bg-white dark:bg-slate-900 md:bg-white/80 md:dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 flex items-center justify-between transition-colors shadow-xs">
+      <header className="sticky top-0 z-30 h-16 backdrop-blur-xl bg-[#FAF8F5]/85 dark:bg-[#030306]/85 border-b border-[#E8E3D9] dark:border-white/10 px-3 sm:px-6 flex items-center justify-between transition-colors shadow-xs">
         {/* Element 1: Global Search / ⌘K (+ Mobile Drawer Hamburger) */}
         <div className="flex items-center gap-2.5 flex-1 max-w-md">
           {/* Mobile Hamburger Drawer Trigger (< md) */}
@@ -475,7 +475,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors"
-            title="Open SentryOps Documentation"
+            title="Open Somak AI Documentation"
           >
             <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
             <span>Docs</span>
@@ -611,7 +611,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                   <span><kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-[10px]">ESC</kbd> dismiss</span>
                 </div>
                 <span className="text-indigo-600 dark:text-indigo-400 font-medium">
-                  SentryOps
+                  Somak AI
                 </span>
               </div>
             </motion.div>

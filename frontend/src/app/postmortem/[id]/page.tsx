@@ -166,7 +166,7 @@ export default function PostMortemPage() {
         if (res?.markdown) {
           setPostMortemText(res.markdown);
         } else {
-          setPostMortemText(`# SentryOps Executive Incident Post-Mortem
+          setPostMortemText(`# Somak AI Executive Incident Post-Mortem
 
 **Incident ID:** \`${id}\`  
 **Severity:** \`SEV-1 Critical\` | **Service:** \`auth-service\`  
@@ -179,7 +179,7 @@ export default function PostMortemPage() {
 ---
 
 ## 1. Executive Summary
-On 14:02:11 UTC, an unhandled memory leak triggered high-priority pod crash alerts in auth-service. SentryOps autonomously ingested the stack trace, extracted the failure fingerprint via NVIDIA Nemotron-3-Nano, grounded resolution patterns via Tavily Search API, and synthesized a verified zero-regression AST patch via NVIDIA Nemotron-3-Ultra.
+On 14:02:11 UTC, an unhandled memory leak triggered high-priority pod crash alerts in auth-service. Somak AI autonomously ingested the stack trace, extracted the failure fingerprint via NVIDIA Nemotron-3-Nano, grounded resolution patterns via Tavily Search API, and synthesized a verified zero-regression AST patch via NVIDIA Nemotron-3-Ultra.
 
 ## 2. Root Cause Analysis
 - Core Defect: In src/services/tokenService.ts, verified JWT session tokens were cached in an unbounded Map<string, any>.
@@ -930,7 +930,7 @@ Verified AST diff merged into canary image.
                   </div>
 
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                    At 14:02:11 UTC, an unhandled V8 heap memory leak triggered production crash alerts on <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-xs text-red-600 dark:text-red-400">{incident.service}</code>. SentryOps autonomously routed incoming crash telemetry via <strong className="text-slate-900 dark:text-white">NVIDIA Nemotron-3-Nano</strong> (latency: 11ms) for stack fingerprint extraction, grounded resolution patterns via <strong className="text-slate-900 dark:text-white">Tavily Search API</strong>, and synthesized a zero-regression AST patch via <strong className="text-slate-900 dark:text-white">NVIDIA Nemotron-3-Ultra</strong> (latency: 42ms).
+                    At 14:02:11 UTC, an unhandled V8 heap memory leak triggered production crash alerts on <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-xs text-red-600 dark:text-red-400">{incident.service}</code>. Somak AI autonomously routed incoming crash telemetry via <strong className="text-slate-900 dark:text-white">NVIDIA Nemotron-3-Nano</strong> (latency: 11ms) for stack fingerprint extraction, grounded resolution patterns via <strong className="text-slate-900 dark:text-white">Tavily Search API</strong>, and synthesized a zero-regression AST patch via <strong className="text-slate-900 dark:text-white">NVIDIA Nemotron-3-Ultra</strong> (latency: 42ms).
                   </p>
 
                   {/* Inline Comments Drawer */}
@@ -1232,7 +1232,7 @@ Verified AST diff merged into canary image.
                     </div>
                     <div className="flex justify-between py-1.5">
                       <span className="font-semibold text-slate-500">Operator Sign-Off:</span>
-                      <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">SentryOps Automated Safe-Deploy Gate (PASS)</span>
+                      <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">Somak AI Automated Safe-Deploy Gate (PASS)</span>
                     </div>
                   </div>
                 </div>
@@ -1252,7 +1252,7 @@ Verified AST diff merged into canary image.
                   </div>
 
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    SentryOps Pattern Matcher detected 3 historical incidents sharing the identical failure fingerprint across auth and billing services.
+                    Somak AI Pattern Matcher detected 3 historical incidents sharing the identical failure fingerprint across auth and billing services.
                   </p>
 
                   {/* MTTR Acceleration Impact Callout */}
@@ -1262,7 +1262,7 @@ Verified AST diff merged into canary image.
                         Autonomous Acceleration Impact
                       </span>
                       <span className="text-sm font-extrabold text-slate-900 dark:text-white">
-                        Historical Mean MTTR: 45m 00s &rarr; SentryOps: 2m 07s
+                        Historical Mean MTTR: 45m 00s &rarr; Somak AI: 2m 07s
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

@@ -38,7 +38,7 @@ export default function SetupChecklistPage() {
   const checklist = currentOrg?.setup_checklist || {
     sentry_connected: false,
     sentry_dsn: '',
-    sentry_inbound_url: `https://api.sentryops.io/v1/webhook/ingest/${currentOrg?.slug || 'my-org'}`,
+    sentry_inbound_url: `https://api.somak.ai/v1/webhook/ingest/${currentOrg?.slug || 'my-org'}`,
     ai_connected: false,
     ai_api_key: '',
     ai_model_tier: 'nvidia/nemotron-3-nano-30b-a3b',
@@ -63,7 +63,7 @@ export default function SetupChecklistPage() {
   // Inbound Webhook URL generated for Sentry
   const inboundWebhookUrl =
     checklist.sentry_inbound_url ||
-    `https://api.sentryops.io/v1/webhook/ingest/${currentOrg?.slug || 'cluster-prod'}`;
+    `https://api.somak.ai/v1/webhook/ingest/${currentOrg?.slug || 'cluster-prod'}`;
 
   const copyInboundUrl = () => {
     navigator.clipboard.writeText(inboundWebhookUrl);
@@ -229,7 +229,7 @@ export default function SetupChecklistPage() {
                   )}
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  This is how SentryOps finds out when something breaks in real-time.
+                  This is how Somak AI finds out when something breaks in real-time.
                 </p>
               </div>
             </div>

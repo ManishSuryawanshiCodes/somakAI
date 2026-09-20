@@ -95,7 +95,7 @@ const INTEGRATIONS: Integration[] = [
     description: 'Creates autonomous pull requests containing validated AST hotfixes with linked Jest sandbox execution results.',
     fields: [
       { label: 'App Installation ID', value: 'gh-app-784192' },
-      { label: 'Target Repo', value: 'sentryops/auth-service' },
+      { label: 'Target Repo', value: 'somak-ai/auth-service' },
     ],
   },
   {

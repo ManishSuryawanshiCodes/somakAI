@@ -52,43 +52,44 @@ class AuthService:
         # Seed pre-hashed accounts with Argon2id
         default_pwd_hash = hash_password("Password123!")
         
-        self.register_user(
-            name="Elena Rostova",
-            email="elena.rostova@sentryops.internal",
-            password_hash=default_pwd_hash,
-            role="Admin",
-            team="SecOps & Infrastructure",
-            email_verified=True,
-            mfa_enabled=True,
-            mfa_secret="JBSWY3DPEHPK3PXP"  # Standard test secret
-        )
-        self.register_user(
-            name="Marcus Vance",
-            email="marcus.vance@sentryops.internal",
-            password_hash=default_pwd_hash,
-            role="Operator",
-            team="Platform Reliability SRE",
-            email_verified=True,
-            mfa_enabled=False
-        )
-        self.register_user(
-            name="Sarah Connor",
-            email="sarah.connor@sentryops.internal",
-            password_hash=default_pwd_hash,
-            role="Viewer",
-            team="Compliance & Audit",
-            email_verified=True,
-            mfa_enabled=False
-        )
-        self.register_user(
-            name="Audit Observer",
-            email="audit.observer@sentryops.internal",
-            password_hash=default_pwd_hash,
-            role="Viewer",
-            team="Read-Only Observer",
-            email_verified=True,
-            mfa_enabled=False
-        )
+        for domain in ["somak.internal", "sentryops.internal"]:
+            self.register_user(
+                name="Elena Rostova",
+                email=f"elena.rostova@{domain}",
+                password_hash=default_pwd_hash,
+                role="Admin",
+                team="SecOps & Infrastructure",
+                email_verified=True,
+                mfa_enabled=True,
+                mfa_secret="JBSWY3DPEHPK3PXP"  # Standard test secret
+            )
+            self.register_user(
+                name="Marcus Vance",
+                email=f"marcus.vance@{domain}",
+                password_hash=default_pwd_hash,
+                role="Operator",
+                team="Platform Reliability SRE",
+                email_verified=True,
+                mfa_enabled=False
+            )
+            self.register_user(
+                name="Sarah Connor",
+                email=f"sarah.connor@{domain}",
+                password_hash=default_pwd_hash,
+                role="Viewer",
+                team="Compliance & Audit",
+                email_verified=True,
+                mfa_enabled=False
+            )
+            self.register_user(
+                name="Audit Observer",
+                email=f"audit.observer@{domain}",
+                password_hash=default_pwd_hash,
+                role="Viewer",
+                team="Read-Only Observer",
+                email_verified=True,
+                mfa_enabled=False
+            )
 
     def register_user(
         self,

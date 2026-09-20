@@ -28,7 +28,7 @@ class OrgStore:
         acme_checklist = SetupChecklist(
             sentry_connected=True,
             sentry_dsn="https://o4505@sentry.io/450582",
-            sentry_inbound_url="https://api.sentryops.io/v1/webhook/ingest/acme-prod",
+            sentry_inbound_url="https://api.somak.ai/v1/webhook/ingest/acme-prod",
             sentry_webhook_secret=encrypt_secret("sentry_whsec_dev_token_991823"),
             ai_connected=True,
             ai_api_key=encrypt_secret("neb-tok-live-89f4b321"),
@@ -66,7 +66,7 @@ class OrgStore:
                     user=OrgMemberUser(
                         id="usr_elena",
                         name="Elena Rostova",
-                        email="elena.rostova@sentryops.internal",
+                        email="elena.rostova@somak.internal",
                         avatar="ER",
                         team="SecOps & Infrastructure",
                         mfa_enabled=True,
@@ -82,7 +82,7 @@ class OrgStore:
                     user=OrgMemberUser(
                         id="usr_mv492",
                         name="Marcus Vance",
-                        email="marcus.vance@sentryops.internal",
+                        email="marcus.vance@somak.internal",
                         avatar="MV",
                         team="Platform Reliability SRE",
                         mfa_enabled=False,
@@ -98,7 +98,7 @@ class OrgStore:
                     user=OrgMemberUser(
                         id="usr_devin",
                         name="Devin Zhao",
-                        email="devin.zhao@sentryops.internal",
+                        email="devin.zhao@somak.internal",
                         avatar="DZ",
                         team="Cloud Operations",
                         mfa_enabled=False,
@@ -114,7 +114,7 @@ class OrgStore:
                     user=OrgMemberUser(
                         id="usr_sarah",
                         name="Sarah Connor",
-                        email="sarah.connor@sentryops.internal",
+                        email="sarah.connor@somak.internal",
                         avatar="SC",
                         team="Compliance & Audit",
                         mfa_enabled=False,
@@ -130,7 +130,7 @@ class OrgStore:
                     user=OrgMemberUser(
                         id="usr_observer",
                         name="Audit Observer",
-                        email="audit.observer@sentryops.internal",
+                        email="audit.observer@somak.internal",
                         avatar="AO",
                         team="Read-Only Observer",
                         mfa_enabled=False,
@@ -175,7 +175,7 @@ class OrgStore:
             clean_slug = f"{clean_slug}-{uuid.uuid4().hex[:4]}"
 
         org_id = f"org_{uuid.uuid4().hex[:8]}"
-        inbound_url = f"https://api.sentryops.io/v1/webhook/ingest/{clean_slug}"
+        inbound_url = f"https://api.somak.ai/v1/webhook/ingest/{clean_slug}"
         
         checklist = SetupChecklist(
             sentry_inbound_url=inbound_url

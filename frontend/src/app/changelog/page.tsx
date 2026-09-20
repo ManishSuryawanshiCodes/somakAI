@@ -76,7 +76,7 @@ const RELEASES: Release[] = [
   {
     version: 'v1.0.0',
     date: 'September 15, 2026',
-    title: 'SentryOps Autonomous Reliability Platform Launch',
+    title: 'Somak AI Autonomous Reliability Platform Launch',
     badge: 'Initial GA',
     highlights: [
       'Autonomous telemetry ingestion from Envoy, Prometheus, and Sentry exception webhooks.',

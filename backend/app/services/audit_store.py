@@ -38,7 +38,7 @@ class AuditStore:
         # Pre-seed realistic verified entries
         self.record_event(
             actor_name="Marcus Vance",
-            actor_email="marcus.vance@sentryops.internal",
+            actor_email="marcus.vance@somak.internal",
             actor_role="Operator",
             org_id="org_acme",
             action="Approved 5% Canary Deployment for INC-2041",
@@ -49,7 +49,7 @@ class AuditStore:
         )
         self.record_event(
             actor_name="Elena Rostova",
-            actor_email="elena.rostova@sentryops.internal",
+            actor_email="elena.rostova@somak.internal",
             actor_role="Admin",
             org_id="org_acme",
             action="Modified RBAC Permission for Devin Zhao to Operator",
@@ -60,7 +60,7 @@ class AuditStore:
         )
         self.record_event(
             actor_name="Elena Rostova",
-            actor_email="elena.rostova@sentryops.internal",
+            actor_email="elena.rostova@somak.internal",
             actor_role="Admin",
             org_id="org_acme",
             action="Rotated Nebius Token Factory Production API Key",

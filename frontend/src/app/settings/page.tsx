@@ -63,7 +63,7 @@ const INITIAL_TEAM: TeamMember[] = [
   {
     id: 'usr-1',
     name: 'Elena Rostova',
-    email: 'elena.rostova@sentryops.internal',
+    email: 'elena.rostova@somak.internal',
     role: 'Admin',
     avatar: 'ER',
     mfaEnabled: true,
@@ -72,7 +72,7 @@ const INITIAL_TEAM: TeamMember[] = [
   {
     id: 'usr-2',
     name: 'Marcus Vance',
-    email: 'marcus.vance@sentryops.internal',
+    email: 'marcus.vance@somak.internal',
     role: 'Operator',
     avatar: 'MV',
     mfaEnabled: true,
@@ -81,7 +81,7 @@ const INITIAL_TEAM: TeamMember[] = [
   {
     id: 'usr-3',
     name: 'Devin Zhao',
-    email: 'devin.zhao@sentryops.internal',
+    email: 'devin.zhao@somak.internal',
     role: 'Operator',
     avatar: 'DZ',
     mfaEnabled: true,
@@ -90,7 +90,7 @@ const INITIAL_TEAM: TeamMember[] = [
   {
     id: 'usr-4',
     name: 'Sarah Connor',
-    email: 'sarah.connor@sentryops.internal',
+    email: 'sarah.connor@somak.internal',
     role: 'Viewer',
     avatar: 'SC',
     mfaEnabled: false,
@@ -116,7 +116,7 @@ export default function SettingsPage() {
   const [slackWebhook, setSlackWebhook] = useState('https://hooks.slack.com/services/T00/B00/X123456');
   const [pagerdutyKey, setPagerdutyKey] = useState('pd_live_a89f920bc481');
   const [emailAlerts, setEmailAlerts] = useState(true);
-  const [oncallEmail, setOncallEmail] = useState('sre-oncall@sentryops.internal');
+  const [oncallEmail, setOncallEmail] = useState('sre-oncall@somak.internal');
   const [notifySev1, setNotifySev1] = useState(true);
   const [notifySev2, setNotifySev2] = useState(true);
   const [notifyCanary, setNotifyCanary] = useState(true);

@@ -247,7 +247,7 @@ export default function Sidebar({
               {(!collapsed || isMobileDrawer) && (
                 <div className="flex flex-col min-w-0">
                   <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
-                    SentryOps
+                    Somak AI
                     <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded-full bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
                       SRE
                     </span>

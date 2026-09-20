@@ -301,7 +301,7 @@ export default function RunbooksPage() {
                 No AST remediation runbooks synthesized yet
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
-                Runbooks are automatically cataloged as SentryOps remediates code regressions and infrastructure anomalies for {currentOrg?.name || 'this organization'}.
+                Runbooks are automatically cataloged as Somak AI remediates code regressions and infrastructure anomalies for {currentOrg?.name || 'this organization'}.
               </p>
             </div>
             <div className="pt-2 flex items-center justify-center gap-3">

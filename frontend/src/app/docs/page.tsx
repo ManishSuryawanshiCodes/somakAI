@@ -188,7 +188,7 @@ export default function DocsPage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-base tracking-tight text-slate-900 dark:text-white">
-                  SentryOps
+                  Somak AI
                 </span>
                 <span className="text-slate-400 font-normal">/</span>
                 <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
@@ -384,7 +384,7 @@ export default function DocsPage() {
             <article className="space-y-10 leading-relaxed text-sm">
               <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-slate-800">
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                  Getting Started with SentryOps
+                  Getting Started with Somak AI
                 </h1>
                 <p className="text-base text-slate-600 dark:text-slate-300">
                   Follow this 5-step guided path to configure autonomous incident remediation for your production engineering organization.
@@ -402,7 +402,7 @@ export default function DocsPage() {
                   </h2>
                 </div>
                 <p className="text-slate-600 dark:text-slate-300">
-                  Every workspace in SentryOps is strictly isolated with independent error budgets, runbook patterns, and role-based permissions. Sign up at <Link href="/signup" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">/signup</Link> or visit <Link href="/onboarding/create-org" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">/onboarding/create-org</Link>.
+                  Every workspace in Somak AI is strictly isolated with independent error budgets, runbook patterns, and role-based permissions. Sign up at <Link href="/signup" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">/signup</Link> or visit <Link href="/onboarding/create-org" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">/onboarding/create-org</Link>.
                 </p>
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
                   <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -410,7 +410,7 @@ export default function DocsPage() {
                     <span>Workspace Slug Architecture</span>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Organization slugs are unique lowercase identifiers used in your dedicated inbound webhook endpoints (e.g. <code className="font-mono text-[11px] bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">https://api.sentryops.io/v1/webhook/ingest/your-slug</code>). The user creating the workspace is automatically provisioned the <strong>Admin</strong> role.
+                    Organization slugs are unique lowercase identifiers used in your dedicated inbound webhook endpoints (e.g. <code className="font-mono text-[11px] bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">https://api.somak.ai/v1/webhook/ingest/your-slug</code>). The user creating the workspace is automatically provisioned the <strong>Admin</strong> role.
                   </p>
                 </div>
               </section>
@@ -426,7 +426,7 @@ export default function DocsPage() {
                   </h2>
                 </div>
                 <p className="text-slate-600 dark:text-slate-300">
-                  SentryOps ingests real-time crash reports via Sentry Webhooks. Navigate to <strong>Sentry &rarr; Settings &rarr; Integrations &rarr; Webhooks</strong> and paste your inbound URL:
+                  Somak AI ingests real-time crash reports via Sentry Webhooks. Navigate to <strong>Sentry &rarr; Settings &rarr; Integrations &rarr; Webhooks</strong> and paste your inbound URL:
                 </p>
 
                 {/* Code Block */}
@@ -434,7 +434,7 @@ export default function DocsPage() {
                   <div className="px-4 py-2 bg-slate-950 flex items-center justify-between text-xs text-slate-400">
                     <span className="font-mono">Inbound Webhook Configuration</span>
                     <button
-                      onClick={() => handleCopyCode('sentry-url', 'https://api.sentryops.io/v1/webhook/ingest/acme-prod')}
+                      onClick={() => handleCopyCode('sentry-url', 'https://api.somak.ai/v1/webhook/ingest/acme-prod')}
                       className="hover:text-white flex items-center gap-1 text-[11px]"
                     >
                       {copiedCodeId === 'sentry-url' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -442,7 +442,7 @@ export default function DocsPage() {
                     </button>
                   </div>
                   <pre className="p-4 text-xs font-mono overflow-x-auto text-emerald-400">
-                    https://api.sentryops.io/v1/webhook/ingest/acme-prod
+                    https://api.somak.ai/v1/webhook/ingest/acme-prod
                   </pre>
                 </div>
               </section>
@@ -458,12 +458,12 @@ export default function DocsPage() {
                   </h2>
                 </div>
                 <p className="text-slate-600 dark:text-slate-300">
-                  SentryOps uses a two-tier model architecture: <strong>Nemotron-3 30B</strong> for sub-10ms fingerprint triage, and <strong>Nemotron-3 550B MoE</strong> for AST syntax patch generation. Provide your API key in <Link href="/settings" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">Settings &rarr; AI Engine</Link> or the <Link href="/onboarding/setup" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">Setup Wizard</Link>.
+                  Somak AI uses a two-tier model architecture: <strong>Nemotron-3 30B</strong> for sub-10ms fingerprint triage, and <strong>Nemotron-3 550B MoE</strong> for AST syntax patch generation. Provide your API key in <Link href="/settings" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">Settings &rarr; AI Engine</Link> or the <Link href="/onboarding/setup" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">Setup Wizard</Link>.
                 </p>
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
                   <span>
-                    <strong>Zero-Hallucination Guarantee:</strong> SentryOps AST patches are verified in Firecracker sandboxes before canary promotion. LLM output that does not compile or pass tests is rejected immediately.
+                    <strong>Zero-Hallucination Guarantee:</strong> Somak AI AST patches are verified in Firecracker sandboxes before canary promotion. LLM output that does not compile or pass tests is rejected immediately.
                   </span>
                 </div>
               </section>
@@ -508,7 +508,7 @@ export default function DocsPage() {
                   Core Concepts & Glossary
                 </h1>
                 <p className="text-base text-slate-600 dark:text-slate-300">
-                  A plain-language guide to site reliability engineering concepts and the autonomous technologies powering SentryOps.
+                  A plain-language guide to site reliability engineering concepts and the autonomous technologies powering Somak AI.
                 </p>
               </header>
 
@@ -530,7 +530,7 @@ export default function DocsPage() {
                     <span>AST (Abstract Syntax Tree) Patching</span>
                   </h3>
                   <p className="text-slate-600 dark:text-slate-300">
-                    Standard AI code assistants output raw conversational text, which often includes syntax errors or missing brackets. SentryOps manipulates the <strong>Abstract Syntax Tree</strong> of the source code directly. This guarantees that any generated patch represents valid grammar and adheres to language-specific semantics.
+                    Standard AI code assistants output raw conversational text, which often includes syntax errors or missing brackets. Somak AI manipulates the <strong>Abstract Syntax Tree</strong> of the source code directly. This guarantees that any generated patch represents valid grammar and adheres to language-specific semantics.
                   </p>
                 </section>
 
@@ -540,7 +540,7 @@ export default function DocsPage() {
                     <span>Blast Radius & MicroVM Sandboxing</span>
                   </h3>
                   <p className="text-slate-600 dark:text-slate-300">
-                    The <strong>blast radius</strong> is the maximum possible impact an error or deployment can have on your users. SentryOps limits blast radius to zero during code synthesis by booting an ephemeral <strong>Firecracker microVM</strong> in ~50ms, compiling the patched service, and running integration tests before any code touches production.
+                    The <strong>blast radius</strong> is the maximum possible impact an error or deployment can have on your users. Somak AI limits blast radius to zero during code synthesis by booting an ephemeral <strong>Firecracker microVM</strong> in ~50ms, compiling the patched service, and running integration tests before any code touches production.
                   </p>
                 </section>
 
@@ -550,7 +550,7 @@ export default function DocsPage() {
                     <span>Canary Rollout & Auto-Rollback</span>
                   </h3>
                   <p className="text-slate-600 dark:text-slate-300">
-                    Instead of deploying a fix to 100% of production traffic at once, a canary deployment routes 5% of real-world requests to the patched service. SentryOps monitors the 5-minute error rate. If error rates remain nominal, it automatically promotes to 25%, 50%, and 100%. If an anomaly occurs, it instantly rolls back to the previous stable release.
+                    Instead of deploying a fix to 100% of production traffic at once, a canary deployment routes 5% of real-world requests to the patched service. Somak AI monitors the 5-minute error rate. If error rates remain nominal, it automatically promotes to 25%, 50%, and 100%. If an anomaly occurs, it instantly rolls back to the previous stable release.
                   </p>
                 </section>
 
@@ -570,7 +570,7 @@ export default function DocsPage() {
                     <span>Runbook Pattern Library</span>
                   </h3>
                   <p className="text-slate-600 dark:text-slate-300">
-                    Whenever an incident is resolved with verified zero regressions, SentryOps extracts an anonymized AST pattern into the <strong>Runbook Library</strong>. The next time a similar incident occurs, SentryOps references this library first to synthesize an instant fix in milliseconds.
+                    Whenever an incident is resolved with verified zero regressions, Somak AI extracts an anonymized AST pattern into the <strong>Runbook Library</strong>. The next time a similar incident occurs, Somak AI references this library first to synthesize an instant fix in milliseconds.
                   </p>
                 </section>
 
@@ -613,10 +613,10 @@ export default function DocsPage() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Configure a webhook in Sentry pointing to your organization endpoint. SentryOps listens for <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">event.alert</code> and <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">issue.created</code> payloads.
+                    Configure a webhook in Sentry pointing to your organization endpoint. Somak AI listens for <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">event.alert</code> and <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">issue.created</code> payloads.
                   </p>
                   <div className="p-3 bg-slate-900 rounded-xl text-xs font-mono text-slate-300 overflow-x-auto">
-                    {`POST /api/v1/webhook/ingest/{org_slug} HTTP/1.1\nHost: api.sentryops.io\nSentry-Hook-Resource: issue\nContent-Type: application/json`}
+                    {`POST /api/v1/webhook/ingest/{org_slug} HTTP/1.1\nHost: api.somak.ai\nSentry-Hook-Resource: issue\nContent-Type: application/json`}
                   </div>
                 </section>
 
@@ -631,7 +631,7 @@ export default function DocsPage() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Add an Incoming Webhook URL in your Slack workspace. SentryOps posts rich cards containing live error rates, diff previews, and direct 1-click &quot;Approve Hotfix&quot; or &quot;Rollback&quot; buttons for Operators.
+                    Add an Incoming Webhook URL in your Slack workspace. Somak AI posts rich cards containing live error rates, diff previews, and direct 1-click &quot;Approve Hotfix&quot; or &quot;Rollback&quot; buttons for Operators.
                   </p>
                 </section>
 
@@ -646,7 +646,7 @@ export default function DocsPage() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Provide your PagerDuty Events API v2 integration key. SentryOps triggers high-urgency pages if canary evaluation detects unexpected latency regression during a rollout.
+                    Provide your PagerDuty Events API v2 integration key. Somak AI triggers high-urgency pages if canary evaluation detects unexpected latency regression during a rollout.
                   </p>
                 </section>
 
@@ -750,8 +750,8 @@ export default function DocsPage() {
               <div className="space-y-6">
                 {[
                   {
-                    q: 'How does SentryOps guarantee the AI will not hallucinate broken code?',
-                    a: 'SentryOps does not rely on open-loop code generation. All synthesized fixes are structured as Abstract Syntax Tree modifications and immediately built inside an ephemeral Firecracker microVM. If compilation fails or any regression tests break, the fix is instantly discarded.',
+                    q: 'How does Somak AI guarantee the AI will not hallucinate broken code?',
+                    a: 'Somak AI does not rely on open-loop code generation. All synthesized fixes are structured as Abstract Syntax Tree modifications and immediately built inside an ephemeral Firecracker microVM. If compilation fails or any regression tests break, the fix is instantly discarded.',
                   },
                   {
                     q: 'What triggers an automatic canary rollback?',
@@ -763,19 +763,19 @@ export default function DocsPage() {
                   },
                   {
                     q: 'Is our proprietary source code transmitted or stored by third parties?',
-                    a: 'No. SentryOps only transmits the relevant context window (stack trace, local function AST, and dependencies) to your configured LLM endpoint. Code snippets are never retained or used for model training.',
+                    a: 'No. Somak AI only transmits the relevant context window (stack trace, local function AST, and dependencies) to your configured LLM endpoint. Code snippets are never retained or used for model training.',
                   },
                   {
                     q: 'Can human SREs override or pause autonomous promotions?',
                     a: 'Yes. At any stage of the canary rollout (5% → 25% → 50%), any Operator or Admin can click "Pause Promotion" or "Abort" from the web dashboard or Slack.',
                   },
                   {
-                    q: 'Does SentryOps work with self-hosted Sentry and private Git servers?',
-                    a: 'Yes. SentryOps provides standard HTTPS webhook ingestion compatible with self-hosted Sentry (Docker / Kubernetes) and self-hosted GitLab / GitHub Enterprise.',
+                    q: 'Does Somak AI work with self-hosted Sentry and private Git servers?',
+                    a: 'Yes. Somak AI provides standard HTTPS webhook ingestion compatible with self-hosted Sentry (Docker / Kubernetes) and self-hosted GitLab / GitHub Enterprise.',
                   },
                   {
                     q: 'What happens if multiple incidents strike different services at once?',
-                    a: 'SentryOps triages and isolates each incident concurrently into its own sandboxed pipeline. Inbound rate limiters prevent cascade contention.',
+                    a: 'Somak AI triages and isolates each incident concurrently into its own sandboxed pipeline. Inbound rate limiters prevent cascade contention.',
                   },
                   {
                     q: 'How long do team invitation links remain valid?',

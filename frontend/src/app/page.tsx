@@ -222,7 +222,7 @@ export default function ExecutiveIncidentRadar() {
   if (!mounted) {
     let hasStoredUser = false;
     try {
-      if (typeof window !== 'undefined' && localStorage.getItem('sentryops_user')) {
+      if (typeof window !== 'undefined' && (localStorage.getItem('somak_user') || localStorage.getItem('sentryops_user'))) {
         hasStoredUser = true;
       }
     } catch {}
@@ -242,7 +242,7 @@ export default function ExecutiveIncidentRadar() {
   }
 
   return (
-    <div className="min-h-screen text-slate-900 dark:text-slate-100 flex flex-col relative bg-[#F8FAFC] dark:bg-[#090D16]">
+    <div className="min-h-screen text-[#181614] dark:text-slate-100 flex flex-col relative bg-[#FAF8F5] dark:bg-[#030306]">
       {/* Top Navigation */}
       <TopNav onSimulate={handleSimulate} isSimulating={simulating} />
 

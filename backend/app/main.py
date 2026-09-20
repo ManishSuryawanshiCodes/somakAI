@@ -25,4 +25,4 @@ app.include_router(router)
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "service": "SentryOps API"}
+    return {"status": "ok", "service": "Somak AI API"}

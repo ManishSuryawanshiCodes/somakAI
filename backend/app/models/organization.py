@@ -84,7 +84,7 @@ class CreateOrgRequest(BaseModel):
     primary_use_case: str | None = None
     user_id: str
     user_name: str = "Operator"
-    user_email: str = "operator@sentryops.internal"
+    user_email: str = "operator@somak.internal"
 
 class CheckSlugResponse(BaseModel):
     slug: str

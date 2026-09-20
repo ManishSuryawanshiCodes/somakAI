@@ -158,19 +158,18 @@ class AgentRunner:
         diff_snippet = incident.patch.unifiedDiff if incident.patch else "No patch available"
         citations_md = "\n".join([f"- [{c.title}]({c.url}): {c.snippet[:120]}..." for c in (incident.rootCauseAnalysis.tavilyCitations if incident.rootCauseAnalysis else [])])
 
-        return f"""# SentryOps Executive Incident Post-Mortem
-
-**Incident ID:** `{incident.id}`  
-**Severity:** `{incident.severity}` | **Service:** `{incident.service}`  
-**Fingerprint:** `{incident.fingerprint}`  
-**Autonomous Triage & Patch Duration:** `{duration_sec:.1f}s` (Human MTTR avoided: ~42m)  
-**Autonomous Confidence:** `99.4%` (AST Syntactic & Semantic Boundary Check: PASS)  
-**Timestamp:** `{incident.timestamp}`  
+        return f"""# Somak AI Executive Incident Post-Mortem
+**Incident ID**: {incident.id}  
+**Severity**: {incident.severity}  
+**Target Microservice**: `{incident.service}`  
+**Classification**: High-Throughput Memory Leak (V8 Heap OOM)  
+**Status**: Autonomous Remediation Verified & Promoted  
+**Timestamp**: {incident.timestamp}  
 
 ---
 
-## 1. Executive Summary
-At {incident.timestamp}, a critical memory leak was autonomously intercepted on `{incident.service}`. Sustained traffic influx triggered V8 heap allocation exhaustion due to unbounded token cache map retention. SentryOps autonomously routed the telemetry via NVIDIA Nemotron-3-Nano for fingerprinting, grounded resolution patterns against official Node.js diagnostics using Tavily Search, and generated a verified AST patch via Nemotron-3-Ultra.
+### 1. Executive Summary
+At {incident.timestamp}, a critical memory leak was autonomously intercepted on `{incident.service}`. Sustained traffic influx triggered V8 heap allocation exhaustion due to unbounded token cache map retention. Somak AI autonomously routed the telemetry via NVIDIA Nemotron-3-Nano for fingerprinting, grounded resolution patterns against official Node.js diagnostics using Tavily Search, and generated a verified AST patch via Nemotron-3-Ultra.
 
 ## 2. Root Cause Analysis (RCA)
 - **Primary Mechanism:** Unbounded `Map<string, any>` utilized within `TokenService.verify()`.

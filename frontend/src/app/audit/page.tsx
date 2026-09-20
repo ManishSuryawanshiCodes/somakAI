@@ -35,7 +35,7 @@ interface AuditEvent {
 const AUDIT_EVENTS: AuditEvent[] = [
   {
     id: 'aud-9842',
-    actor: { name: 'Marcus Vance', email: 'marcus.vance@sentryops.internal', avatar: 'MV', role: 'Operator' },
+    actor: { name: 'Marcus Vance', email: 'marcus.vance@somak.internal', avatar: 'MV', role: 'Operator' },
     action: 'Approved 5% Canary Deployment for INC-2041',
     actionCategory: 'canary',
     targetResource: 'auth-service:v1.4.2-hotfix',
@@ -46,7 +46,7 @@ const AUDIT_EVENTS: AuditEvent[] = [
   },
   {
     id: 'aud-9841',
-    actor: { name: 'Elena Rostova', email: 'elena.rostova@sentryops.internal', avatar: 'ER', role: 'Admin' },
+    actor: { name: 'Elena Rostova', email: 'elena.rostova@somak.internal', avatar: 'ER', role: 'Admin' },
     action: 'Modified RBAC Permission for Devin Zhao to Operator',
     actionCategory: 'rbac',
     targetResource: 'usr-3 (devin.zhao)',
@@ -57,7 +57,7 @@ const AUDIT_EVENTS: AuditEvent[] = [
   },
   {
     id: 'aud-9840',
-    actor: { name: 'Sarah Chen', email: 'sarah.chen@sentryops.internal', avatar: 'SC', role: 'Operator' },
+    actor: { name: 'Sarah Chen', email: 'sarah.chen@somak.internal', avatar: 'SC', role: 'Operator' },
     action: 'Triggered Emergency Hold-to-Rollback on Canary',
     actionCategory: 'rollback',
     targetResource: 'billing-api:v2.1.0',
@@ -68,7 +68,7 @@ const AUDIT_EVENTS: AuditEvent[] = [
   },
   {
     id: 'aud-9839',
-    actor: { name: 'Elena Rostova', email: 'elena.rostova@sentryops.internal', avatar: 'ER', role: 'Admin' },
+    actor: { name: 'Elena Rostova', email: 'elena.rostova@somak.internal', avatar: 'ER', role: 'Admin' },
     action: 'Rotated Nebius Token Factory Production API Key',
     actionCategory: 'api_key',
     targetResource: 'secrets/nebius_api_key',
@@ -79,7 +79,7 @@ const AUDIT_EVENTS: AuditEvent[] = [
   },
   {
     id: 'aud-9838',
-    actor: { name: 'Marcus Vance', email: 'marcus.vance@sentryops.internal', avatar: 'MV', role: 'Operator' },
+    actor: { name: 'Marcus Vance', email: 'marcus.vance@somak.internal', avatar: 'MV', role: 'Operator' },
     action: 'Locked & Published Post-Mortem to SOC-2 Audit Vault',
     actionCategory: 'compliance',
     targetResource: 'postmortem/INC-1892',
@@ -114,7 +114,7 @@ export default function AuditPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `sentryops-audit-trail-${Date.now()}.json`;
+    a.download = `somak-audit-trail-${Date.now()}.json`;
     a.click();
   };
 

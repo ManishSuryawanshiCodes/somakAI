@@ -94,7 +94,7 @@ export default function PublicStatusPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
-              SentryOps
+              Somak AI
             </span>
             <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
               System Status
@@ -345,7 +345,7 @@ export default function PublicStatusPage() {
       <footer className="max-w-4xl mx-auto px-4 text-center text-xs text-slate-400 space-y-2">
         <div className="flex items-center justify-center gap-4">
           <Link href="/" className="hover:underline text-indigo-600 dark:text-indigo-400">
-            SentryOps Cloud Console
+            Somak AI Cloud Console
           </Link>
           <span>•</span>
           <Link href="/history" className="hover:underline">
@@ -357,7 +357,7 @@ export default function PublicStatusPage() {
           </Link>
         </div>
         <p className="text-[11px]">
-          Powered by SentryOps Autonomous Reliability Engine • Continuous 24/7 Verification
+          Powered by Somak AI Autonomous Reliability Engine • Continuous 24/7 Verification
         </p>
       </footer>
     </div>

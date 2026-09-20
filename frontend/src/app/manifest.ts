@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Autonomous cloud incident triage, zero-hallucination AST hotfixes, and canary rollouts',
     start_url: '/',
     display: 'standalone',
-    background_color: '#090D16',
+    background_color: '#030306',
     theme_color: '#4F46E5',
     icons: [
       {

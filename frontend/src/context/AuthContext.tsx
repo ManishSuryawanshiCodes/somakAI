@@ -33,7 +33,7 @@ interface AuthContextType {
 const DEFAULT_USER: User = {
   id: 'usr_elena',
   name: 'Elena Rostova',
-  email: 'elena@sentryops.internal',
+  email: 'elena@somak.internal',
   role: 'Admin',
   avatar: 'ER',
   team: 'Platform Reliability SRE',
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('sentryops_user');
+      const stored = localStorage.getItem('somak_user') || localStorage.getItem('sentryops_user');
       if (stored) {
         setUser(JSON.parse(stored));
       } else {
@@ -77,6 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(newUser);
     try {
+      localStorage.setItem('somak_user', JSON.stringify(newUser));
       localStorage.setItem('sentryops_user', JSON.stringify(newUser));
       // Brand new user has 0 organizations initially
       localStorage.removeItem(`sentryops_orgs_${newUser.id}`);
@@ -107,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cleanEmail.includes('elena') ||
       cleanEmail.includes('marcus') ||
       cleanEmail.includes('observer') ||
+      cleanEmail.includes('somak.internal') ||
       cleanEmail.includes('sentryops.internal');
 
     const userId = cleanEmail.includes('elena')
@@ -120,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const newUser: User = {
       id: userId,
       name: name || defaultName,
-      email: cleanEmail || 'operator@sentryops.internal',
+      email: cleanEmail || 'operator@somak.internal',
       role,
       avatar: (name || defaultName).substring(0, 2).toUpperCase(),
       team:
@@ -168,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     setUser(newUser);
     try {
+      localStorage.setItem('somak_user', JSON.stringify(newUser));
       localStorage.setItem('sentryops_user', JSON.stringify(newUser));
     } catch {}
     const hasOrgs = (res.organizations?.length || 0) > 0;
@@ -177,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginAsDemo = async (): Promise<User> => {
     setUser(DEFAULT_USER);
     try {
+      localStorage.setItem('somak_user', JSON.stringify(DEFAULT_USER));
       localStorage.setItem('sentryops_user', JSON.stringify(DEFAULT_USER));
     } catch {}
     return DEFAULT_USER;
@@ -185,6 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     try {
+      localStorage.removeItem('somak_user');
       localStorage.removeItem('sentryops_user');
     } catch {}
   };
@@ -203,6 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     setUser(updated);
     try {
+      localStorage.setItem('somak_user', JSON.stringify(updated));
       localStorage.setItem('sentryops_user', JSON.stringify(updated));
     } catch {}
   };

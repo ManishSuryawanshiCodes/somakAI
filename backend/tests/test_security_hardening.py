@@ -70,7 +70,7 @@ def run_tests():
     print("\n[3/9] Testing TOTP Multi-Factor Authentication...")
     # Elena has MFA enabled with secret JBSWY3DPEHPK3PXP
     res_mfa_step1 = client.post("/api/auth/login", json={
-        "email": "elena.rostova@sentryops.internal",
+        "email": "elena.rostova@somak.internal",
         "password": "Password123!"
     })
     assert res_mfa_step1.status_code == 200
@@ -91,7 +91,7 @@ def run_tests():
 
     # Get a fresh ticket
     res_fresh = client.post("/api/auth/login", json={
-        "email": "elena.rostova@sentryops.internal",
+        "email": "elena.rostova@somak.internal",
         "password": "Password123!"
     })
     fresh_ticket = res_fresh.json()["mfa_ticket"]
@@ -108,7 +108,7 @@ def run_tests():
     print("\n[4/9] Testing Server-Side RBAC Enforcement (Viewer vs Operator vs Admin)...")
     # Log in Sarah Connor (Viewer)
     res_sarah = client.post("/api/auth/login", json={
-        "email": "sarah.connor@sentryops.internal",
+        "email": "sarah.connor@somak.internal",
         "password": "Password123!"
     })
     sarah_token = res_sarah.json()["session_token"]
@@ -146,7 +146,7 @@ def run_tests():
 
     # OPERATOR (Marcus) CALLING DEPLOY MUST SUCCEED (HTTP 200)
     res_marcus = client.post("/api/auth/login", json={
-        "email": "marcus.vance@sentryops.internal",
+        "email": "marcus.vance@somak.internal",
         "password": "Password123!"
     })
     marcus_token = res_marcus.json()["session_token"]

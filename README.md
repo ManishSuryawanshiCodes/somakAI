@@ -1,11 +1,11 @@
-# SentryOps — Autonomous Cloud SRE & Incident Remediation Platform
+# SOMAK AI — Autonomous Cloud SRE & Incident Remediation Platform
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Built For](https://img.shields.io/badge/Hackathon-Nebius%20x%20NVIDIA%20Global%20AI-76B900.svg)](https://nebius.com)
 [![Next.js 14](https://img.shields.io/badge/Next.js-14%20App%20Router-black.svg)](https://nextjs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688.svg)](https://fastapi.tiangolo.com)
 
-> Autonomous cloud Site Reliability Engineering (SRE) and AST hotfix verification platform. When critical incidents (Sev-1/Sev-2) trigger production alerts, SentryOps autonomously ingests telemetry, fingerprints errors with **NVIDIA Nemotron-3-Nano**, grounds resolution patterns via **Tavily Search API**, synthesizes verified AST hotfixes with **NVIDIA Nemotron-3-Ultra**, and executes containerized test suites in ephemeral **Nebius Token Factory Sandboxes**.
+> Autonomous cloud Site Reliability Engineering (SRE) and AST hotfix verification platform. When critical incidents (Sev-1/Sev-2) trigger production alerts, Somak AI autonomously ingests telemetry, fingerprints errors with **NVIDIA Nemotron-3-Nano**, grounds resolution patterns via **Tavily Search API**, synthesizes verified AST hotfixes with **NVIDIA Nemotron-3-Ultra**, and executes containerized test suites in ephemeral **Nebius Token Factory Sandboxes**.
 
 ---
 
@@ -83,10 +83,10 @@
 
 ## Design System & Theming
 
-- **Porcelain / Alabaster Light Mode (Default):** Crisp porcelain surfaces (`#F8FAFC`, `#FFFFFF`), slate typography (`#0F172A`), hairline zinc borders (`#E2E8F0`), and soft shadows.
-- **Obsidian Dark Mode:** Deep obsidian background (`#090D16`, `#0F172A`) with hairline strokes (`#1E293B`).
-- **Tactile Floating Dock:** iOS-inspired bottom navigation pill for fast 1-click switching between screens.
-- **Mobile First:** Horizontally swipable KPI reels, collapsible bottom drawers, and tactile touch/mouse drag-to-confirm release slider.
+- **Liquid Glass Cream Light Mode (Default):** Warm, tactile cream surfaces (`#FAF8F5`, `#F5F2EB`), deep slate/warm typography (`#181614`), liquid glass caustic highlights (`inset 0 1px 1.5px rgba(255, 255, 255, 0.98)`), and soft borders (`#E8E3D9`).
+- **Obsidian Pure Black Dark Mode:** Deep pure black background (`#030306` / `#000000`) with hairline luminous strokes (`rgba(255, 255, 255, 0.09)`) and minimalist colored neon accents (Emerald, Cyan, Violet, Amber).
+- **Tactile Floating Dock:** iOS-inspired bottom navigation pill for fast 1-click switching between screens with safe-area spacing for mobile.
+- **Mobile & Laptop Responsive:** Collapsible mobile drawers, non-overlapping laptop headers, and tactile touch/mouse drag-to-confirm release slider.
 
 ---
 
