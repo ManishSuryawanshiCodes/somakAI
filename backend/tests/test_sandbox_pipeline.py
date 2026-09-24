@@ -117,8 +117,16 @@ async def run_tests():
     # ----------------------------------------------------
     print("\n[2/6] Testing Sandbox Network Isolation (Attempting connection to DB & internal service)...")
     
+    import urllib.parse
+    parsed_host = "db.internal.cloud"
+    if settings.DATABASE_URL:
+        try:
+            parsed_host = urllib.parse.urlparse(settings.DATABASE_URL).hostname or parsed_host
+        except Exception:
+            pass
+
     # Script that attempts outbound socket connections to production Supabase and localhost:8000
-    network_probe_script = """
+    network_probe_script = f"""
 import socket
 import sys
 
@@ -126,13 +134,13 @@ import sys
 try:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(1.0)
-    s.connect(("db.bbxcimubvmarachjvnwo.supabase.co", 5432))
+    s.connect(("{parsed_host}", 5432))
     print("SECURITY LEAK: Connected to Supabase DB!")
     sys.exit(0)
 except ConnectionRefusedError as e:
-    print(f"PASS: Connection to Supabase blocked by policy: {e}")
+    print(f"PASS: Connection to Supabase blocked by policy: {{e}}")
 except Exception as e:
-    print(f"PASS: Connection blocked ({type(e).__name__}): {e}")
+    print(f"PASS: Connection blocked ({{type(e).__name__}}): {{e}}")
 
 # Attempt 2: Connect to Internal Microservice localhost:8000
 try:

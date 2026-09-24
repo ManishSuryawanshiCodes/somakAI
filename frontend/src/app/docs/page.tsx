@@ -434,7 +434,7 @@ export default function DocsPage() {
                   <div className="px-4 py-2 bg-slate-950 flex items-center justify-between text-xs text-slate-400">
                     <span className="font-mono">Inbound Webhook Configuration</span>
                     <button
-                      onClick={() => handleCopyCode('sentry-url', 'https://api.somak.ai/v1/webhook/ingest/acme-prod')}
+                      onClick={() => handleCopyCode('sentry-url', 'https://api.somak.ai/v1/webhook/ingest/<your-org-slug>')}
                       className="hover:text-white flex items-center gap-1 text-[11px]"
                     >
                       {copiedCodeId === 'sentry-url' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -442,7 +442,7 @@ export default function DocsPage() {
                     </button>
                   </div>
                   <pre className="p-4 text-xs font-mono overflow-x-auto text-emerald-400">
-                    https://api.somak.ai/v1/webhook/ingest/acme-prod
+                    https://api.somak.ai/v1/webhook/ingest/&lt;your-org-slug&gt;
                   </pre>
                 </div>
               </section>

@@ -259,8 +259,7 @@ def run_e2e_verification():
     print("\n[CHECK 6] Environment Configuration Check...")
     # Confirm backend database URL is read from environment / settings
     db_url = settings.DATABASE_URL
-    assert db_url and "postgres" in db_url
-    assert "bbxcimubvmarachjvnwo" in db_url
+    assert db_url and "postgres" in db_url.lower()
     print(f"  [OK] Backend DATABASE_URL read from environment configuration: {db_url[:28]}...[REDACTED]")
 
     # Confirm frontend uses NEXT_PUBLIC_API_BASE

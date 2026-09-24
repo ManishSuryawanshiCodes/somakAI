@@ -10,6 +10,7 @@ import {
   Activity,
   AlertTriangle,
   ShieldCheck,
+  ArrowLeft,
   ArrowRight,
   FileText,
   TrendingDown,
@@ -245,6 +246,13 @@ export default function CanaryRolloutMonitor() {
       <TopNav />
 
       <main className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col gap-5">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Radar</span>
+        </Link>
         
         {/* Header Section */}
         <motion.div

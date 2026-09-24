@@ -13,6 +13,7 @@ import {
   Shield,
   Calendar,
   ChevronRight,
+  ArrowLeft,
   ArrowRight,
   ExternalLink,
   Search,
@@ -277,6 +278,13 @@ export default function OnCallPage() {
       </AnimatePresence>
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Radar</span>
+        </Link>
         
         {/* Header Ribbon */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">

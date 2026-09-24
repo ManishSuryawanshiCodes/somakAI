@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
+  ArrowLeft,
   ArrowRight,
   Sun,
   Moon,
@@ -88,19 +89,29 @@ export default function PublicStatusPage() {
     <div className="min-h-screen bg-radial-gradient text-slate-900 dark:text-slate-100 flex flex-col transition-colors pb-16">
       {/* Public Header */}
       <header className="glass-panel border-b border-slate-200/90 dark:border-slate-800/80 px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform">
-            <Shield className="w-4 h-4" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
-              Somak AI
-            </span>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-              System Status
-            </span>
-          </div>
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back</span>
+          </Link>
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform">
+              <Shield className="w-4 h-4" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
+                Somak AI
+              </span>
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                System Status
+              </span>
+            </div>
+          </Link>
+        </div>
 
         <div className="flex items-center gap-3">
           <button

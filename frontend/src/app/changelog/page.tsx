@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Tag,
   ArrowRight,
+  ArrowLeft,
   Shield,
   Layers,
   Zap,
@@ -26,10 +27,23 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: 'v2.0.0',
+    date: 'September 24, 2026',
+    title: 'Multi-Provider BYOK, Live PostgreSQL Persistence & Sandbox Self-Correction',
+    badge: 'Latest Release',
+    highlights: [
+      'Multi-Provider BYOK Architecture: Integrated Nebius (Nemotron-3), Anthropic (Claude 3.5 Sonnet), OpenAI (GPT-4o), and Google (Gemini 1.5 Pro) with independent triage and synthesis model selection.',
+      'Live Supabase PostgreSQL Persistence: Real production relational schema backing users (Argon2id hashing), organizations, incidents, audit logs, and provider usage quotas.',
+      'Sandbox Pipeline Hardening: Automated self-correction feedback loop parsing test errors/stack traces with capped retries and strict network isolation verification.',
+      'Enterprise RBAC & Security: Multi-tenant data segregation, session cookie encryption with HttpOnly enforcement, credential masking, and brute-force lockout.',
+      'Navigation & Ergonomics: Added unified Back to Radar controls across all child screens, mobile-responsive settings drawers, and real-time live usage counters.',
+    ],
+  },
+  {
     version: 'v1.4.0',
     date: 'September 19, 2026',
     title: 'Enterprise Collapsible Sidebar, Glassmorphism System & Error Budget Tracking',
-    badge: 'Latest Release',
+    badge: 'Major',
     highlights: [
       'Introduced fixed collapsible left sidebar (240px expanded / 72px collapsed) with persistence and mobile slide-in drawer.',
       'Refined visual shell with GPU-accelerated mesh aurora background, glassmorphism panels, and 1px edge inner-highlights.',
@@ -92,6 +106,14 @@ export default function ChangelogPage() {
       <TopNav />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Radar</span>
+        </Link>
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
           <div>

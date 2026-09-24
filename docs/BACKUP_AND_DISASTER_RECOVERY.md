@@ -6,7 +6,7 @@ This runbook outlines the backup posture, verification protocol, Point-in-Time R
 
 ## 1. Automated Managed Backups Posture
 
-Somak AI runs on a managed Supabase PostgreSQL cluster (`db.bbxcimubvmarachjvnwo.supabase.co`).
+Somak AI runs on a managed Supabase PostgreSQL cluster (`db.[PROJECT-REF].supabase.co`).
 
 ### Backup Specifications
 - **Frequency:** Automated daily snapshots at 00:00 UTC.
@@ -29,14 +29,14 @@ Prior to major infrastructure deployments, schema alterations, or quarterly comp
 
 ### Pre-requisites
 - PostgreSQL client tools (`pg_dump` version 15+)
-- Connection string with encoded credentials:
-  `postgresql://postgres:somak%20AI%20047918@db.bbxcimubvmarachjvnwo.supabase.co:5432/postgres`
+- Connection string securely retrieved from your environment:
+  `postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres` (or `$DATABASE_URL`)
 
 ### Execution Command (Linux / macOS / PowerShell)
 ```bash
-# Generate a compressed, custom-format database archive
+# Generate a compressed, custom-format database archive using $DATABASE_URL
 pg_dump \
-  --dbname="postgresql://postgres:somak%20AI%20047918@db.bbxcimubvmarachjvnwo.supabase.co:5432/postgres" \
+  --dbname="$DATABASE_URL" \
   --format=custom \
   --no-owner \
   --no-privileges \
@@ -48,7 +48,7 @@ pg_dump \
 If capturing active incidents and audit trails only:
 ```bash
 pg_dump \
-  --dbname="postgresql://postgres:somak%20AI%20047918@db.bbxcimubvmarachjvnwo.supabase.co:5432/postgres" \
+  --dbname="$DATABASE_URL" \
   --table=incidents \
   --table=audit_events \
   --table=provider_usage \
@@ -76,7 +76,7 @@ python -c "from app.core.database import db; print(db.check_health())"
 To restore the schema and data from a `.dump` snapshot:
 ```bash
 pg_restore \
-  --dbname="postgresql://postgres:somak%20AI%20047918@db.bbxcimubvmarachjvnwo.supabase.co:5432/postgres" \
+  --dbname="$DATABASE_URL" \
   --clean \
   --if-exists \
   --no-owner \

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useId } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -9,6 +10,7 @@ import {
   Users,
   Target,
   ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -135,6 +137,17 @@ export default function CreateOrgPage() {
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 -left-32 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Back to Radar Navigation */}
+      <div className="w-full max-w-lg mb-4 flex items-center justify-between z-10">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Radar</span>
+        </Link>
+      </div>
 
       {/* Brand & Progress Header */}
       <motion.div

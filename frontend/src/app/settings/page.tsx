@@ -21,6 +21,7 @@ import {
   ExternalLink,
   Lock,
   Sparkles,
+  ArrowLeft,
   ArrowRight,
   QrCode,
   RefreshCw,
@@ -143,11 +144,11 @@ export default function SettingsPage() {
   const [synthesisProvider, setSynthesisProvider] = useState<string>(currentOrg?.setup_checklist?.synthesis_provider || 'nebius');
   const [synthesisModel, setSynthesisModel] = useState<string>(currentOrg?.setup_checklist?.synthesis_model || 'nvidia/nemotron-3-ultra-550b');
 
-  const [nebiusKey, setNebiusKey] = useState(currentOrg?.setup_checklist?.nebius_api_key || currentOrg?.setup_checklist?.ai_api_key || 'neb-tok-live-89f4b321');
+  const [nebiusKey, setNebiusKey] = useState(currentOrg?.setup_checklist?.nebius_api_key || currentOrg?.setup_checklist?.ai_api_key || '');
   const [anthropicKey, setAnthropicKey] = useState(currentOrg?.setup_checklist?.anthropic_api_key || '');
   const [openaiKey, setOpenAIKey] = useState(currentOrg?.setup_checklist?.openai_api_key || '');
   const [googleKey, setGoogleKey] = useState(currentOrg?.setup_checklist?.google_api_key || '');
-  const [tavilyKey, setTavilyKey] = useState(currentOrg?.setup_checklist?.tavily_api_key || 'tvly-prod-c4391aa8');
+  const [tavilyKey, setTavilyKey] = useState(currentOrg?.setup_checklist?.tavily_api_key || '');
 
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [modelsCatalog, setModelsCatalog] = useState<AvailableModelsResponse | null>(null);
@@ -468,6 +469,14 @@ export default function SettingsPage() {
       <TopNav />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Radar</span>
+        </Link>
+
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
           <div>
