@@ -17,6 +17,7 @@ class SandboxExecution(BaseModel):
     stdout: str
     testsPassed: int
     totalTests: int
+    failureHistory: list[dict] = []
 
 class Patch(BaseModel):
     targetFile: str
@@ -31,13 +32,20 @@ class Incident(BaseModel):
     severity: Literal['SEV-1', 'SEV-2']
     service: str
     timestamp: str
-    status: Literal['TRIAGING', 'INVESTIGATING', 'SANDBOX_VERIFYING', 'READY_FOR_DEPLOY', 'DEPLOYED']
+    status: Literal['TRIAGING', 'INVESTIGATING', 'SANDBOX_VERIFYING', 'READY_FOR_DEPLOY', 'DEPLOYED', 'FAILED', 'NEEDS_HUMAN_REVIEW']
     confidenceScore: float = 99.4
     astValidated: bool = True
     correctionLoops: int = 0
     rootCauseAnalysis: RootCauseAnalysis | None = None
     patch: Patch | None = None
     postMortemReport: str | None = None
+    triage_provider: str = "nebius"
+    triage_model: str = "nvidia/nemotron-3-nano-30b-a3b"
+    synthesis_provider: str = "nebius"
+    synthesis_model: str = "nvidia/nemotron-3-ultra-550b"
+    fallback_occurred: bool = False
+    fallback_message: str | None = None
+    reasoning_steps: list[dict] = []
 
 class CanaryStatus(BaseModel):
     incidentId: str

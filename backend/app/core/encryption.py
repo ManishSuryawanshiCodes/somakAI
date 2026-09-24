@@ -51,6 +51,15 @@ def mask_secret(secret: str) -> str:
     plain = decrypt_secret(secret)
     if len(plain) <= 8:
         return "••••••••"
-    prefix = plain[:4] if plain.startswith(("neb-", "tvly", "http", "pd_")) else ""
+    if plain.startswith("sk-ant-"):
+        prefix = "sk-ant-"
+    elif plain.startswith("AIzaSy"):
+        prefix = "AIza"
+    elif plain.startswith("sk-"):
+        prefix = "sk-"
+    elif plain.startswith(("neb-", "tvly", "http", "pd_")):
+        prefix = plain[:4]
+    else:
+        prefix = ""
     suffix = plain[-4:]
     return f"{prefix}••••••••{suffix}" if prefix else f"••••••••{suffix}"

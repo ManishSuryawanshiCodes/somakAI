@@ -114,10 +114,10 @@ class AuditStore:
         self._events.insert(0, event)  # newest first for query convenience
         return event
 
-    def list_events(self, org_id: Optional[str] = None, limit: int = 50) -> List[AuditEvent]:
+    def list_events(self, org_id: Optional[str] = None, limit: int = 50, offset: int = 0) -> List[AuditEvent]:
         if not org_id:
-            return self._events[:limit]
+            return self._events[offset:offset+limit]
         filtered = [e for e in self._events if e.organization_id == org_id]
-        return filtered[:limit]
+        return filtered[offset:offset+limit]
 
 audit_store = AuditStore()

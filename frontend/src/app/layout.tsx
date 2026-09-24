@@ -6,6 +6,7 @@ import { OrgProvider } from '@/context/OrgContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 import AppShell from '@/components/AppShell';
+import '@/lib/sentry';
 import './globals.css';
 
 export const metadata: Metadata = {

@@ -27,12 +27,14 @@ async def get_current_user(
     2. Authorization header: Bearer <session_token>
     3. Fallback header: x-user-email (for demo/development backwards compatibility)
     """
-    # 1. Check session cookie
-    token = request.cookies.get("somak_session")
-
-    # 2. Check Authorization Bearer header
-    if not token and authorization and authorization.startswith("Bearer "):
+    # 1. Check Authorization Bearer header (explicit auth takes precedence)
+    token = None
+    if authorization and authorization.startswith("Bearer "):
         token = authorization[7:].strip()
+
+    # 2. Check session cookie (browser-managed)
+    if not token:
+        token = request.cookies.get("somak_session")
 
     if token:
         session = get_session(token)

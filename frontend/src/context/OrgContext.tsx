@@ -23,6 +23,7 @@ interface OrgContextType {
     primary_use_case?: string;
   }) => Promise<Organization>;
   updateChecklist: (data: Partial<SetupChecklist>) => Promise<Organization | null>;
+  updateOrgPlan: (plan: 'free' | 'team' | 'business' | 'enterprise') => Promise<Organization | null>;
   invites: Invite[];
   createInvites: (emails: string[], role: UserRole) => Promise<Invite[]>;
   revokeInvite: (inviteId: string) => Promise<boolean>;
@@ -36,6 +37,7 @@ export const DEFAULT_ACME_ORG: Organization = {
   slug: 'acme',
   team_size: '11-50',
   primary_use_case: 'Autonomous Incident Remediation',
+  plan: 'enterprise',
   created_at: '2026-09-01T00:00:00Z',
   created_by: 'usr_mv492',
   setup_checklist: {
@@ -44,7 +46,18 @@ export const DEFAULT_ACME_ORG: Organization = {
     sentry_inbound_url: 'https://api.somak.ai/v1/webhook/ingest/acme-prod',
     ai_connected: true,
     ai_api_key: 'neb-tok-live-89f4b321',
+    nebius_api_key: 'neb-tok-live-89f4b321',
     ai_model_tier: 'nvidia/nemotron-3-ultra-550b',
+    triage_provider: 'nebius',
+    triage_model: 'nvidia/nemotron-3-nano-30b-a3b',
+    synthesis_provider: 'nebius',
+    synthesis_model: 'nvidia/nemotron-3-ultra-550b',
+    anthropic_connected: false,
+    anthropic_api_key: '',
+    openai_connected: false,
+    openai_api_key: '',
+    google_connected: false,
+    google_api_key: '',
     tavily_connected: true,
     tavily_api_key: 'tvly-prod-c4391aa8',
     notifications_connected: true,
@@ -53,6 +66,7 @@ export const DEFAULT_ACME_ORG: Organization = {
     team_invited: true,
   },
 };
+
 
 const OrgContext = createContext<OrgContextType | undefined>(undefined);
 
@@ -265,6 +279,36 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     return nextOrg;
   };
 
+  const updateOrgPlan = async (plan: 'free' | 'team' | 'business' | 'enterprise'): Promise<Organization | null> => {
+    if (!currentOrg) return null;
+
+    let updated: Organization | null = null;
+    try {
+      updated = await api.updateOrganizationPlan(currentOrg.id, plan);
+    } catch (e) {
+      console.warn('Backend updateOrganizationPlan failed, applying locally', e);
+    }
+
+    const nextOrg: Organization = updated || {
+      ...currentOrg,
+      plan,
+    };
+
+    setCurrentOrg(nextOrg);
+    const nextUserOrgs = userOrgs.map((o) =>
+      o.organization.id === nextOrg.id ? { ...o, organization: nextOrg } : o
+    );
+    setUserOrgs(nextUserOrgs);
+
+    if (user) {
+      try {
+        localStorage.setItem(`sentryops_orgs_${user.id}`, JSON.stringify(nextUserOrgs));
+      } catch {}
+    }
+
+    return nextOrg;
+  };
+
   const createInvites = async (emails: string[], role: UserRole): Promise<Invite[]> => {
     if (!currentOrg || !user) return [];
 
@@ -357,6 +401,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         switchOrg,
         createOrg,
         updateChecklist,
+        updateOrgPlan,
         invites,
         createInvites,
         revokeInvite,

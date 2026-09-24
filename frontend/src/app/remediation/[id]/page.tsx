@@ -24,6 +24,7 @@ import {
   Cpu,
   CheckCircle2,
   Lock,
+  RefreshCw,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import ReasoningTree from '@/components/ReasoningTree';
@@ -34,7 +35,7 @@ import SlideToDeploy from '@/components/SlideToDeploy';
 import FloatingDock from '@/components/FloatingDock';
 import { useToast } from '@/components/ToastProvider';
 import { useAuth } from '@/context/AuthContext';
-import { getIncident, getActiveIncidents, deployRemediation } from '@/lib/api';
+import { getIncident, getActiveIncidents, deployRemediation, retrySandboxExecution } from '@/lib/api';
 import { mockIncident, mockIncident2, mockTerminalLines } from '@/lib/mock-data';
 import { Incident } from '@/lib/types';
 
@@ -57,9 +58,7 @@ export default function RemediationStudio() {
   const [showConfidenceTooltip, setShowConfidenceTooltip] = useState(false);
 
   const [deploying, setDeploying] = useState(false);
-  const [confirmingDeploy, setConfirmingDeploy] = useState(false);
-
-  const confirmTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [retryingSandbox, setRetryingSandbox] = useState(false);
 
   useEffect(() => {
     getActiveIncidents().then((data) => {
@@ -82,8 +81,6 @@ export default function RemediationStudio() {
 
   const handleDeploy = useCallback(async () => {
     setDeploying(true);
-    setConfirmingDeploy(false);
-    if (confirmTimeoutRef.current) clearTimeout(confirmTimeoutRef.current);
     try {
       await deployRemediation(selectedIncident.id);
       addToast('Canary deployment triggered at 5% traffic', 'success');
@@ -95,17 +92,26 @@ export default function RemediationStudio() {
     }
   }, [selectedIncident.id, router, addToast]);
 
-  // Desktop double-confirmation trigger for the single primary CTA
-  const handleDesktopDeployClick = () => {
-    if (confirmingDeploy) {
-      handleDeploy();
-    } else {
-      setConfirmingDeploy(true);
-      if (confirmTimeoutRef.current) clearTimeout(confirmTimeoutRef.current);
-      confirmTimeoutRef.current = setTimeout(() => {
-        setConfirmingDeploy(false);
-      }, 4000);
+  const handleRetrySandbox = async () => {
+    setRetryingSandbox(true);
+    try {
+      const updated = await retrySandboxExecution(selectedIncident.id);
+      if (updated) {
+        setSelectedIncident(updated);
+        addToast('Sandbox execution re-triggered with self-correction loop', 'info');
+      } else {
+        addToast('Sandbox retry scheduled in background queue', 'info');
+      }
+    } catch {
+      addToast('Failed to trigger sandbox retry', 'error');
+    } finally {
+      setRetryingSandbox(false);
     }
+  };
+
+  // Instant desktop 1-click deploy CTA
+  const handleDesktopDeployClick = () => {
+    handleDeploy();
   };
 
   // Global Keyboard Shortcut: ⌘ + Enter -> Deploy Canary immediately
@@ -123,6 +129,9 @@ export default function RemediationStudio() {
   const patch = selectedIncident.patch;
   const sandbox = patch?.sandboxExecution;
   const citations = rca?.tavilyCitations || [];
+  const failureHistory = sandbox?.failureHistory || selectedIncident.sandboxExecution?.failureHistory || [];
+  const loops = sandbox?.loops || selectedIncident.sandboxExecution?.loops || 1;
+  const isHumanReview = selectedIncident.status === 'NEEDS_HUMAN_REVIEW';
 
   return (
     <div className="min-h-screen text-text-primary flex flex-col relative">
@@ -266,6 +275,87 @@ export default function RemediationStudio() {
           </div>
         </div>
 
+        {/* HUMAN REVIEW REQUIRED ESCALATION BANNER WITH FAILURE HISTORY */}
+        {isHumanReview && (
+          <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 space-y-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/30">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-black text-slate-900 dark:text-white">
+                    Autonomous Fix Failed — Manual Review Required
+                  </h2>
+                  <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+                    Self-correction loop exhausted 3 capped attempts. The test suite continued to fail in the isolated sandbox. Review the real error traces below.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleRetrySandbox}
+                disabled={retryingSandbox}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-600/25 transition-all active:scale-95 flex items-center gap-2 shrink-0 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${retryingSandbox ? 'animate-spin' : ''}`} />
+                <span>{retryingSandbox ? 'Retrying Sandbox...' : 'Retry Sandbox Loop'}</span>
+              </button>
+            </div>
+
+            {/* Failure History Traces */}
+            {failureHistory.length > 0 && (
+              <div className="pt-3 border-t border-amber-500/20 space-y-2.5">
+                <div className="flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-200">
+                  <span>SANDBOX ATTEMPTS &amp; ERROR TRACES ({failureHistory.length} recorded)</span>
+                  <span className="text-[11px] font-mono text-slate-500">Max Loops: 3</span>
+                </div>
+
+                <div className="space-y-2">
+                  {failureHistory.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 space-y-1"
+                    >
+                      <div className="flex items-center justify-between pb-1 border-b border-slate-800/80 text-[10px]">
+                        <span className="text-amber-400 font-bold">Attempt {item.loop || idx + 1} of 3</span>
+                        <span className="text-slate-500">{item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : 'Just now'}</span>
+                      </div>
+                      <div className="text-rose-400 font-semibold pt-1">
+                        {item.error_message || 'AssertionError: test suite failed'}
+                      </div>
+                      {item.test_output && (
+                        <pre className="p-2.5 rounded-lg bg-black/60 text-slate-300 overflow-x-auto text-[10px] mt-1 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                          {item.test_output}
+                        </pre>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SELF-CORRECTION LOOP SUCCESS BANNER */}
+        {!isHumanReview && loops > 1 && (
+          <div className="p-3 rounded-xl border border-purple-500/20 bg-purple-500/10 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse" />
+              <span className="font-bold text-purple-700 dark:text-purple-300">
+                Self-Correction Loop Succeeded:
+              </span>
+              <span className="text-slate-600 dark:text-slate-300">
+                Initial attempt failed; real sandbox error output was fed back into the reasoning model and resolved on loop {loops} (Exit code 0).
+              </span>
+            </div>
+            <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-purple-200 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200 font-bold shrink-0">
+              {loops} Loops Converged
+            </span>
+          </div>
+        )}
+
         {/* Runbook Match Auto-Suggestion Banner */}
         {(selectedIncident?.fingerprint?.includes('MEM_LEAK') || selectedIncident?.id === 'INC-2041') && (
           <div className="p-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 dark:bg-indigo-500/10 flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -337,7 +427,12 @@ export default function RemediationStudio() {
               >
                 <span className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-indigo-500" />
-                  Autonomous Reasoning Trace (Nemotron-3-Ultra 550B • 4 Steps)
+                  Autonomous Reasoning Trace ({selectedIncident.synthesis_model?.split('/')?.pop() || 'Nemotron-3-Ultra'} • 4 Steps)
+                  {selectedIncident.fallback_occurred && (
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/30">
+                      Fallback Active
+                    </span>
+                  )}
                 </span>
                 {traceExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
               </button>
@@ -349,7 +444,7 @@ export default function RemediationStudio() {
                     exit={{ height: 0, opacity: 0 }}
                     className="px-4 pb-4 pt-1 border-t border-slate-100 dark:border-slate-800"
                   >
-                    <ReasoningTree currentStep={4} incidentId={selectedIncident.id} />
+                    <ReasoningTree currentStep={4} incidentId={selectedIncident.id} incident={selectedIncident} />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -559,20 +654,36 @@ export default function RemediationStudio() {
           
           {/* Left Summary: Context and Safety Status */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
+            {isHumanReview ? (
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/30 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/30 shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
-                  Ready for Production Canary Deployment
+                  {isHumanReview
+                    ? 'Autonomous Fix Failed — Manual Review Required'
+                    : 'Ready for Production Canary Deployment'}
                 </span>
-                <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-500/20">
-                  99.4% Fix Verified
+                <span
+                  className={`hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border ${
+                    isHumanReview
+                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                      : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                  }`}
+                >
+                  {isHumanReview ? '3 Loops Failed' : '99.4% Fix Verified'}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
-                Hotfix will be routed to 5% live ingress traffic with continuous automated rollback protection.
+                {isHumanReview
+                  ? 'Sandbox tests failed across 3 retry loops. Inspect failure history or retry execution.'
+                  : 'Hotfix will be routed to 5% live ingress traffic with continuous automated rollback protection.'}
               </p>
             </div>
           </div>
@@ -584,44 +695,48 @@ export default function RemediationStudio() {
                 <Lock className="w-4 h-4 text-amber-500" />
                 <span>Viewer Mode (Deploy requires Operator role)</span>
               </div>
+            ) : isHumanReview ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleRetrySandbox}
+                  disabled={retryingSandbox}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-600/20 transition-all active:scale-95 flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${retryingSandbox ? 'animate-spin' : ''}`} />
+                  <span>{retryingSandbox ? 'Retrying...' : 'Retry Sandbox Loop'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDesktopDeployClick}
+                  disabled={deploying}
+                  className="px-4 py-2.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold text-xs flex items-center gap-1.5 transition-all"
+                  title="Override failed sandbox test and deploy anyway"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                  <span>Force Deploy (Override)</span>
+                </button>
+              </div>
             ) : (
               <>
-                {/* Desktop Primary CTA: Approve & Trigger Canary Deploy */}
+                {/* Desktop Primary CTA: Effortless 1-Click Canary Deploy */}
                 <div className="hidden sm:block">
                   <button
+                    type="button"
                     onClick={handleDesktopDeployClick}
                     disabled={deploying}
-                    className={`font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 shadow-lg transition-all text-xs relative overflow-hidden active:scale-95 disabled:opacity-50 ${
-                      confirmingDeploy
-                        ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30 ring-2 ring-amber-400'
-                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25'
-                    }`}
+                    className="font-black py-3 px-7 rounded-xl flex items-center gap-2.5 shadow-xl shadow-emerald-600/35 hover:scale-[1.02] active:scale-95 transition-all text-xs text-white bg-emerald-600 hover:bg-emerald-500 ring-2 ring-emerald-400/50 btn-glow-primary cursor-pointer disabled:opacity-50"
                   >
-                    {/* Countdown bar during confirmation */}
-                    {confirmingDeploy && (
-                      <motion.div
-                        initial={{ width: '100%' }}
-                        animate={{ width: '0%' }}
-                        transition={{ duration: 4, ease: 'linear' }}
-                        className="absolute bottom-0 left-0 h-1 bg-white/40"
-                      />
-                    )}
-
                     {deploying ? (
                       <span className="flex items-center gap-2">
                         <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white/20 border-t-white" />
                         Routing to 5% Canary Traffic...
                       </span>
-                    ) : confirmingDeploy ? (
-                      <span className="flex items-center gap-2 text-white">
-                        <AlertTriangle className="w-4 h-4 animate-bounce" />
-                        Click Again to Confirm 5% Canary Deploy (4s)
-                      </span>
                     ) : (
                       <span className="flex items-center gap-2">
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>Approve & Trigger Canary Deploy (5% Traffic)</span>
-                        <kbd className="px-1.5 py-0.2 rounded bg-emerald-700/80 font-mono text-[10px] text-emerald-100 font-normal">
+                        <Play className="w-4 h-4 fill-current text-white" />
+                        <span>Approve &amp; Trigger Canary Deploy (5% Traffic)</span>
+                        <kbd className="px-1.5 py-0.5 rounded bg-emerald-700 font-mono text-[10px] text-emerald-100 font-normal ml-1">
                           ⌘↵
                         </kbd>
                       </span>

@@ -53,6 +53,19 @@ export default function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
       bgColor = 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/25';
       label = 'AST Validated';
       break;
+    case 'NEEDS_HUMAN_REVIEW':
+      bgColor = 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30';
+      pulse = true;
+      label = 'Fix Failed — Human Review';
+      break;
+    case 'FAILED':
+      bgColor = 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30';
+      label = 'Failed';
+      break;
+    case 'CANCELLED':
+      bgColor = 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/30';
+      label = 'Cancelled';
+      break;
     default:
       break;
   }

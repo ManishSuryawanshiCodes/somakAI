@@ -19,7 +19,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, role?: UserRole, name?: string) => Promise<{ user?: User; hasOrgs?: boolean; mfaRequired?: boolean; mfaTicket?: string }>;
+  login: (email: string, password?: string, role?: UserRole, name?: string) => Promise<{ user?: User; hasOrgs?: boolean; mfaRequired?: boolean; mfaTicket?: string }>;
   completeMfaLogin: (ticket: string, code: string) => Promise<{ user: User; hasOrgs: boolean }>;
   loginAsDemo: () => Promise<User>;
   signup: (email: string, password?: string, name?: string) => Promise<User>;
@@ -65,14 +65,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Call backend endpoint (rate-limited via RateLimiterMiddleware)
     const backendRes = await backendSignup({ email: cleanEmail, password, name: defaultName });
+    const u = (backendRes as any)?.user;
 
     const newUser: User = {
-      id: backendRes?.user_id || ('usr_' + Math.random().toString(36).substring(2, 9)),
-      name: defaultName,
-      email: cleanEmail,
-      role: 'Admin',
-      avatar: defaultName.substring(0, 2).toUpperCase(),
-      team: 'SecOps & Infrastructure',
+      id: u?.id || (backendRes as any)?.user_id || ('usr_' + Math.random().toString(36).substring(2, 9)),
+      name: u?.name || defaultName,
+      email: u?.email || cleanEmail,
+      role: (u?.role as UserRole) || 'Admin',
+      avatar: (u?.name || defaultName).substring(0, 2).toUpperCase(),
+      team: u?.team || 'SecOps & Infrastructure',
+      email_verified: u?.email_verified ?? false,
+      mfa_enabled: u?.mfa_enabled ?? false,
     };
 
     setUser(newUser);
@@ -89,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (
     email: string,
+    password?: string,
     role: UserRole = 'Operator',
     name?: string
   ): Promise<{ user?: User; hasOrgs?: boolean; mfaRequired?: boolean; mfaTicket?: string }> => {
@@ -97,13 +101,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ? cleanEmail.split('@')[0].replace('.', ' ').replace(/(^\w|\s\w)/g, (m) => m.toUpperCase())
       : 'Demo Operator');
 
-    // Call backend endpoint (rate-limited via RateLimiterMiddleware)
-    const backendRes = await backendLogin({ email: cleanEmail, role, name: defaultName });
+    // Call backend endpoint with actual credentials
+    const backendRes = await backendLogin({ email: cleanEmail, password, role, name: defaultName });
 
     if (backendRes?.status === 'mfa_required' && backendRes.mfa_ticket) {
       return { mfaRequired: true, mfaTicket: backendRes.mfa_ticket };
     }
 
+    const u = (backendRes as any)?.user;
     const isDemoUser =
       cleanEmail.includes('elena') ||
       cleanEmail.includes('marcus') ||
@@ -111,45 +116,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cleanEmail.includes('somak.internal') ||
       cleanEmail.includes('sentryops.internal');
 
-    const userId = cleanEmail.includes('elena')
+    const userId = u?.id || (cleanEmail.includes('elena')
       ? 'usr_elena'
       : cleanEmail.includes('marcus')
       ? 'usr_mv492'
       : cleanEmail.includes('observer')
       ? 'usr_observer'
-      : 'usr_' + Math.random().toString(36).substring(2, 9);
+      : 'usr_' + Math.random().toString(36).substring(2, 9));
 
     const newUser: User = {
       id: userId,
-      name: name || defaultName,
-      email: cleanEmail || 'operator@somak.internal',
-      role,
-      avatar: (name || defaultName).substring(0, 2).toUpperCase(),
-      team:
+      name: u?.name || name || defaultName,
+      email: u?.email || cleanEmail || 'operator@somak.internal',
+      role: (u?.role as UserRole) || role,
+      avatar: (u?.name || name || defaultName).substring(0, 2).toUpperCase(),
+      team: u?.team || (
         role === 'Admin'
           ? 'SecOps & Infrastructure'
           : role === 'Operator'
           ? 'Platform Reliability SRE'
-          : 'Read-Only Observer',
+          : 'Read-Only Observer'
+      ),
+      email_verified: u?.email_verified ?? true,
+      mfa_enabled: u?.mfa_enabled ?? false,
     };
 
     setUser(newUser);
     try {
+      localStorage.setItem('somak_user', JSON.stringify(newUser));
       localStorage.setItem('sentryops_user', JSON.stringify(newUser));
     } catch {}
 
-    // Check if user has organizations
-    let hasOrgs = isDemoUser;
-    if (!hasOrgs) {
-      try {
-        const storedOrgs = localStorage.getItem(`sentryops_orgs_${newUser.id}`);
-        if (storedOrgs) {
-          const parsed = JSON.parse(storedOrgs);
-          hasOrgs = Array.isArray(parsed) && parsed.length > 0;
-        }
-      } catch {}
-    }
-
+    const hasOrgs = ((backendRes as any)?.organizations?.length > 0) || (backendRes as any)?.has_organizations || isDemoUser;
     return { user: newUser, hasOrgs };
   };
 

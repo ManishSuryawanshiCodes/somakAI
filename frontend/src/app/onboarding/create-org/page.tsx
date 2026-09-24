@@ -219,7 +219,7 @@ export default function CreateOrgPage() {
 
             <div className="relative flex items-center">
               <span className="absolute left-3 text-xs text-slate-400 font-mono select-none">
-                sentryops.io/
+                somak.ai/
               </span>
               <input
                 type="text"
@@ -227,7 +227,7 @@ export default function CreateOrgPage() {
                 value={slug}
                 onChange={handleSlugChange}
                 placeholder="acme-corp"
-                className={`w-full bg-slate-50 dark:bg-slate-800/80 border rounded-xl py-2.5 pl-28 pr-3 text-xs font-mono text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                className={`w-full bg-slate-50 dark:bg-slate-800/80 border rounded-xl py-2.5 pl-24 pr-3 text-xs font-mono text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
                   isSlugAvailable === false
                     ? 'border-rose-500/50 focus:ring-rose-500'
                     : isSlugAvailable === true

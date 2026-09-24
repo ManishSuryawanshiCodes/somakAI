@@ -129,7 +129,51 @@ describe('TokenService Memory Management', () => {
                 triggerMechanism="A 10x surge in authentication traffic caused 2.3M unique JWT verification tokens to be retained in memory without eviction.",
                 tavilyCitations=default_citations
             ),
-            patch=default_patch
+            patch=default_patch,
+            triage_provider="nebius",
+            triage_model="nvidia/nemotron-3-nano-30b-a3b",
+            synthesis_provider="nebius",
+            synthesis_model="nvidia/nemotron-3-ultra-550b",
+            fallback_occurred=False,
+            fallback_message=None,
+            reasoning_steps=[
+                {
+                    "title": "Triage & Log Fingerprinting",
+                    "desc": "NVIDIA Nemotron-3-Nano extracted stack signature ERR_EVENTEMITTER_LEAK and flagged src/services/tokenService.ts as SEV-1 root.",
+                    "duration": "0.4s",
+                    "provider": "nebius",
+                    "model": "Nemotron-3-Nano (30B)",
+                    "statusText": "Classified SEV-1",
+                    "fallback": False
+                },
+                {
+                    "title": "Context Grounding via Tavily",
+                    "desc": "Tavily Search queried 3 official Node.js diagnostic docs for unbounded Map memory exhaustion patterns & TTL cache remedies.",
+                    "duration": "1.2s",
+                    "provider": "tavily",
+                    "model": "Tavily API v2",
+                    "statusText": "3 Citations Grounded",
+                    "fallback": False
+                },
+                {
+                    "title": "AST Hotfix Synthesis",
+                    "desc": "NVIDIA Nemotron-3-Ultra synthesized surgical AST patch replacing Map with bounded LRU/TTL Cache and generated Jest test spec.",
+                    "duration": "3.8s",
+                    "provider": "nebius",
+                    "model": "Nemotron-3-Ultra (550B)",
+                    "statusText": "AST Verified",
+                    "fallback": False
+                },
+                {
+                    "title": "Nebius Sandbox & Self-Correction",
+                    "desc": "Container sandbox sbx-8841 executed full reproduction test suite. Self-correction loop auto-disposed listeners: 14/14 passed.",
+                    "duration": "4.2s",
+                    "provider": "nebius",
+                    "model": "Nebius Token Sandbox",
+                    "statusText": "Exit Code 0",
+                    "fallback": False
+                }
+            ]
         )
 
         self._incidents: dict[str, Incident] = {"INC-2041": default_incident}
@@ -145,20 +189,170 @@ describe('TokenService Memory Management', () => {
             )
         }
         
+    def _row_to_incident(self, row: dict) -> Incident:
+        """Constructs an Incident model from a database dictionary record."""
+        import json
+        from app.models.incident import RootCauseAnalysis, Patch, SandboxExecution
+
+        rca = None
+        if row.get("root_cause_analysis"):
+            val = row["root_cause_analysis"]
+            if isinstance(val, str):
+                val = json.loads(val)
+            if isinstance(val, dict):
+                rca = RootCauseAnalysis(**val)
+
+        patch = None
+        if row.get("patch"):
+            val = row["patch"]
+            if isinstance(val, str):
+                val = json.loads(val)
+            if isinstance(val, dict):
+                patch = Patch(**val)
+
+        steps = []
+        if row.get("reasoning_steps"):
+            val = row["reasoning_steps"]
+            if isinstance(val, str):
+                val = json.loads(val)
+            if isinstance(val, list):
+                steps = val
+
+        return Incident(
+            id=row["id"],
+            organization_id=row.get("organization_id", "org_acme"),
+            fingerprint=row.get("fingerprint", "ERR_DEFAULT"),
+            severity=row.get("severity", "SEV-1"),
+            service=row.get("service", "unknown-service"),
+            timestamp=row.get("timestamp", ""),
+            status=row.get("status", "TRIAGING"),
+            confidenceScore=row.get("confidence_score", 99.4),
+            astValidated=row.get("ast_validated", True),
+            correctionLoops=row.get("correction_loops", 0),
+            rootCauseAnalysis=rca,
+            patch=patch,
+            postMortemReport=row.get("post_mortem_report"),
+            triage_provider=row.get("triage_provider", "nebius"),
+            triage_model=row.get("triage_model", "nvidia/nemotron-3-nano-30b-a3b"),
+            synthesis_provider=row.get("synthesis_provider", "nebius"),
+            synthesis_model=row.get("synthesis_model", "nvidia/nemotron-3-ultra-550b"),
+            fallback_occurred=row.get("fallback_occurred", False),
+            fallback_message=row.get("fallback_message"),
+            reasoning_steps=steps
+        )
+
+    def hydrate_from_db(self):
+        """Pre-populates memory store from Supabase on application startup."""
+        try:
+            from app.core.database import db
+            rows = db.execute_query("SELECT * FROM incidents ORDER BY timestamp DESC LIMIT 50;")
+            if rows:
+                for r in rows:
+                    inc = self._row_to_incident(r)
+                    self._incidents[inc.id] = inc
+        except Exception:
+            pass
+
     def add_incident(self, incident: Incident):
         self._incidents[incident.id] = incident
-        
+        self._sync_incident_to_db(incident)
+
     def get_incident(self, incident_id: str) -> Incident | None:
-        return self._incidents.get(incident_id) or self._incidents.get("INC-2041")
-        
-    def get_active_incidents(self, org_id: str | None = None) -> list[Incident]:
+        if incident_id in self._incidents:
+            return self._incidents[incident_id]
+
+        try:
+            from app.core.database import db
+            rows = db.execute_query("SELECT * FROM incidents WHERE id = %s LIMIT 1;", (incident_id,))
+            if rows:
+                inc = self._row_to_incident(rows[0])
+                self._incidents[inc.id] = inc
+                return inc
+        except Exception:
+            pass
+
+        return self._incidents.get("INC-2041")
+
+    def get_active_incidents(self, org_id: str | None = None, limit: int = 50, offset: int = 0) -> list[Incident]:
+        effective_org = org_id or "org_acme"
+        # 1. Batch query indexed by organization_id to avoid N+1 query patterns
+        try:
+            from app.core.database import db
+            rows = db.execute_query(
+                "SELECT * FROM incidents WHERE organization_id = %s ORDER BY timestamp DESC LIMIT %s OFFSET %s;",
+                (effective_org, limit, offset)
+            )
+            if rows:
+                db_incidents = [self._row_to_incident(r) for r in rows]
+                for inc in db_incidents:
+                    self._incidents[inc.id] = inc
+                return db_incidents
+        except Exception:
+            pass
+
+        # In-memory fallback
         if not org_id:
-            return list(self._incidents.values())
-        return [i for i in self._incidents.values() if getattr(i, 'organization_id', 'org_acme') == org_id]
-        
+            return list(self._incidents.values())[offset:offset+limit]
+        return [i for i in self._incidents.values() if getattr(i, 'organization_id', 'org_acme') == org_id][offset:offset+limit]
+
+    def get_incidents(self, org_id: str | None = None) -> list[Incident]:
+        return self.get_active_incidents(org_id)
+
     def update_incident(self, incident: Incident):
-        if incident.id in self._incidents:
-            self._incidents[incident.id] = incident
+        self._incidents[incident.id] = incident
+        self._sync_incident_to_db(incident)
+
+    def _sync_incident_to_db(self, incident: Incident):
+        try:
+            import json
+            from app.core.database import db
+            query = """
+            INSERT INTO incidents (
+                id, organization_id, fingerprint, severity, service, timestamp, status,
+                confidence_score, ast_validated, correction_loops, root_cause_analysis,
+                patch, post_mortem_report, triage_provider, triage_model, synthesis_provider,
+                synthesis_model, fallback_occurred, fallback_message, reasoning_steps
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (id) DO UPDATE SET
+                status = EXCLUDED.status,
+                confidence_score = EXCLUDED.confidence_score,
+                ast_validated = EXCLUDED.ast_validated,
+                correction_loops = EXCLUDED.correction_loops,
+                root_cause_analysis = EXCLUDED.root_cause_analysis,
+                patch = EXCLUDED.patch,
+                post_mortem_report = EXCLUDED.post_mortem_report,
+                fallback_occurred = EXCLUDED.fallback_occurred,
+                fallback_message = EXCLUDED.fallback_message,
+                reasoning_steps = EXCLUDED.reasoning_steps;
+            """
+            rca_json = json.dumps(incident.rootCauseAnalysis.model_dump()) if incident.rootCauseAnalysis else None
+            patch_json = json.dumps(incident.patch.model_dump()) if incident.patch else None
+            steps_json = json.dumps(incident.reasoning_steps)
+            db.execute_query(query, (
+                incident.id,
+                incident.organization_id,
+                incident.fingerprint,
+                incident.severity,
+                incident.service,
+                incident.timestamp,
+                incident.status,
+                incident.confidenceScore,
+                incident.astValidated,
+                incident.correctionLoops,
+                rca_json,
+                patch_json,
+                incident.postMortemReport,
+                incident.triage_provider,
+                incident.triage_model,
+                incident.synthesis_provider,
+                incident.synthesis_model,
+                incident.fallback_occurred,
+                incident.fallback_message,
+                steps_json
+            ))
+        except Exception:
+            pass
+
             
     def set_canary_status(self, status: CanaryStatus):
         self._canary_statuses[status.incidentId] = status

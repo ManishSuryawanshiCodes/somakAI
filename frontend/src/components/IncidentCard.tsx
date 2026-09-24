@@ -164,10 +164,29 @@ export default function IncidentCard({
           </span>
 
           {/* Badge 2: Status */}
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-900/50 dark:text-emerald-400">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-            {incident.status === 'READY_FOR_DEPLOY' ? 'Ready for Deploy' : incident.status}
-          </span>
+          {incident.status === 'NEEDS_HUMAN_REVIEW' ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 animate-pulse">
+              <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+              Human Review Required
+            </span>
+          ) : incident.status === 'DEPLOYED' ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 dark:bg-indigo-950/40 dark:border-indigo-900/50 dark:text-indigo-400">
+              <ShieldCheck className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+              Canary Deployed
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-900/50 dark:text-emerald-400">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+              Ready for Deploy
+            </span>
+          )}
+
+          {/* Self-correction loop badge */}
+          {incident.patch?.sandboxExecution?.loops && incident.patch.sandboxExecution.loops > 1 && (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 dark:bg-purple-950/50 dark:border-purple-900/50 dark:text-purple-400 font-bold">
+              Self-corrected ({incident.patch.sandboxExecution.loops} loops)
+            </span>
+          )}
 
           {/* +2 More Metadata Chip */}
           <button
@@ -178,7 +197,7 @@ export default function IncidentCard({
             }}
             className="text-[10px] font-mono text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            {showMeta ? 'Hide details' : '+2 more'}
+            {showMeta ? 'Hide details' : '+ details'}
           </button>
         </div>
 
@@ -189,7 +208,20 @@ export default function IncidentCard({
         </div>
       </div>
 
-      {/* Expanded Metadata (Revealed via +2 More) */}
+      {/* Human Escalation Warning Alert if Retries Exhausted */}
+      {incident.status === 'NEEDS_HUMAN_REVIEW' && (
+        <div className="my-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <span className="font-bold block">Autonomous Fix Failed (Max Retries Reached)</span>
+            <span className="text-[11px] text-amber-700 dark:text-amber-400 leading-tight block mt-0.5">
+              Sandbox test suite failed across 3 self-correction iterations. Manual engineer review required before deployment.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Expanded Metadata (Revealed via + details) */}
       <AnimatePresence>
         {showMeta && (
           <motion.div
@@ -206,6 +238,12 @@ export default function IncidentCard({
               <span>Verification:</span>
               <span className="text-emerald-600 dark:text-emerald-400 font-bold">{incident.confidenceScore || 99.4}% AST Verified</span>
             </div>
+            {incident.patch?.sandboxExecution?.failureHistory && incident.patch.sandboxExecution.failureHistory.length > 0 && (
+              <div className="flex items-center justify-between text-rose-600 dark:text-rose-400">
+                <span>Failed Attempts:</span>
+                <span className="font-bold">{incident.patch.sandboxExecution.failureHistory.length} recorded</span>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -271,29 +309,62 @@ export default function IncidentCard({
         </AnimatePresence>
       </div>
 
-      {/* Action Bar: Clean Hierarchy (One Primary Action + Ghost Secondary) */}
+      {/* Action Bar: Prominent Canary Launch CTA */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
         <div className="flex flex-wrap items-center gap-2">
-          {/* Primary Action Button */}
-          <button
-            type="button"
-            onClick={handleStudioClick}
-            className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
-          >
-            <span>Remediation Studio</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          {incident.status === 'READY_FOR_DEPLOY' ? (
+            <>
+              {/* High-Contrast, Prominent Primary Canary CTA */}
+              <button
+                type="button"
+                onClick={handleDeployClick}
+                title="Deploy Canary 5% Hotfix (⌘ + Enter)"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-2 shadow-md shadow-emerald-600/25 transition-all active:scale-95 btn-glow-primary"
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-100" />
+                <span>Approve Canary 5%</span>
+              </button>
 
-          {/* Secondary Action */}
-          <button
-            type="button"
-            onClick={handleDeployClick}
-            title="Deploy Canary 5% Hotfix (⌘ + Enter)"
-            className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition-all"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Deploy Canary 5%</span>
-          </button>
+              {/* Secondary Studio Link */}
+              <button
+                type="button"
+                onClick={handleStudioClick}
+                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition-all"
+              >
+                <span>Remediation Studio</span>
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+            </>
+          ) : incident.status === 'NEEDS_HUMAN_REVIEW' ? (
+            <>
+              <button
+                type="button"
+                onClick={handleStudioClick}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs flex items-center gap-2 shadow-md shadow-amber-600/25 transition-all active:scale-95"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                <span>Review Failure Traces & Fix</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleDeployClick}
+                className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
+              >
+                <span>View Canary</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleStudioClick}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold text-xs"
+              >
+                Studio
+              </button>
+            </>
+          )}
         </div>
 
         {/* Inline Drawer Expansion Trigger */}

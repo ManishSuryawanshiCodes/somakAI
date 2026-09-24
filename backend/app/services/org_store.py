@@ -32,7 +32,18 @@ class OrgStore:
             sentry_webhook_secret=encrypt_secret("sentry_whsec_dev_token_991823"),
             ai_connected=True,
             ai_api_key=encrypt_secret("neb-tok-live-89f4b321"),
+            nebius_api_key=encrypt_secret("neb-tok-live-89f4b321"),
             ai_model_tier="nvidia/nemotron-3-ultra-550b",
+            triage_provider="nebius",
+            triage_model="nvidia/nemotron-3-nano-30b-a3b",
+            synthesis_provider="nebius",
+            synthesis_model="nvidia/nemotron-3-ultra-550b",
+            anthropic_connected=False,
+            anthropic_api_key="",
+            openai_connected=False,
+            openai_api_key="",
+            google_connected=False,
+            google_api_key="",
             tavily_connected=True,
             tavily_api_key=encrypt_secret("tvly-prod-c4391aa8"),
             notifications_connected=True,
@@ -49,6 +60,7 @@ class OrgStore:
             primary_use_case="Autonomous Incident Remediation",
             created_at=datetime.now(timezone.utc).isoformat(),
             created_by="usr_elena",
+            plan="enterprise",
             setup_checklist=acme_checklist,
         )
 
@@ -187,6 +199,7 @@ class OrgStore:
             slug=clean_slug,
             team_size=req.team_size or "2-10",
             primary_use_case=req.primary_use_case or "Autonomous Incident Remediation",
+            plan=req.plan or "business",
             created_at=datetime.now(timezone.utc).isoformat(),
             created_by=req.user_id,
             setup_checklist=checklist
@@ -387,11 +400,42 @@ class OrgStore:
 
         if req.ai_api_key is not None:
             checklist.ai_api_key = encrypt_secret(req.ai_api_key)
+            checklist.nebius_api_key = checklist.ai_api_key
             checklist.ai_connected = bool(req.ai_api_key)
+        if req.nebius_api_key is not None:
+            checklist.nebius_api_key = encrypt_secret(req.nebius_api_key)
+            checklist.ai_api_key = checklist.nebius_api_key
+            checklist.ai_connected = bool(req.nebius_api_key)
         if req.ai_model_tier is not None:
             checklist.ai_model_tier = req.ai_model_tier
+        if req.triage_provider is not None:
+            checklist.triage_provider = req.triage_provider
+        if req.triage_model is not None:
+            checklist.triage_model = req.triage_model
+        if req.synthesis_provider is not None:
+            checklist.synthesis_provider = req.synthesis_provider
+        if req.synthesis_model is not None:
+            checklist.synthesis_model = req.synthesis_model
         if req.ai_connected is not None:
             checklist.ai_connected = req.ai_connected
+
+        if req.anthropic_api_key is not None:
+            checklist.anthropic_api_key = encrypt_secret(req.anthropic_api_key)
+            checklist.anthropic_connected = bool(req.anthropic_api_key)
+        if req.anthropic_connected is not None:
+            checklist.anthropic_connected = req.anthropic_connected
+
+        if req.openai_api_key is not None:
+            checklist.openai_api_key = encrypt_secret(req.openai_api_key)
+            checklist.openai_connected = bool(req.openai_api_key)
+        if req.openai_connected is not None:
+            checklist.openai_connected = req.openai_connected
+
+        if req.google_api_key is not None:
+            checklist.google_api_key = encrypt_secret(req.google_api_key)
+            checklist.google_connected = bool(req.google_api_key)
+        if req.google_connected is not None:
+            checklist.google_connected = req.google_connected
 
         if req.tavily_api_key is not None:
             checklist.tavily_api_key = encrypt_secret(req.tavily_api_key)
@@ -411,6 +455,21 @@ class OrgStore:
         if req.team_invited is not None:
             checklist.team_invited = req.team_invited
 
+        if req.sandbox_concurrency is not None:
+            checklist.sandbox_concurrency = req.sandbox_concurrency
+        if req.sandbox_timeout is not None:
+            checklist.sandbox_timeout = req.sandbox_timeout
+
+        self._sync_org_to_db(org)
+        return org
+
+    def update_org_plan(self, org_id: str, plan: str) -> Organization | None:
+        """Updates plan tier for an organization."""
+        org = self._organizations.get(org_id)
+        if not org:
+            return None
+        org.plan = plan  # type: ignore
+        self._sync_org_to_db(org)
         return org
 
     def rotate_secret(self, org_id: str, secret_type: str, new_value: str) -> bool:
@@ -421,8 +480,76 @@ class OrgStore:
         encrypted_val = encrypt_secret(new_value)
         if hasattr(org.setup_checklist, secret_type):
             setattr(org.setup_checklist, secret_type, encrypted_val)
+            if secret_type in ("ai_api_key", "nebius_api_key"):
+                org.setup_checklist.ai_api_key = encrypted_val
+                org.setup_checklist.nebius_api_key = encrypted_val
+                org.setup_checklist.ai_connected = bool(new_value)
+            elif secret_type == "anthropic_api_key":
+                org.setup_checklist.anthropic_connected = bool(new_value)
+            elif secret_type == "openai_api_key":
+                org.setup_checklist.openai_connected = bool(new_value)
+            elif secret_type == "google_api_key":
+                org.setup_checklist.google_connected = bool(new_value)
+            elif secret_type == "tavily_api_key":
+                org.setup_checklist.tavily_connected = bool(new_value)
+            self._sync_org_to_db(org)
             return True
         return False
+
+    def get_decrypted_provider_key(self, org_id: str, provider: str) -> str:
+        """Returns the decrypted BYOK key for an organization and provider."""
+        org = self._organizations.get(org_id)
+        if not org:
+            return ""
+        ch = org.setup_checklist
+        prov = (provider or "").lower()
+        enc_key = ""
+        if prov == "anthropic":
+            enc_key = ch.anthropic_api_key
+        elif prov == "openai":
+            enc_key = ch.openai_api_key
+        elif prov == "google":
+            enc_key = ch.google_api_key
+        elif prov == "nebius":
+            enc_key = ch.nebius_api_key or ch.ai_api_key
+
+        if not enc_key:
+            return ""
+        from app.core.encryption import decrypt_secret
+        return decrypt_secret(enc_key)
+
+    def _sync_org_to_db(self, org: Organization):
+        """Asynchronously or best-effort syncs org to Supabase PostgreSQL."""
+        try:
+            import json
+            from app.core.database import db
+            query = """
+            INSERT INTO organizations (id, name, slug, team_size, primary_use_case, mfa_enforced, plan, created_at, created_by, setup_checklist)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (id) DO UPDATE SET
+                name = EXCLUDED.name,
+                slug = EXCLUDED.slug,
+                team_size = EXCLUDED.team_size,
+                primary_use_case = EXCLUDED.primary_use_case,
+                mfa_enforced = EXCLUDED.mfa_enforced,
+                plan = EXCLUDED.plan,
+                setup_checklist = EXCLUDED.setup_checklist;
+            """
+            db.execute_query(query, (
+                org.id,
+                org.name,
+                org.slug,
+                org.team_size,
+                org.primary_use_case,
+                org.mfa_enforced,
+                org.plan,
+                org.created_at,
+                org.created_by,
+                json.dumps(org.setup_checklist.model_dump())
+            ))
+        except Exception:
+            pass
+
 
     def toggle_mfa_enforcement(self, org_id: str, enforced: bool) -> bool:
         """Enforces or relaxes MFA requirement for all org members."""

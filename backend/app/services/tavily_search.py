@@ -8,7 +8,7 @@ class TavilySearchService:
             return self._simulated_search()
         
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=3.0) as client:
                 response = await client.post(
                     "https://api.tavily.com/search",
                     json={"query": query, "api_key": settings.TAVILY_API_KEY}

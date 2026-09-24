@@ -2,52 +2,88 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Search, GitBranch, Play, ChevronDown, ChevronUp, Check, Cpu, RefreshCw } from 'lucide-react';
+import { Zap, Search, GitBranch, Play, ChevronDown, ChevronUp, Check, Cpu, RefreshCw, AlertTriangle } from 'lucide-react';
+import type { Incident } from '@/lib/types';
 
 interface ReasoningTreeProps {
   currentStep?: number;
   incidentId?: string;
+  incident?: Incident;
 }
 
-export default function ReasoningTree({ currentStep = 4, incidentId }: ReasoningTreeProps) {
+export default function ReasoningTree({ currentStep = 4, incidentId, incident }: ReasoningTreeProps) {
   const [expanded, setExpanded] = useState(true);
   const [activeStep, setActiveStep] = useState<number>(currentStep);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
 
-  const steps = [
+  // Derive steps dynamically from incident if available, or use defaults
+  const triageModelName = incident?.triage_model?.split('/')?.pop()?.replace(/-/g, ' ') || 'Nemotron-3-Nano (30B)';
+  const synthModelName = incident?.synthesis_model?.split('/')?.pop()?.replace(/-/g, ' ') || 'Nemotron-3-Ultra (550B)';
+
+  const defaultSteps = [
     {
       icon: Zap,
       title: 'Triage & Log Fingerprinting',
-      desc: 'NVIDIA Nemotron-3-Nano extracted stack signature ERR_EVENTEMITTER_LEAK and flagged src/services/tokenService.ts as SEV-1 root.',
+      desc: incident?.triage_model 
+        ? `${incident.triage_model.split('/').pop()} extracted stack signature and classified root cause as ${incident.severity} on ${incident.service}.`
+        : 'NVIDIA Nemotron-3-Nano extracted stack signature ERR_EVENTEMITTER_LEAK and flagged src/services/tokenService.ts as SEV-1 root.',
       duration: '0.4s',
-      model: 'Nemotron-3-Nano (30B)',
-      statusText: 'Classified SEV-1',
+      model: triageModelName,
+      statusText: `Classified ${incident?.severity || 'SEV-1'}`,
+      fallback: incident?.fallback_occurred && incident?.triage_provider === 'nebius' && incident?.triage_model?.includes('nemotron'),
+      fallbackMessage: incident?.fallback_message,
     },
     {
       icon: Search,
       title: 'Context Grounding via Tavily',
-      desc: 'Tavily Search queried 3 official Node.js diagnostic docs for unbounded Map memory exhaustion patterns & TTL cache remedies.',
+      desc: incident?.rootCauseAnalysis?.tavilyCitations
+        ? `Tavily Search queried ${incident.rootCauseAnalysis.tavilyCitations.length} official diagnostic references for memory exhaustion patterns & TTL cache remedies.`
+        : 'Tavily Search queried 3 official Node.js diagnostic docs for unbounded Map memory exhaustion patterns & TTL cache remedies.',
       duration: '1.2s',
       model: 'Tavily API v2',
-      statusText: '3 Citations Grounded',
+      statusText: `${incident?.rootCauseAnalysis?.tavilyCitations?.length || 3} Citations Grounded`,
+      fallback: false,
+      fallbackMessage: undefined,
     },
     {
       icon: GitBranch,
       title: 'AST Hotfix Synthesis',
-      desc: 'NVIDIA Nemotron-3-Ultra synthesized surgical AST patch replacing Map with bounded LRU/TTL Cache and generated Jest test spec.',
+      desc: incident?.synthesis_model
+        ? `${incident.synthesis_model.split('/').pop()} synthesized surgical AST patch replacing Map with bounded LRU/TTL Cache and generated Jest test spec.`
+        : 'NVIDIA Nemotron-3-Ultra synthesized surgical AST patch replacing Map with bounded LRU/TTL Cache and generated Jest test spec.',
       duration: '3.8s',
-      model: 'Nemotron-3-Ultra (550B)',
+      model: synthModelName,
       statusText: 'AST Verified',
+      fallback: incident?.fallback_occurred && incident?.synthesis_provider === 'nebius' && incident?.synthesis_model?.includes('nemotron'),
+      fallbackMessage: incident?.fallback_message,
     },
     {
       icon: Play,
       title: 'Nebius Sandbox & Self-Correction',
-      desc: 'Container sandbox sbx-8841 executed full reproduction test suite. Self-correction loop auto-disposed listeners: 14/14 passed.',
+      desc: `Container sandbox ${incident?.patch?.sandboxExecution?.sandboxId || 'sbx-8841'} executed full reproduction test suite. Self-correction loop: ${incident?.patch?.sandboxExecution?.testsPassed || 14}/${incident?.patch?.sandboxExecution?.totalTests || 14} passed.`,
       duration: '4.2s',
       model: 'Nebius Token Sandbox',
       statusText: 'Exit Code 0',
+      fallback: false,
+      fallbackMessage: undefined,
     },
   ];
+
+  const stepIcons = [Zap, Search, GitBranch, Play];
+
+  // If incident contains populated reasoning_steps, use them
+  const steps = (incident?.reasoning_steps && incident.reasoning_steps.length > 0)
+    ? incident.reasoning_steps.map((s, idx) => ({
+        icon: stepIcons[idx % stepIcons.length],
+        title: s.title,
+        desc: s.desc,
+        duration: s.duration,
+        model: s.model,
+        statusText: s.statusText,
+        fallback: s.fallback,
+        fallbackMessage: s.fallbackMessage,
+      }))
+    : defaultSteps;
 
   // Streaming replay function
   const triggerStreamingReplay = () => {
@@ -86,8 +122,14 @@ export default function ReasoningTree({ currentStep = 4, incidentId }: Reasoning
             Autonomous Pipeline Reasoning Trace
           </h3>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-500/20">
-            {isStreaming ? `Step ${Math.min(activeStep + 1, 4)} / 4` : 'Self-Corrected (Exit 0)'}
+            {isStreaming ? `Step ${Math.min(activeStep + 1, steps.length)} / ${steps.length}` : 'Self-Corrected (Exit 0)'}
           </span>
+          {incident?.fallback_occurred && (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold border border-amber-500/30 flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3 text-amber-500" />
+              Fallback Active
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -121,6 +163,28 @@ export default function ReasoningTree({ currentStep = 4, incidentId }: Reasoning
             exit={{ height: 0, opacity: 0 }}
             className="p-5"
           >
+            {/* Fallback Graceful Degradation Notice */}
+            {incident?.fallback_occurred && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-start gap-2.5 p-3.5 mb-5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs"
+              >
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                <div className="space-y-1">
+                  <div className="font-bold flex items-center gap-2">
+                    Resilient Provider Degradation Engaged
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                      Zero Downtime
+                    </span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-sans">
+                    {incident.fallback_message || 'Configured BYOK model was unreachable or exhausted quota. Somak AI seamlessly degraded to Platform Nebius Nemotron without interrupting incident remediation.'}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
             <div className="relative">
               {steps.map((step, idx) => {
                 const Icon = step.icon;
@@ -139,7 +203,9 @@ export default function ReasoningTree({ currentStep = 4, incidentId }: Reasoning
                     <div className="relative flex flex-col items-center">
                       <div
                         className={`w-8 h-8 rounded-xl flex items-center justify-center relative shadow-xs transition-colors ${
-                          isCompleted
+                          step.fallback
+                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/40'
+                            : isCompleted
                             ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                             : isActive
                             ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30'
@@ -191,11 +257,19 @@ export default function ReasoningTree({ currentStep = 4, incidentId }: Reasoning
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                             {step.model}
                           </span>
+                          {step.fallback && (
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 font-semibold flex items-center gap-1">
+                              <AlertTriangle className="w-2.5 h-2.5" />
+                              Platform Fallback
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 text-xs">
                           <span
                             className={`text-[11px] font-semibold ${
-                              isCompleted
+                              step.fallback
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : isCompleted
                                 ? 'text-emerald-600 dark:text-emerald-400'
                                 : isActive
                                 ? 'text-indigo-600 dark:text-indigo-400'
@@ -217,6 +291,11 @@ export default function ReasoningTree({ currentStep = 4, incidentId }: Reasoning
                       >
                         {step.desc}
                       </motion.p>
+                      {step.fallback && step.fallbackMessage && (
+                        <p className="mt-1 text-[11px] text-amber-600/90 dark:text-amber-400/90 font-mono italic">
+                          ↳ {step.fallbackMessage}
+                        </p>
+                      )}
                     </div>
                   </motion.div>
                 );

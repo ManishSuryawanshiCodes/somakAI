@@ -13,6 +13,19 @@ class Settings(BaseSettings):
     MAX_FAILED_LOGIN_ATTEMPTS: int = 5
     LOCKOUT_DURATION_SECONDS: int = 900  # 15 minutes
     SANDBOX_TIMEOUT_SECONDS: int = 10
+    DATABASE_URL: str = "postgresql://postgres:somak%20AI%20047918@db.bbxcimubvmarachjvnwo.supabase.co:5432/postgres"
+    SUPABASE_URL: str = "https://bbxcimubvmarachjvnwo.supabase.co"
+    SUPABASE_KEY: str = "sb_publishable_kFeMK-49o6KV_fP1hVSy1w_EFUqNIxz"
+    ANTHROPIC_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    GOOGLE_API_KEY: str = ""
+    SOMAK_INFRA_SENTRY_DSN: str = ""
+    REDIS_URL: str = ""
+    ALLOWED_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://app.somak.ai"
+    ]
 
     class Config:
         env_file = ".env"
