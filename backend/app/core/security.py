@@ -89,3 +89,89 @@ def clear_session_cookie(response: Response):
         httponly=True,
         samesite="lax",
     )
+
+# -------------------------------------------------------------
+# Signed Tokens: SSE Stream & Single-Use Action Confirmation
+# -------------------------------------------------------------
+
+import json
+import base64
+
+_consumed_confirmation_nonces = set()
+
+def _sign_payload(payload: dict) -> str:
+    raw_json = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    b64_payload = base64.urlsafe_b64encode(raw_json).decode("utf-8").rstrip("=")
+    sig = hmac.new(settings.SESSION_SECRET.encode("utf-8"), b64_payload.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{b64_payload}.{sig}"
+
+def _verify_payload(token: str) -> Optional[dict]:
+    try:
+        parts = token.split(".")
+        if len(parts) != 2:
+            return None
+        b64_payload, sig = parts
+        expected_sig = hmac.new(settings.SESSION_SECRET.encode("utf-8"), b64_payload.encode("utf-8"), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected_sig, sig):
+            return None
+        # Add padding back if necessary
+        padding = "=" * (4 - (len(b64_payload) % 4)) if len(b64_payload) % 4 != 0 else ""
+        raw_json = base64.urlsafe_b64decode(b64_payload + padding).decode("utf-8")
+        payload = json.loads(raw_json)
+        if time.time() > payload.get("exp", 0):
+            return None
+        return payload
+    except Exception:
+        return None
+
+def create_stream_token(user_id: str, org_id: str) -> str:
+    """Creates a short-lived (5 min) signed token for EventSource SSE connections."""
+    payload = {
+        "sub": user_id,
+        "org_id": org_id,
+        "typ": "sse_stream",
+        "exp": time.time() + 300,
+        "nonce": secrets.token_hex(8)
+    }
+    return _sign_payload(payload)
+
+def verify_stream_token(token: str) -> Optional[dict]:
+    """Verifies a signed stream token."""
+    payload = _verify_payload(token)
+    if not payload or payload.get("typ") != "sse_stream":
+        return None
+    return payload
+
+def create_confirmation_token(user_id: str, org_id: str, action: str, incident_id: str) -> str:
+    """Creates a single-use 2-minute signed token for destructive actions (rollback, promote)."""
+    nonce = secrets.token_hex(16)
+    payload = {
+        "sub": user_id,
+        "org_id": org_id,
+        "act": action,
+        "inc": incident_id,
+        "typ": "action_confirm",
+        "nonce": nonce,
+        "exp": time.time() + 120,
+    }
+    return _sign_payload(payload)
+
+def verify_and_consume_confirmation_token(token: str, user_id: str, org_id: str, action: str, incident_id: str) -> bool:
+    """Verifies that the confirmation token is valid, matches the action & resource, and has not been used."""
+    payload = _verify_payload(token)
+    if not payload:
+        return False
+    if payload.get("typ") != "action_confirm":
+        return False
+    if payload.get("org_id") != org_id or payload.get("act") != action or payload.get("inc") != incident_id:
+        return False
+    # Check if user matches or has admin rights
+    if payload.get("sub") != user_id:
+        return False
+    nonce = payload.get("nonce")
+    if not nonce or nonce in _consumed_confirmation_nonces:
+        return False
+    # Mark as consumed (single-use)
+    _consumed_confirmation_nonces.add(nonce)
+    return True
+

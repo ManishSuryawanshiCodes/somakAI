@@ -5,9 +5,9 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     NEBIUS_API_KEY: str = ""
     TAVILY_API_KEY: str = ""
-    SENTRY_WEBHOOK_SECRET: str = "sentry_whsec_dev_token_991823"
-    SESSION_SECRET: str = "somak_sec_session_super_secret_key_32b_hex"
-    ENCRYPTION_MASTER_KEY: str = "G1U6pM5N1D-9Bw_l1iK8m4o2P3q4R5s6T7u8V9w0X1Y="  # Valid 32-byte urlsafe base64 Fernet key
+    SENTRY_WEBHOOK_SECRET: str = "sentry_whsec_63f6f68ed41ead93c1e2f93b66f3c9e5ae842057aa85ed67"
+    SESSION_SECRET: str = "4fe6abda02c263fb03d4eef8729537771cd0a601510a98c10587369395b22ffa"
+    ENCRYPTION_MASTER_KEY: str = "KAqej9u5ywcF6oDW5v9dN6soVEs0gDL1r0eLO7a4w8Q="  # Valid 32-byte urlsafe base64 Fernet key
     MFA_ISSUER_NAME: str = "SOMAK AI"
     COOKIE_SECURE: bool = False  # Set to True in production over HTTPS
     MAX_FAILED_LOGIN_ATTEMPTS: int = 5

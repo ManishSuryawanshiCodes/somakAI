@@ -18,21 +18,18 @@ ROLE_HIERARCHY = {
 
 async def get_current_user(
     request: Request,
-    authorization: Optional[str] = Header(None),
-    x_user_email: Optional[str] = Header(None, alias="x-user-email")
+    authorization: Optional[str] = Header(None)
 ) -> UserRecord:
     """
     Resolves authenticated user from:
     1. HttpOnly cookie: somak_session
     2. Authorization header: Bearer <session_token>
-    3. Fallback header: x-user-email (for demo/development backwards compatibility)
+    NO unauthenticated header bypasses allowed.
     """
-    # 1. Check Authorization Bearer header (explicit auth takes precedence)
     token = None
     if authorization and authorization.startswith("Bearer "):
         token = authorization[7:].strip()
 
-    # 2. Check session cookie (browser-managed)
     if not token:
         token = request.cookies.get("somak_session")
 
@@ -42,12 +39,6 @@ async def get_current_user(
             user = auth_service.get_user_by_id(session["user_id"]) or auth_service.get_user_by_email(session["email"])
             if user:
                 return user
-
-    # 3. Fallback header for demo or tests
-    if x_user_email:
-        user = auth_service.get_user_by_email(x_user_email)
-        if user:
-            return user
 
     raise HTTPException(
         status_code=401,
@@ -77,7 +68,7 @@ def require_org_member(required_role: Optional[str] = None):
         request: Request,
         user: UserRecord = Depends(get_current_user)
     ) -> Tuple[UserRecord, str, str]:
-        # 1. Resolve org_id
+        # 1. Resolve org_id from explicit parameters
         org_id = request.path_params.get("org_id")
         
         if not org_id:
@@ -87,19 +78,21 @@ def require_org_member(required_role: Optional[str] = None):
             try:
                 body = await request.json()
                 org_id = body.get("organization_id") or body.get("org_id")
-                # If incidentId provided (e.g. deploy/promote/rollback), resolve org from incident
-                if not org_id and "incidentId" in body:
-                    inc = incident_store.get_incident(body["incidentId"])
-                    if inc and inc.organization_id:
-                        org_id = inc.organization_id
             except Exception:
                 pass
 
         if not org_id:
-            # Default to primary demo org if unspecified
-            org_id = "org_acme"
+            # Resolve from user's primary/active org memberships
+            user_orgs = org_store.list_user_orgs(user.id, user.email)
+            if user_orgs:
+                org_id = user_orgs[0]["organization"].id
+            else:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Access denied: User {user.email} is not affiliated with any organization."
+                )
 
-        # 2. Verify user membership in org
+        # 2. Verify user membership in resolved org
         members = org_store.list_org_members(org_id)
         user_member = None
         for m in members:

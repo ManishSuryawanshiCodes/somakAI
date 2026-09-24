@@ -143,14 +143,27 @@ if {deny_network}:
             with open(test_file, "w", encoding="utf-8") as f:
                 f.write(wrapper_code)
 
-            # 2. Spawn isolated subprocess
-            proc_env = dict(os.environ)
-            proc_env.update({
+            # 2. Spawn isolated subprocess with stripped environment (ZERO HOST SECRETS)
+            # Whitelist strictly essential runtime variables, ensuring complete isolation
+            proc_env = {
+                "PATH": os.environ.get("PATH", ""),
+                "SYSTEMROOT": os.environ.get("SYSTEMROOT", "C:\\Windows"),
+                "WINDIR": os.environ.get("WINDIR", "C:\\Windows"),
+                "TEMP": scratch_dir,
+                "TMP": scratch_dir,
                 "PYTHONPATH": scratch_dir,
                 "SOMAK_SANDBOX": "1",
                 "PYTHONIOENCODING": "utf-8",
-                "PYTHONUTF8": "1"
-            })
+                "PYTHONUTF8": "1",
+                "PYTHONUNBUFFERED": "1",
+            }
+            # Explicitly ensure NO credentials or secrets leak
+            for secret_key in [
+                "NEBIUS_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY",
+                "DATABASE_URL", "SESSION_SECRET", "SENTRY_WEBHOOK_SECRET", "ENCRYPTION_MASTER_KEY",
+                "TAVILY_API_KEY", "SLACK_WEBHOOK_URL", "PAGERDUTY_ROUTING_KEY"
+            ]:
+                proc_env.pop(secret_key, None)
 
             proc = await asyncio.create_subprocess_exec(
                 sys.executable,

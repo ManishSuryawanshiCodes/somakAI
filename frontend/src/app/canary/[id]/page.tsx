@@ -103,6 +103,7 @@ export default function CanaryRolloutMonitor() {
   const [canaryStatus, setCanaryStatus] = useState<CanaryStatus>(mockCanary);
   const [promoted, setPromoted] = useState(false);
   const [rolledBack, setRolledBack] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Traffic Control Mode: Automatic vs Manual Override
   const [controlMode, setControlMode] = useState<'auto' | 'manual'>('auto');
@@ -183,15 +184,27 @@ export default function CanaryRolloutMonitor() {
   }, [isTickerLive, rolledBack]);
 
   const handlePromote = async () => {
-    await promoteCanary(id);
-    setPromoted(true);
-    setCanaryStatus((prev) => ({ ...prev, trafficPercent: 100, status: 'PROMOTED' }));
+    try {
+      setActionError(null);
+      await promoteCanary(id);
+      setPromoted(true);
+      setCanaryStatus((prev) => ({ ...prev, trafficPercent: 100, status: 'PROMOTED' }));
+    } catch (err: any) {
+      console.error('Canary promotion failed:', err);
+      setActionError(err.message || 'Canary promotion failed. Operator or Admin privileges required.');
+    }
   };
 
   const executeRollback = async () => {
-    await rollbackCanary(id);
-    setRolledBack(true);
-    setCanaryStatus((prev) => ({ ...prev, trafficPercent: 0, status: 'ROLLED_BACK' }));
+    try {
+      setActionError(null);
+      await rollbackCanary(id);
+      setRolledBack(true);
+      setCanaryStatus((prev) => ({ ...prev, trafficPercent: 0, status: 'ROLLED_BACK' }));
+    } catch (err: any) {
+      console.error('Canary rollback failed:', err);
+      setActionError(err.message || 'Canary rollback failed. Operator or Admin privileges required.');
+    }
   };
 
   // Hold-to-Confirm Handlers (1.5 seconds)
@@ -314,6 +327,26 @@ export default function CanaryRolloutMonitor() {
             <CheckCircle className="w-3 h-3" /> Live Envoy Stream
           </span>
         </div>
+
+        {/* Action Error Banner */}
+        {actionError && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between gap-3 text-rose-700 dark:text-rose-400 text-xs"
+          >
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+              <span className="font-semibold">{actionError}</span>
+            </div>
+            <button
+              onClick={() => setActionError(null)}
+              className="text-[10px] uppercase font-bold text-rose-500 hover:text-rose-700 underline shrink-0"
+            >
+              Dismiss
+            </button>
+          </motion.div>
+        )}
 
         {/* Promotion Banner */}
         {promoted && (

@@ -108,6 +108,21 @@ CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents (status);
 CREATE INDEX IF NOT EXISTS idx_provider_usage_org ON provider_usage (org_id, timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_provider_usage_provider ON provider_usage (provider, model);
 CREATE INDEX IF NOT EXISTS idx_audit_events_org ON audit_events (org_id, timestamp DESC);
+
+-- =============================================================
+-- Database-Enforced Append-Only Audit Trail (Zero Update/Delete)
+-- =============================================================
+CREATE OR REPLACE FUNCTION reject_audit_mutation()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'Audit trail is strictly append-only. UPDATE and DELETE operations are forbidden.';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_audit_events_immutable ON audit_events;
+CREATE TRIGGER trg_audit_events_immutable
+BEFORE UPDATE OR DELETE ON audit_events
+FOR EACH ROW EXECUTE FUNCTION reject_audit_mutation();
 """
 
 class Database:

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { getPublicStatus } from '@/lib/api';
 import {
   Shield,
   CheckCircle2,
@@ -38,7 +39,7 @@ export default function PublicStatusPage() {
     return Array.from({ length: 90 }, (_, i) => !incidentDays.includes(89 - i));
   };
 
-  const components: ServiceComponent[] = [
+  const defaultComponents: ServiceComponent[] = [
     {
       name: 'API Gateway & Edge Ingress',
       description: 'Global SSL edge proxies, load balancers, and SSL termination',
@@ -75,6 +76,18 @@ export default function PublicStatusPage() {
       days: generate90Days([0, 1]), // today and yesterday
     },
   ];
+
+  const [components, setComponents] = useState<ServiceComponent[]>(defaultComponents);
+
+  useEffect(() => {
+    let mounted = true;
+    getPublicStatus().then((data) => {
+      if (mounted && data?.components && data.components.length > 0) {
+        setComponents(data.components);
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();

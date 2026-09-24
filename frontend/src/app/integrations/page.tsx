@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getIntegrations } from '@/lib/api';
 import {
   Layers,
   ArrowLeft,
@@ -120,12 +121,26 @@ export default function IntegrationsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [integrations, setIntegrations] = useState<Integration[]>(INTEGRATIONS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    getIntegrations().then((data) => {
+      if (mounted && data && data.length > 0) {
+        setIntegrations(data);
+      }
+    }).finally(() => {
+      if (mounted) setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, []);
 
   const handleTestConnection = (name: string) => {
     showToast(`Pinging ${name} endpoint... Connected successfully (24ms)`, 'success');
   };
 
-  const filteredIntegrations = INTEGRATIONS.filter((item) => {
+  const filteredIntegrations = integrations.filter((item) => {
     const matchesCategory = selectedCategory === 'ALL' || item.category === selectedCategory;
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q) || item.category.toLowerCase().includes(q);
@@ -155,7 +170,7 @@ export default function IntegrationsPage() {
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                 Integrations
                 <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  {INTEGRATIONS.length} Connected
+                  {integrations.length} Connected
                 </span>
               </h1>
             </div>

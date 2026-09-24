@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getOnCallShifts } from '@/lib/api';
 import {
   Radio,
   Users,
@@ -164,11 +165,25 @@ export default function OnCallPage() {
   const { currentOrg } = useOrg();
   const isAcme = !currentOrg || currentOrg.id === 'org_acme';
 
+  const [shifts, setShifts] = useState<OnCallShift[]>(SHIFTS);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paging' | 'nominal'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
   const [revealedContacts, setRevealedContacts] = useState<Record<string, boolean>>({});
   const [pageToast, setPageToast] = useState<{ message: string; type: 'success' | 'warning' } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    getOnCallShifts().then((data) => {
+      if (mounted && data && data.length > 0) {
+        setShifts(data);
+      }
+    }).finally(() => {
+      if (mounted) setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, [currentOrg]);
 
   // Toggle contact info reveal
   const toggleContactReveal = (key: string) => {
@@ -216,7 +231,7 @@ export default function OnCallPage() {
 
   // Filter and sort shifts: Paging services surfaced first, then alphabetical
   const processedShifts = useMemo(() => {
-    return SHIFTS.filter((shift) => {
+    return shifts.filter((shift) => {
       const matchesStatus =
         statusFilter === 'all' ||
         (statusFilter === 'paging' && shift.status === 'paging') ||

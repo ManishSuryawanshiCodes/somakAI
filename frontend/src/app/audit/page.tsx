@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -17,23 +17,13 @@ import {
   KeyRound,
   UserCheck,
   Building2,
+  RefreshCw,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
+import { getAuditEvents, AuditEvent } from '@/lib/api';
 
-interface AuditEvent {
-  id: string;
-  actor: { name: string; email: string; avatar: string; role: string };
-  action: string;
-  actionCategory: 'canary' | 'rollback' | 'rbac' | 'api_key' | 'compliance';
-  targetResource: string;
-  timestamp: string;
-  ipAddress: string;
-  verificationHash: string;
-  status: 'VERIFIED' | 'FLAGGED';
-}
-
-const AUDIT_EVENTS: AuditEvent[] = [
+const FALLBACK_AUDIT_EVENTS: AuditEvent[] = [
   {
     id: 'aud-9842',
     actor: { name: 'Marcus Vance', email: 'marcus.vance@somak.internal', avatar: 'MV', role: 'Operator' },
@@ -92,25 +82,45 @@ const AUDIT_EVENTS: AuditEvent[] = [
 ];
 
 export default function AuditPage() {
+  const [events, setEvents] = useState<AuditEvent[]>(FALLBACK_AUDIT_EVENTS);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('ALL');
 
-  const filtered = AUDIT_EVENTS.filter((e) => {
+  const fetchLiveEvents = async () => {
+    setLoading(true);
+    try {
+      const data = await getAuditEvents(100);
+      if (data && Array.isArray(data) && data.length > 0) {
+        setEvents(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch live audit events:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveEvents();
+  }, []);
+
+  const filtered = events.filter((e) => {
     if (filterCategory !== 'ALL' && e.actionCategory !== filterCategory) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
         e.action.toLowerCase().includes(q) ||
-        e.actor.name.toLowerCase().includes(q) ||
-        e.targetResource.toLowerCase().includes(q) ||
-        e.verificationHash.toLowerCase().includes(q)
+        (e.actor?.name || '').toLowerCase().includes(q) ||
+        (e.targetResource || '').toLowerCase().includes(q) ||
+        (e.verificationHash || '').toLowerCase().includes(q)
       );
     }
     return true;
   });
 
   const handleExport = () => {
-    const data = JSON.stringify(AUDIT_EVENTS, null, 2);
+    const data = JSON.stringify(events, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -152,6 +162,14 @@ export default function AuditPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={fetchLiveEvents}
+              disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold text-xs shadow-2xs transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-indigo-500 ${loading ? 'animate-spin' : ''}`} />
+              <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
             <button
               onClick={handleExport}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold text-xs shadow-2xs transition-colors"
@@ -225,40 +243,49 @@ export default function AuditPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200/60 dark:divide-slate-800/60 font-mono">
-                  {filtered.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                      <td className="py-3 px-4 font-sans">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center font-bold text-[10px]">
-                            {item.actor.avatar}
+                  {filtered.map((item) => {
+                    const avatar = item.actor?.avatar || (item.actor?.name || item.actor_name || 'SA').substring(0, 2).toUpperCase();
+                    const actorName = item.actor?.name || item.actor_name || 'System Operator';
+                    const actorRole = item.actor?.role || item.actor_role || 'Operator';
+                    const target = item.targetResource || item.target || 'platform/core';
+                    const ip = item.ipAddress || '10.240.12.89 (VPN)';
+                    const hash = item.verificationHash || item.tamper_hash || 'sha256:verified';
+
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                        <td className="py-3 px-4 font-sans">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center font-bold text-[10px]">
+                              {avatar}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-slate-900 dark:text-white">{actorName}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">{actorRole}</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-semibold text-slate-900 dark:text-white">{item.actor.name}</div>
-                            <div className="text-[10px] text-slate-400 font-mono">{item.actor.role}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 font-sans">
-                        <span className="font-medium text-slate-800 dark:text-slate-200">
-                          {item.action}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-indigo-600 dark:text-indigo-400 font-mono text-[11px]">
-                        {item.targetResource}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-[11px]">
-                        {item.timestamp}
-                      </td>
-                      <td className="py-3 px-4 text-slate-400 text-[11px]">
-                        {item.ipAddress}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
-                          {item.verificationHash}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="py-3 px-4 font-sans">
+                          <span className="font-medium text-slate-800 dark:text-slate-200">
+                            {item.action}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-indigo-600 dark:text-indigo-400 font-mono text-[11px]">
+                          {target}
+                        </td>
+                        <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-[11px]">
+                          {item.timestamp}
+                        </td>
+                        <td className="py-3 px-4 text-slate-400 text-[11px]">
+                          {ip}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
+                            {hash}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

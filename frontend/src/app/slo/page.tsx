@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { getSLOs } from '@/lib/api';
 import {
   Target,
   AlertTriangle,
@@ -167,12 +168,26 @@ export default function SLOPage() {
   const { currentOrg } = useOrg();
   const isAcme = !currentOrg || currentOrg.id === 'org_acme';
 
+  const [slos, setSlos] = useState<ServiceSLO[]>(MOCK_SLOS);
+  const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<string>('auth-service');
   const [statusFilter, setStatusFilter] = useState<'all' | 'at_risk' | 'healthy'>('all');
 
-  const activeSLO = MOCK_SLOS.find((s) => s.service === selectedService) || MOCK_SLOS[0];
+  useEffect(() => {
+    let mounted = true;
+    getSLOs().then((data) => {
+      if (mounted && data && data.length > 0) {
+        setSlos(data);
+      }
+    }).finally(() => {
+      if (mounted) setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, [currentOrg]);
 
-  const filteredSLOs = MOCK_SLOS.filter((s) => {
+  const activeSLO = slos.find((s) => s.service === selectedService) || slos[0] || MOCK_SLOS[0];
+
+  const filteredSLOs = slos.filter((s) => {
     if (statusFilter === 'all') return true;
     return s.burnState === statusFilter;
   });

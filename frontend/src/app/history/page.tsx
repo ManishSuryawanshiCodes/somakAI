@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { getHistory } from '@/lib/api';
 import {
   History,
   Search,
@@ -117,12 +118,26 @@ export default function HistoryPage() {
   const { currentOrg } = useOrg();
   const isAcme = !currentOrg || currentOrg.id === 'org_acme';
 
+  const [incidents, setIncidents] = useState<HistoricalIncident[]>(HISTORICAL_INCIDENTS);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('ALL');
   const [selectedService, setSelectedService] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
 
-  const filtered = HISTORICAL_INCIDENTS.filter((inc) => {
+  useEffect(() => {
+    let mounted = true;
+    getHistory().then((data) => {
+      if (mounted && data && data.length > 0) {
+        setIncidents(data);
+      }
+    }).finally(() => {
+      if (mounted) setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, [currentOrg]);
+
+  const filtered = incidents.filter((inc) => {
     if (selectedSeverity !== 'ALL' && inc.severity !== selectedSeverity) return false;
     if (selectedService !== 'ALL' && inc.service !== selectedService) return false;
     if (selectedStatus !== 'ALL' && inc.status !== selectedStatus) return false;

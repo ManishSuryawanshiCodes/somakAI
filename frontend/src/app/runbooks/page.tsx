@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getRunbooks } from '@/lib/api';
 import {
   BookOpen,
   Search,
@@ -130,6 +131,8 @@ export default function RunbooksPage() {
   const { currentOrg } = useOrg();
   const isAcme = !currentOrg || currentOrg.id === 'org_acme';
 
+  const [runbooks, setRunbooks] = useState<RunbookPattern[]>(RUNBOOKS);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [groupBy, setGroupBy] = useState<'none' | 'service' | 'category'>('none');
@@ -137,6 +140,18 @@ export default function RunbooksPage() {
   const [sortBy, setSortBy] = useState<'confidence' | 'runs' | 'id'>('confidence');
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
   const [toastMessage, setToastMessage] = useState<{ message: string; type: 'success' | 'warning' } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    getRunbooks().then((data) => {
+      if (mounted && data && data.length > 0) {
+        setRunbooks(data);
+      }
+    }).finally(() => {
+      if (mounted) setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, [currentOrg]);
 
   // Toggle single card expand/collapse
   const toggleCard = (id: string) => {
@@ -150,7 +165,7 @@ export default function RunbooksPage() {
       setExpandedCards({});
     } else {
       const all: Record<string, boolean> = {};
-      RUNBOOKS.forEach((r) => {
+      runbooks.forEach((r) => {
         all[r.id] = true;
       });
       setExpandedCards(all);
@@ -186,7 +201,7 @@ export default function RunbooksPage() {
 
   // Filter and sort patterns
   const filteredPatterns = useMemo(() => {
-    return RUNBOOKS.filter((r) => {
+    return runbooks.filter((r) => {
       if (selectedCategory !== 'ALL' && r.category !== selectedCategory) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
