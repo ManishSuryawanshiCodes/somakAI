@@ -28,6 +28,8 @@ import {
   Sparkles,
   Gauge,
   BookOpen,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import { useAuth } from '@/context/AuthContext';
@@ -45,7 +47,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
-  const { setMobileDrawerOpen } = useAppShell();
+  const { sidebarCollapsed, toggleSidebar, setMobileDrawerOpen } = useAppShell();
 
   // Modals & Menus
   const [searchOpen, setSearchOpen] = useState(false);
@@ -289,14 +291,24 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
     <>
       <header className="sticky top-0 z-30 h-16 backdrop-blur-xl bg-[#FAF8F5]/85 dark:bg-[#030306]/85 border-b border-[#E8E3D9] dark:border-white/10 px-3 sm:px-6 flex items-center justify-between transition-colors shadow-xs">
         {/* Element 1: Global Search / ⌘K (+ Mobile Drawer Hamburger) */}
-        <div className="flex items-center gap-2.5 flex-1 max-w-md">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-1 max-w-md">
           {/* Mobile Hamburger Drawer Trigger (< md) */}
           <button
             onClick={() => setMobileDrawerOpen(true)}
             aria-label="Open navigation menu"
-            className="md:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 transition-all focus:outline-none"
+            className="md:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 transition-all focus:outline-none active:scale-95"
           >
             <Menu className="w-4 h-4" />
+          </button>
+
+          {/* Desktop/Laptop Sidebar Collapse/Expand Toggle (>= md) */}
+          <button
+            onClick={toggleSidebar}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="hidden md:flex p-2 rounded-xl text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 transition-all focus:outline-none active:scale-95 shrink-0"
+          >
+            {sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </button>
 
           {/* Desktop Search Trigger (⌘K) */}

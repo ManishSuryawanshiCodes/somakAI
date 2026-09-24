@@ -118,22 +118,22 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {/* Mobile Slide-in Drawer with Backdrop Overlay */}
           <AnimatePresence>
             {mobileDrawerOpen && (
-              <div className="fixed inset-0 z-50 md:hidden flex">
+              <div className="fixed inset-0 z-[70] md:hidden flex">
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18 }}
+                  transition={{ duration: 0.2 }}
                   onClick={() => setMobileDrawerOpen(false)}
-                  className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
+                  className="fixed inset-0 bg-slate-950/70 backdrop-blur-md cursor-pointer"
                 />
 
                 <motion.div
                   initial={{ x: '-100%' }}
                   animate={{ x: 0 }}
                   exit={{ x: '-100%' }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 32 }}
-                  className="relative z-10 w-72 max-w-[80vw] h-full"
+                  transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+                  className="relative z-10 w-72 max-w-[85vw] h-full shadow-2xl overflow-hidden"
                 >
                   <Sidebar
                     collapsed={false}

@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Radar, Terminal, Gauge, FileText } from 'lucide-react';
+import { useAppShell } from './AppShell';
 
 export default function FloatingDock({ incidentId = 'INC-2041' }: { incidentId?: string }) {
+  const { mobileDrawerOpen } = useAppShell();
   const [mounted, setMounted] = useState(false);
   let pathname = '';
 
@@ -57,10 +59,15 @@ export default function FloatingDock({ incidentId = 'INC-2041' }: { incidentId?:
     },
   ];
 
+  // Do not render bottom dock when mobile side navigation drawer is open to prevent overlapping
+  if (mobileDrawerOpen) {
+    return null;
+  }
+
   return (
     <>
     {/* Floating Tactical Navigation Dock */}
-      <div className="fixed bottom-5 sm:bottom-6 mb-[env(safe-area-inset-bottom,0px)] inset-x-0 z-50 md:hidden flex justify-center px-3 sm:px-4 pointer-events-none">
+      <div className="fixed bottom-5 sm:bottom-6 mb-[env(safe-area-inset-bottom,0px)] inset-x-0 z-30 md:hidden flex justify-center px-3 sm:px-4 pointer-events-none">
       <motion.nav
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

@@ -84,7 +84,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen pb-32 md:pb-8 transition-colors duration-200 antialiased selection:bg-indigo-500/20 selection:text-indigo-600 dark:selection:text-indigo-300">
+      <body className="min-h-screen transition-colors duration-200 antialiased selection:bg-indigo-500/20 selection:text-indigo-600 dark:selection:text-indigo-300">
         <ThemeProvider>
           <AuthProvider>
             <OrgProvider>
