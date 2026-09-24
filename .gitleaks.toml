@@ -1,0 +1,25 @@
+# .gitleaks.toml — Gitleaks Configuration for Somak AI
+title = "Somak AI Secret Detection Rules"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlisted test fixtures and mock specs"
+paths = [
+    '''backend/tests/.*''',
+    '''frontend/src/lib/mock-data\.ts''',
+    '''\.secrets\.baseline''',
+    '''scratch/.*'''
+]
+regexes = [
+    '''test-secret-key-256bit''',
+    '''mock-key''',
+    '''inv_demo_token_7d'''
+]
+
+[[rules]]
+id = "hardcoded-secret-defaults"
+description = "Detects hardcoded default secrets in Python config classes"
+regex = '''(?i)(SENTRY_WEBHOOK_SECRET|SESSION_SECRET|ENCRYPTION_MASTER_KEY)\s*:\s*str\s*=\s*["'][^"']+["']'''
+tags = ["secret", "config", "critical"]

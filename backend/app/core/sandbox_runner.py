@@ -129,6 +129,16 @@ if hasattr(sys.stdout, 'buffer'):
 if hasattr(sys.stderr, 'buffer'):
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
+import builtins
+_orig_open = builtins.open
+def _safe_open(file, *args, **kwargs):
+    file_str = str(file).replace("\\\\", "/").lower()
+    for forbidden in ["/etc/passwd", "/etc/shadow", "system32", "id_rsa", ".env"]:
+        if forbidden in file_str:
+            raise PermissionError(f"Access denied by SOMAK Sandbox Security Policy: Restricted path '{{file_str}}'")
+    return _orig_open(file, *args, **kwargs)
+builtins.open = _safe_open
+
 if {deny_network}:
     import socket
     # Strictly disallow all outbound socket connections to production DB or internal services

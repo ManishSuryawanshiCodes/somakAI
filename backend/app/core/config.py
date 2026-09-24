@@ -1,13 +1,24 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+
+# Load .env file into os.environ if present
+_backend_dir = Path(__file__).resolve().parent.parent.parent
+_env_candidates = [_backend_dir / ".env", Path.cwd() / ".env"]
+for env_file in _env_candidates:
+    if env_file.exists():
+        load_dotenv(env_file, override=False)
+        break
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     NEBIUS_API_KEY: str = ""
     TAVILY_API_KEY: str = ""
-    SENTRY_WEBHOOK_SECRET: str = "sentry_whsec_63f6f68ed41ead93c1e2f93b66f3c9e5ae842057aa85ed67"
-    SESSION_SECRET: str = "4fe6abda02c263fb03d4eef8729537771cd0a601510a98c10587369395b22ffa"
-    ENCRYPTION_MASTER_KEY: str = "KAqej9u5ywcF6oDW5v9dN6soVEs0gDL1r0eLO7a4w8Q="  # Valid 32-byte urlsafe base64 Fernet key
+    # Required secrets with no default - fail loudly if missing
+    SENTRY_WEBHOOK_SECRET: str = os.environ["SENTRY_WEBHOOK_SECRET"]
+    SESSION_SECRET: str = os.environ["SESSION_SECRET"]
+    ENCRYPTION_MASTER_KEY: str = os.environ["ENCRYPTION_MASTER_KEY"]
     MFA_ISSUER_NAME: str = "SOMAK AI"
     COOKIE_SECURE: bool = False  # Set to True in production over HTTPS
     MAX_FAILED_LOGIN_ATTEMPTS: int = 5

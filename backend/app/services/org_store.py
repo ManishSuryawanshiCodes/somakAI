@@ -236,6 +236,9 @@ class OrgStore:
                 return org
         return None
 
+    def list_all_orgs(self) -> list[Organization]:
+        return list(self._organizations.values())
+
     def list_user_orgs(self, user_id: str, user_email: str | None = None) -> list[dict]:
         results = []
         for org_id, members in self._members.items():

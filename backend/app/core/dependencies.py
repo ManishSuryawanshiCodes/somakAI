@@ -102,8 +102,8 @@ def require_org_member(required_role: Optional[str] = None):
 
         if not user_member:
             raise HTTPException(
-                status_code=403,
-                detail=f"Access denied: User {user.email} is not a member of organization '{org_id}'."
+                status_code=404,
+                detail=f"Organization '{org_id}' not found."
             )
 
         actual_role = user_member.role

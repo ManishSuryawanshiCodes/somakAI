@@ -528,9 +528,12 @@ async def toggle_mfa_enforcement(
 @router.get("/api/organizations")
 async def list_user_organizations(
     user_id: Optional[str] = Query(None),
-    email: Optional[str] = Query(None)
+    email: Optional[str] = Query(None),
+    current_user: UserRecord = Depends(get_current_user)
 ):
-    orgs = org_store.list_user_orgs(user_id or "usr_elena", email)
+    target_uid = current_user.id
+    target_email = current_user.email
+    orgs = org_store.list_user_orgs(target_uid, target_email)
     return [{
         "organization": o["organization"].get_masked(),
         "role": o["role"],
@@ -811,9 +814,13 @@ async def stream_incidents(
     )
 
 @router.get("/api/incidents/dlq")
-async def get_dead_letter_queue():
+async def get_dead_letter_queue(
+    auth_ctx: tuple = Depends(require_org_member(required_role="Operator"))
+):
     """Returns dead-letter queue records for failed pipelines requiring operator intervention."""
-    return job_queue.get_dlq()
+    user, org_id, role = auth_ctx
+    dlq_items = job_queue.get_dlq()
+    return [item for item in dlq_items if item.get("organization_id") == org_id]
 
 @router.post("/api/incidents/{incident_id}/retry")
 async def retry_failed_incident(
@@ -823,7 +830,7 @@ async def retry_failed_incident(
     """Operator endpoint: Retries an incident in FAILED status from dead-letter queue."""
     user, org_id, role = auth_ctx
     incident = incident_store.get_incident(incident_id)
-    if not incident:
+    if not incident or incident.organization_id != org_id:
         raise HTTPException(status_code=404, detail="Incident not found")
 
     incident.status = "TRIAGING"
@@ -863,12 +870,11 @@ async def retry_failed_incident(
 
 @router.get("/api/sandbox/queue-status")
 async def get_sandbox_queue_status(
-    org_id: Optional[str] = Query(None),
-    x_org_id: Optional[str] = Header(None, alias="x-org-id")
+    auth_ctx: tuple = Depends(require_org_member(required_role="Viewer"))
 ):
     """Returns real-time sandbox queue capacity, active sandboxes, and estimated wait."""
-    effective_org = org_id or x_org_id or "org_acme"
-    return sandbox_manager.get_queue_status(effective_org)
+    user, org_id, role = auth_ctx
+    return sandbox_manager.get_queue_status(org_id)
 
 class SandboxRetryRequest(BaseModel):
     human_feedback: Optional[str] = None
@@ -882,7 +888,7 @@ async def retry_sandbox_pipeline(
     """Operator endpoint: Re-evaluates sandbox self-correction loop with optional human guidance."""
     user, org_id, role = auth_ctx
     incident = incident_store.get_incident(incident_id)
-    if not incident:
+    if not incident or incident.organization_id != org_id:
         raise HTTPException(status_code=404, detail="Incident not found")
 
     incident.status = "SANDBOX_VERIFYING"
@@ -1555,7 +1561,11 @@ async def get_public_status():
 
 
 @router.get("/api/email/preview/{template_type}")
-async def preview_email(template_type: str, format: str = Query("html", regex="^(html|text)$")):
+async def preview_email(
+    template_type: str,
+    format: str = Query("html", regex="^(html|text)$"),
+    current_user: UserRecord = Depends(get_current_user)
+):
     try:
         email_data = render_email(template_type)
     except ValueError as e:
@@ -1571,9 +1581,11 @@ async def preview_email(template_type: str, format: str = Query("html", regex="^
 # -------------------------------------------------------------
 
 @router.get("/api/models/available")
-async def get_available_models(org_id: Optional[str] = Query("org_acme")):
+async def get_available_models(
+    auth_ctx: tuple = Depends(require_org_member(required_role="Viewer"))
+):
     """Returns available LLM providers, model tiers, and org BYOK configuration status with 120s caching."""
-    target_org = org_id or "org_acme"
+    user, target_org, role = auth_ctx
     cache_key = f"models:available:{target_org}"
     cached_catalog = cache_service.get(cache_key)
     if cached_catalog:
@@ -1625,14 +1637,23 @@ async def get_available_models(org_id: Optional[str] = Query("org_acme")):
     return response_payload
 
 @router.get("/api/organizations/{org_id}/usage")
-async def get_organization_usage(org_id: str):
-    """Returns granular token consumption and stage calls broken down by provider/model."""
+async def get_organization_usage(
+    org_id: str,
+    auth_ctx: tuple = Depends(require_org_member(required_role="Viewer"))
+):
+    """Returns granular token consumption and stage calls scoped to authorized org."""
+    user, caller_org, role = auth_ctx
+    if org_id != caller_org:
+        raise HTTPException(status_code=404, detail=f"Organization {org_id} not found")
     from app.services.usage_store import usage_store
     return usage_store.get_org_usage(org_id)
 
 @router.get("/api/usage")
-async def get_default_usage(org_id: Optional[str] = Query("org_acme")):
-    """Convenience alias for platform usage overview."""
+async def get_default_usage(
+    auth_ctx: tuple = Depends(require_org_member(required_role="Viewer"))
+):
+    """Convenience alias for platform usage overview scoped to authorized org."""
+    user, org_id, role = auth_ctx
     from app.services.usage_store import usage_store
-    return usage_store.get_org_usage(org_id or "org_acme")
+    return usage_store.get_org_usage(org_id)
 
