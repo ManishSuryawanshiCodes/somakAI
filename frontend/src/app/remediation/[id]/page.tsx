@@ -35,6 +35,7 @@ import SlideToDeploy from '@/components/SlideToDeploy';
 import FloatingDock from '@/components/FloatingDock';
 import { useToast } from '@/components/ToastProvider';
 import { useAuth } from '@/context/AuthContext';
+import { useOrg } from '@/context/OrgContext';
 import { getIncident, getActiveIncidents, deployRemediation, retrySandboxExecution } from '@/lib/api';
 import { mockIncident, mockIncident2, mockTerminalLines } from '@/lib/mock-data';
 import { Incident } from '@/lib/types';
@@ -46,9 +47,12 @@ export default function RemediationStudio() {
   const router = useRouter();
   const { addToast } = useToast();
   const { user, canDeploy } = useAuth();
+  const { currentOrg } = useOrg();
+  const isAcme = !currentOrg || currentOrg.id === 'org_acme';
 
-  const [selectedIncident, setSelectedIncident] = useState<Incident>(mockIncident);
-  const [allIncidents, setAllIncidents] = useState<Incident[]>([mockIncident, mockIncident2]);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(isAcme && id === 'INC-2041' ? mockIncident : null);
+  const [allIncidents, setAllIncidents] = useState<Incident[]>(isAcme ? [mockIncident, mockIncident2] : []);
+  const [loading, setLoading] = useState(true);
   
   // Progressive Disclosure: Collapsible details
   const [traceExpanded, setTraceExpanded] = useState(false);
@@ -61,15 +65,36 @@ export default function RemediationStudio() {
   const [retryingSandbox, setRetryingSandbox] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+    setLoading(true);
     getActiveIncidents().then((data) => {
-      if (data && (data as Incident[]).length > 0) {
-        setAllIncidents(data as Incident[]);
+      if (mounted) {
+        if (data && (data as Incident[]).length > 0) {
+          setAllIncidents(data as Incident[]);
+        } else if (isAcme) {
+          setAllIncidents([mockIncident, mockIncident2]);
+        } else {
+          setAllIncidents([]);
+        }
       }
     });
     getIncident(id).then((data) => {
-      if (data) setSelectedIncident(data as Incident);
+      if (mounted) {
+        if (data) {
+          setSelectedIncident(data as Incident);
+        } else if (isAcme && id === 'INC-2041') {
+          setSelectedIncident(mockIncident);
+        } else {
+          setSelectedIncident(null);
+        }
+      }
+    }).catch(() => {
+      if (mounted && !isAcme) setSelectedIncident(null);
+    }).finally(() => {
+      if (mounted) setLoading(false);
     });
-  }, [id]);
+    return () => { mounted = false; };
+  }, [id, isAcme]);
 
   // Click queue card in left rail to swap active incident without page reload
   const handleSelectQueueIncident = (inc: Incident) => {
@@ -80,6 +105,7 @@ export default function RemediationStudio() {
   };
 
   const handleDeploy = useCallback(async () => {
+    if (!selectedIncident) return;
     setDeploying(true);
     try {
       await deployRemediation(selectedIncident.id);
@@ -90,9 +116,10 @@ export default function RemediationStudio() {
     } finally {
       setDeploying(false);
     }
-  }, [selectedIncident.id, router, addToast]);
+  }, [selectedIncident, router, addToast]);
 
   const handleRetrySandbox = async () => {
+    if (!selectedIncident) return;
     setRetryingSandbox(true);
     try {
       const updated = await retrySandboxExecution(selectedIncident.id);
@@ -124,6 +151,37 @@ export default function RemediationStudio() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [deploying, canDeploy, handleDeploy]);
+
+  if (!selectedIncident) {
+    return (
+      <div className="min-h-screen text-text-primary flex flex-col relative">
+        <TopNav />
+        <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-16 text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mx-auto">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            {loading ? 'Loading Incident Remediation...' : `Incident ${id} Not Found`}
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            {loading
+              ? 'Retrieving live AST analysis and verification sandbox status from secure cluster.'
+              : `This incident either does not exist or belongs to another workspace. Return to the Incident Radar to inspect active real-time incidents.`}
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Back to Incident Radar</span>
+            </Link>
+          </div>
+        </main>
+        <FloatingDock />
+      </div>
+    );
+  }
 
   const rca = selectedIncident.rootCauseAnalysis;
   const patch = selectedIncident.patch;

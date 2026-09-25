@@ -67,7 +67,8 @@ interface TimelineItem {
 export default function PostMortemPage() {
   const params = useParams();
   const id = (params?.id as string) || 'INC-2041';
-  const [incident, setIncident] = useState<Incident>(mockIncident);
+  const isDemo = id === 'INC-2041';
+  const [incident, setIncident] = useState<Incident | null>(isDemo ? mockIncident : null);
   const [postMortemText, setPostMortemText] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [slackSent, setSlackSent] = useState(false);
@@ -155,17 +156,27 @@ export default function PostMortemPage() {
   ];
 
   useEffect(() => {
+    let mounted = true;
     getIncident(id)
       .then((data) => {
-        if (data) setIncident(data as Incident);
+        if (mounted && data) {
+          setIncident(data as Incident);
+        } else if (isDemo) {
+          setIncident(mockIncident);
+        } else if (mounted) {
+          setIncident(null);
+        }
       })
-      .catch(console.error);
+      .catch(() => {
+        if (mounted && !isDemo) setIncident(null);
+      });
 
     getPostMortem(id)
       .then((res) => {
+        if (!mounted) return;
         if (res?.markdown) {
           setPostMortemText(res.markdown);
-        } else {
+        } else if (isDemo) {
           setPostMortemText(`# Somak AI Executive Incident Post-Mortem
 
 **Incident ID:** \`${id}\`  
@@ -208,7 +219,9 @@ Verified AST diff merged into canary image.
         }
       })
       .catch(console.error);
-  }, [id]);
+
+    return () => { mounted = false; };
+  }, [id, isDemo]);
 
   const sections = [
     { id: 'sec-summary', label: 'Overview', num: '1' },
@@ -356,6 +369,35 @@ Verified AST diff merged into canary image.
     }
     setTimeout(() => setStatusMessage(null), 4000);
   };
+
+  if (!incident) {
+    return (
+      <div className="min-h-screen text-slate-900 dark:text-slate-100 flex flex-col relative">
+        <TopNav />
+        <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-16 text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mx-auto">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Post-Mortem for {id} Not Found
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            This incident post-mortem either does not exist or has not been synthesized yet for this workspace.
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-all"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Incident Radar</span>
+            </Link>
+          </div>
+        </main>
+        <FloatingDock />
+      </div>
+    );
+  }
 
   const citations = incident.rootCauseAnalysis?.tavilyCitations || [
     {

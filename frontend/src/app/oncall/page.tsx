@@ -165,7 +165,7 @@ export default function OnCallPage() {
   const { currentOrg } = useOrg();
   const isAcme = !currentOrg || currentOrg.id === 'org_acme';
 
-  const [shifts, setShifts] = useState<OnCallShift[]>(SHIFTS);
+  const [shifts, setShifts] = useState<OnCallShift[]>(isAcme ? SHIFTS : []);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paging' | 'nominal'>('all');
@@ -175,15 +175,22 @@ export default function OnCallPage() {
 
   useEffect(() => {
     let mounted = true;
+    setLoading(true);
     getOnCallShifts().then((data) => {
-      if (mounted && data && data.length > 0) {
-        setShifts(data);
+      if (mounted) {
+        if (data && data.length > 0) {
+          setShifts(data);
+        } else if (isAcme) {
+          setShifts(SHIFTS);
+        } else {
+          setShifts([]);
+        }
       }
     }).finally(() => {
       if (mounted) setLoading(false);
     });
     return () => { mounted = false; };
-  }, [currentOrg]);
+  }, [currentOrg, isAcme]);
 
   // Toggle contact info reveal
   const toggleContactReveal = (key: string) => {
@@ -335,7 +342,7 @@ export default function OnCallPage() {
           </div>
         </div>
 
-        {!isAcme ? (
+        {!loading && shifts.length === 0 ? (
           <div className="glass-panel p-12 rounded-2xl shadow-xs text-center space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mx-auto">
               <Radio className="w-6 h-6" />
@@ -390,39 +397,45 @@ export default function OnCallPage() {
           </div>
         </div>
 
-        {/* Rule 9: Sticky Active Incident Paging Banner */}
-        <div className="sticky top-14 z-20 p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-red-500/40 shadow-lg shadow-red-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
-              <PhoneCall className="w-5 h-5 animate-bounce" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                  Active Page Triggered
-                </span>
-                <span className="text-xs text-slate-400">• Incident INC-2041</span>
+        {/* Sticky Active Incident Paging Banner - Only shown if a shift is actively paging */}
+        {(() => {
+          const pagingShift = shifts.find((s) => s.status === 'paging' && s.activeIncidentId);
+          if (!pagingShift) return null;
+          return (
+            <div className="sticky top-14 z-20 p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-red-500/40 shadow-lg shadow-red-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
+                  <PhoneCall className="w-5 h-5 animate-bounce" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                      Active Page Triggered
+                    </span>
+                    <span className="text-xs text-slate-400">• Incident {pagingShift.activeIncidentId}</span>
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                    {pagingShift.primary.name} paged for {pagingShift.service} Outage
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Autonomous AST patch synthesized and verified in sandbox. PagerDuty auto-notified with 5-minute escalation fallback.
+                  </p>
+                </div>
               </div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                Elena Rostova paged for auth-service V8 Heap OOM Outage
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Autonomous AST patch synthesized and verified in sandbox. PagerDuty auto-notified with 5-minute escalation fallback.
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href="/remediation/INC-2041"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-md shadow-red-600/20 active:scale-95 transition-all"
-            >
-              <span>Respond in Studio</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Link
+                  href={`/remediation/${pagingShift.activeIncidentId}`}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-md shadow-red-600/20 active:scale-95 transition-all"
+                >
+                  <span>Respond in Studio</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Rule 7: Search & Status Filter Toolbar + View Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 rounded-2xl bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">

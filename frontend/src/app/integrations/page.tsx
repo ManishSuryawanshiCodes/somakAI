@@ -23,6 +23,7 @@ import {
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
 import { useToast } from '@/components/ToastProvider';
+import { useOrg } from '@/context/OrgContext';
 
 interface Integration {
   id: string;
@@ -117,24 +118,34 @@ const INTEGRATIONS: Integration[] = [
 
 export default function IntegrationsPage() {
   const { showToast } = useToast();
+  const { currentOrg } = useOrg();
+  const isAcme = !currentOrg || currentOrg.id === 'org_acme';
+
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
-  const [integrations, setIntegrations] = useState<Integration[]>(INTEGRATIONS);
+  const [integrations, setIntegrations] = useState<Integration[]>(isAcme ? INTEGRATIONS : []);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
+    setLoading(true);
     getIntegrations().then((data) => {
-      if (mounted && data && data.length > 0) {
-        setIntegrations(data);
+      if (mounted) {
+        if (data && data.length > 0) {
+          setIntegrations(data);
+        } else if (isAcme) {
+          setIntegrations(INTEGRATIONS);
+        } else {
+          setIntegrations([]);
+        }
       }
     }).finally(() => {
       if (mounted) setLoading(false);
     });
     return () => { mounted = false; };
-  }, []);
+  }, [currentOrg, isAcme]);
 
   const handleTestConnection = (name: string) => {
     showToast(`Pinging ${name} endpoint... Connected successfully (24ms)`, 'success');
@@ -170,7 +181,7 @@ export default function IntegrationsPage() {
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                 Integrations
                 <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  {integrations.length} Connected
+                  {integrations.filter((i) => i.status === 'connected').length} Connected
                 </span>
               </h1>
             </div>

@@ -168,24 +168,34 @@ export default function SLOPage() {
   const { currentOrg } = useOrg();
   const isAcme = !currentOrg || currentOrg.id === 'org_acme';
 
-  const [slos, setSlos] = useState<ServiceSLO[]>(MOCK_SLOS);
+  const [slos, setSlos] = useState<ServiceSLO[]>(isAcme ? MOCK_SLOS : []);
   const [loading, setLoading] = useState(true);
-  const [selectedService, setSelectedService] = useState<string>('auth-service');
+  const [selectedService, setSelectedService] = useState<string>(isAcme ? 'auth-service' : '');
   const [statusFilter, setStatusFilter] = useState<'all' | 'at_risk' | 'healthy'>('all');
 
   useEffect(() => {
     let mounted = true;
+    setLoading(true);
     getSLOs().then((data) => {
-      if (mounted && data && data.length > 0) {
-        setSlos(data);
+      if (mounted) {
+        if (data && data.length > 0) {
+          setSlos(data);
+          setSelectedService(data[0].service);
+        } else if (isAcme) {
+          setSlos(MOCK_SLOS);
+          setSelectedService('auth-service');
+        } else {
+          setSlos([]);
+          setSelectedService('');
+        }
       }
     }).finally(() => {
       if (mounted) setLoading(false);
     });
     return () => { mounted = false; };
-  }, [currentOrg]);
+  }, [currentOrg, isAcme]);
 
-  const activeSLO = slos.find((s) => s.service === selectedService) || slos[0] || MOCK_SLOS[0];
+  const activeSLO = slos.find((s) => s.service === selectedService) || slos[0] || null;
 
   const filteredSLOs = slos.filter((s) => {
     if (statusFilter === 'all') return true;
@@ -235,7 +245,7 @@ export default function SLOPage() {
           </div>
         </div>
 
-        {!isAcme ? (
+        {!loading && slos.length === 0 ? (
           <div className="glass-panel p-12 rounded-2xl shadow-xs text-center space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mx-auto">
               <Target className="w-6 h-6" />
@@ -293,11 +303,11 @@ export default function SLOPage() {
               Active Service SLOs
             </span>
             <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-              6 Monitored
+              {slos.length} Monitored
             </div>
             <div className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              4 Operating Healthy
+              {slos.filter(s => s.burnState === 'healthy').length} Operating Healthy
             </div>
           </div>
 
@@ -306,11 +316,11 @@ export default function SLOPage() {
               Budgets At Risk
             </span>
             <div className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">
-              2 Services
+              {slos.filter(s => s.burnState !== 'healthy').length} Services
             </div>
             <div className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1 font-semibold">
               <Flame className="w-3.5 h-3.5 animate-pulse" />
-              Burn rate &gt; 5.0x detected
+              {slos.some(s => s.burnRate > 5.0) ? 'Burn rate > 5.0x detected' : 'All burn rates nominal'}
             </div>
           </div>
 
@@ -319,7 +329,7 @@ export default function SLOPage() {
               Aggregate 30d SLA
             </span>
             <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-              99.93%
+              {slos.length > 0 ? (slos.reduce((acc, s) => acc + s.currentUptime, 0) / slos.length).toFixed(2) + '%' : '100.0%'}
             </div>
             <div className="text-[11px] text-slate-500 font-mono">
               Contractual Target: 99.90%
@@ -449,7 +459,7 @@ export default function SLOPage() {
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                 }`}
               >
-                All ({MOCK_SLOS.length})
+                All ({slos.length})
               </button>
               <button
                 onClick={() => setStatusFilter('at_risk')}
@@ -459,7 +469,7 @@ export default function SLOPage() {
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                 }`}
               >
-                At Risk (2)
+                At Risk ({slos.filter(s => s.burnState === 'at_risk').length})
               </button>
               <button
                 onClick={() => setStatusFilter('healthy')}
@@ -469,7 +479,7 @@ export default function SLOPage() {
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                 }`}
               >
-                Healthy (4)
+                Healthy ({slos.filter(s => s.burnState === 'healthy').length})
               </button>
             </div>
           </div>

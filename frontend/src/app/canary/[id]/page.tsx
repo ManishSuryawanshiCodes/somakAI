@@ -98,9 +98,20 @@ const initialTelemetryEvents: TelemetryEvent[] = [
 export default function CanaryRolloutMonitor() {
   const params = useParams();
   const id = (params?.id as string) || 'INC-2041';
+  const isDemo = id === 'INC-2041';
   const { user, canRollback, canDeploy } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [canaryStatus, setCanaryStatus] = useState<CanaryStatus>(mockCanary);
+  const [canaryStatus, setCanaryStatus] = useState<CanaryStatus>(
+    isDemo ? mockCanary : {
+      incidentId: id,
+      trafficPercent: 0,
+      baselineErrorRate: 0,
+      canaryErrorRate: 0,
+      baselineP99: 0,
+      canaryP99: 0,
+      status: 'NOT_STARTED',
+    }
+  );
   const [promoted, setPromoted] = useState(false);
   const [rolledBack, setRolledBack] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -119,7 +130,7 @@ export default function CanaryRolloutMonitor() {
   const holdIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Real-time Telemetry Event Log Ticker
-  const [telemetryLogs, setTelemetryLogs] = useState<TelemetryEvent[]>(initialTelemetryEvents);
+  const [telemetryLogs, setTelemetryLogs] = useState<TelemetryEvent[]>(isDemo ? initialTelemetryEvents : []);
   const [isTickerLive, setIsTickerLive] = useState(true);
 
   useEffect(() => {
@@ -128,8 +139,21 @@ export default function CanaryRolloutMonitor() {
       .then((data) => {
         if (data) setCanaryStatus(data as CanaryStatus);
       })
-      .catch(console.error);
-  }, [id]);
+      .catch((err) => {
+        console.error(err);
+        if (!isDemo) {
+          setCanaryStatus({
+            incidentId: id,
+            trafficPercent: 0,
+            baselineErrorRate: 0,
+            canaryErrorRate: 0,
+            baselineP99: 0,
+            canaryP99: 0,
+            status: 'NOT_STARTED',
+          });
+        }
+      });
+  }, [id, isDemo]);
 
   // Timer Countdown Effect
   useEffect(() => {

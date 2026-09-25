@@ -131,7 +131,7 @@ export default function RunbooksPage() {
   const { currentOrg } = useOrg();
   const isAcme = !currentOrg || currentOrg.id === 'org_acme';
 
-  const [runbooks, setRunbooks] = useState<RunbookPattern[]>(RUNBOOKS);
+  const [runbooks, setRunbooks] = useState<RunbookPattern[]>(isAcme ? RUNBOOKS : []);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -143,15 +143,22 @@ export default function RunbooksPage() {
 
   useEffect(() => {
     let mounted = true;
+    setLoading(true);
     getRunbooks().then((data) => {
-      if (mounted && data && data.length > 0) {
-        setRunbooks(data);
+      if (mounted) {
+        if (data && data.length > 0) {
+          setRunbooks(data);
+        } else if (isAcme) {
+          setRunbooks(RUNBOOKS);
+        } else {
+          setRunbooks([]);
+        }
       }
     }).finally(() => {
       if (mounted) setLoading(false);
     });
     return () => { mounted = false; };
-  }, [currentOrg]);
+  }, [currentOrg, isAcme]);
 
   // Toggle single card expand/collapse
   const toggleCard = (id: string) => {
@@ -297,7 +304,7 @@ export default function RunbooksPage() {
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
                 Runbooks
                 <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                  {RUNBOOKS.length} Verified Patterns
+                  {runbooks.length} Verified Patterns
                 </span>
               </h1>
             </div>
@@ -314,7 +321,7 @@ export default function RunbooksPage() {
           </div>
         </div>
 
-        {!isAcme ? (
+        {!loading && runbooks.length === 0 ? (
           <div className="glass-panel p-12 rounded-2xl shadow-xs text-center space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mx-auto">
               <BookOpen className="w-6 h-6" />

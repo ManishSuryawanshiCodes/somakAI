@@ -66,7 +66,19 @@ export default function ExecutiveIncidentRadar() {
   const { currentOrg } = useOrg();
   const { user, isAuthenticated } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [health, setHealth] = useState<SystemHealth>(mockHealth);
+  const isAcme = !currentOrg || currentOrg.id === 'org_acme';
+
+  const emptyHealth: SystemHealth = {
+    uptime: 100.0,
+    activeIncidents: 0,
+    mttr: '0m 00s',
+    costSaved: 0,
+    healthHistory: Array(24).fill(100.0),
+    memoryUsage: Array.from({ length: 24 }, (_, i) => ({ timestamp: `${String(i).padStart(2, '0')}:00`, value: 28 })),
+    latencyData: Array.from({ length: 24 }, (_, i) => ({ timestamp: `${String(i).padStart(2, '0')}:00`, value: 15 })),
+  };
+
+  const [health, setHealth] = useState<SystemHealth>(isAcme ? mockHealth : emptyHealth);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
@@ -75,26 +87,25 @@ export default function ExecutiveIncidentRadar() {
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '24h'>('24h');
   const [mainTab, setMainTab] = useState<'incidents' | 'telemetry' | 'topology'>('incidents');
   const [sandboxQueue, setSandboxQueue] = useState<SandboxQueueStatus | null>(null);
-  const [selectedService, setSelectedService] = useState<string | null>('auth-service');
+  const [selectedService, setSelectedService] = useState<string | null>(isAcme ? 'auth-service' : null);
   const [hoveredService, setHoveredService] = useState<string | null>(null);
-
-  const isAcme = !currentOrg || currentOrg.id === 'org_acme';
 
   useEffect(() => {
     setMounted(true);
     const orgId = currentOrg?.id || 'org_acme';
 
+    if (!isAcme) {
+      setHealth(emptyHealth);
+      setSelectedService(null);
+    } else {
+      setSelectedService('auth-service');
+    }
+
     getSystemHealth(orgId).then((data) => {
       if (data) {
         setHealth(data as SystemHealth);
       } else if (!isAcme) {
-        setHealth({
-          ...mockHealth,
-          uptime: 100.0,
-          activeIncidents: 0,
-          mttr: '0m 00s',
-          costSaved: 0,
-        });
+        setHealth(emptyHealth);
       }
     });
 
@@ -102,12 +113,15 @@ export default function ExecutiveIncidentRadar() {
       if (data && (data as Incident[]).length > 0) {
         setIncidents(data as Incident[]);
         setSelectedIncidentId((data as Incident[])[0].id);
+        setSelectedService((data as Incident[])[0].service);
       } else if (isAcme) {
         setIncidents([mockIncident, mockIncident2]);
         setSelectedIncidentId('INC-2041');
+        setSelectedService('auth-service');
       } else {
         setIncidents([]);
         setSelectedIncidentId(null);
+        setSelectedService(null);
       }
     });
 
@@ -124,8 +138,9 @@ export default function ExecutiveIncidentRadar() {
       setIncidents((prev) => [result as Incident, ...prev]);
       setSelectedIncident(result as Incident);
       setSelectedIncidentId((result as Incident).id);
-    } else {
-      // Local fallback simulation scoped to current org
+      setSelectedService((result as Incident).service);
+    } else if (isAcme) {
+      // Local fallback simulation scoped to demo workspace only
       const fallback: Incident = {
         ...mockIncident,
         id: `INC-${Math.floor(2000 + Math.random() * 8000)}`,
@@ -139,7 +154,7 @@ export default function ExecutiveIncidentRadar() {
     const h = await getSystemHealth(orgId);
     if (h) setHealth(h as SystemHealth);
     setSimulating(false);
-  }, [currentOrg]);
+  }, [currentOrg, isAcme]);
 
   const handleDeploy = (id: string) => {
     setModalOpen(false);

@@ -118,7 +118,7 @@ export default function HistoryPage() {
   const { currentOrg } = useOrg();
   const isAcme = !currentOrg || currentOrg.id === 'org_acme';
 
-  const [incidents, setIncidents] = useState<HistoricalIncident[]>(HISTORICAL_INCIDENTS);
+  const [incidents, setIncidents] = useState<HistoricalIncident[]>(isAcme ? HISTORICAL_INCIDENTS : []);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('ALL');
@@ -127,15 +127,22 @@ export default function HistoryPage() {
 
   useEffect(() => {
     let mounted = true;
+    setLoading(true);
     getHistory().then((data) => {
-      if (mounted && data && data.length > 0) {
-        setIncidents(data);
+      if (mounted) {
+        if (data && data.length > 0) {
+          setIncidents(data);
+        } else if (isAcme) {
+          setIncidents(HISTORICAL_INCIDENTS);
+        } else {
+          setIncidents([]);
+        }
       }
     }).finally(() => {
       if (mounted) setLoading(false);
     });
     return () => { mounted = false; };
-  }, [currentOrg]);
+  }, [currentOrg, isAcme]);
 
   const filtered = incidents.filter((inc) => {
     if (selectedSeverity !== 'ALL' && inc.severity !== selectedSeverity) return false;
@@ -189,7 +196,7 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        {!isAcme ? (
+        {!loading && incidents.length === 0 ? (
           <div className="glass-panel p-12 rounded-2xl shadow-xs text-center space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mx-auto">
               <History className="w-6 h-6" />
@@ -199,7 +206,7 @@ export default function HistoryPage() {
                 No past incidents recorded yet for {currentOrg?.name || 'this organization'}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
-                Resolved incidents and performance benchmarks will be recorded here.
+                Resolved incidents and performance benchmarks will be recorded here automatically.
               </p>
             </div>
             <div className="pt-2">
@@ -222,11 +229,11 @@ export default function HistoryPage() {
               Total Incidents Triaged
             </span>
             <div className="text-2xl font-black text-slate-900 dark:text-white">
-              42
+              {incidents.length}
             </div>
             <div className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              40 Remediated Autonomously
+              {incidents.filter(i => i.status === 'RESOLVED' || i.status === 'READY_FOR_DEPLOY').length} Remediated Autonomously
             </div>
           </div>
 
@@ -235,7 +242,7 @@ export default function HistoryPage() {
               Avg Autonomous MTTR
             </span>
             <div className="text-2xl font-black text-slate-900 dark:text-white">
-              3m 42s
+              {incidents.length > 0 ? '3m 42s' : '0m 00s'}
             </div>
             <div className="text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center gap-1 font-semibold">
               <TrendingDown className="w-3.5 h-3.5" />
@@ -248,7 +255,7 @@ export default function HistoryPage() {
               Cumulative Cost Saved
             </span>
             <div className="text-2xl font-black text-slate-900 dark:text-white">
-              $418,200
+              ${(incidents.length * 28000).toLocaleString()}
             </div>
             <div className="text-[11px] text-slate-500 flex items-center gap-1">
               <span>Based on $8,400/min tier</span>

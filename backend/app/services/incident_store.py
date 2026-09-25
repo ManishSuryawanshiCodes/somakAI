@@ -116,6 +116,7 @@ describe('TokenService Memory Management', () => {
 
         default_incident = Incident(
             id="INC-2041",
+            organization_id="org_acme",
             fingerprint="ERR_EVENTEMITTER_LEAK",
             severity="SEV-1",
             service="auth-service",
@@ -271,7 +272,7 @@ describe('TokenService Memory Management', () => {
         except Exception:
             pass
 
-        return self._incidents.get("INC-2041")
+        return None
 
     def get_active_incidents(self, org_id: str | None = None, limit: int = 50, offset: int = 0) -> list[Incident]:
         effective_org = org_id or "org_acme"
@@ -282,7 +283,7 @@ describe('TokenService Memory Management', () => {
                 "SELECT * FROM incidents WHERE organization_id = %s ORDER BY timestamp DESC LIMIT %s OFFSET %s;",
                 (effective_org, limit, offset)
             )
-            if rows:
+            if rows is not None:
                 db_incidents = [self._row_to_incident(r) for r in rows]
                 for inc in db_incidents:
                     self._incidents[inc.id] = inc
@@ -291,9 +292,9 @@ describe('TokenService Memory Management', () => {
             pass
 
         # In-memory fallback
-        if not org_id:
-            return list(self._incidents.values())[offset:offset+limit]
-        return [i for i in self._incidents.values() if getattr(i, 'organization_id', 'org_acme') == org_id][offset:offset+limit]
+        if not org_id or org_id == "org_acme":
+            return [i for i in self._incidents.values() if getattr(i, 'organization_id', 'org_acme') == "org_acme"][offset:offset+limit]
+        return [i for i in self._incidents.values() if getattr(i, 'organization_id', None) == org_id][offset:offset+limit]
 
     def get_incidents(self, org_id: str | None = None) -> list[Incident]:
         return self.get_active_incidents(org_id)
@@ -363,7 +364,7 @@ describe('TokenService Memory Management', () => {
     def get_system_health(self, org_id: str | None = None) -> SystemHealth:
         # Check incidents for this org
         target_org = org_id or "org_acme"
-        org_incidents = [i for i in self._incidents.values() if getattr(i, 'organization_id', 'org_acme') == target_org]
+        org_incidents = self.get_active_incidents(target_org, limit=100)
         
         hours = [f"{h:02d}:00" for h in range(24)]
 
@@ -407,13 +408,15 @@ describe('TokenService Memory Management', () => {
             else:
                 health_history.append(round(99.9 + (hash(str(i * 13)) % 10) / 100, 2))
 
-        active = len([i for i in org_incidents if i.status != 'DEPLOYED'])
+        active = len([i for i in org_incidents if i.status not in ('DEPLOYED', 'RESOLVED')])
+        resolved_count = len([i for i in org_incidents if i.status in ('DEPLOYED', 'RESOLVED')])
+        real_cost_saved = sum(42500.0 if i.severity == "SEV-1" else 12000.0 for i in org_incidents if i.status in ('DEPLOYED', 'RESOLVED'))
         
         return SystemHealth(
-            uptime=99.94,
+            uptime=99.94 if target_org == "org_acme" else (99.85 if active > 0 else 100.0),
             activeIncidents=max(active, 1) if target_org == "org_acme" else active,
-            mttr="3m 42s" if target_org == "org_acme" else "0m 00s",
-            costSaved=42800.00 if target_org == "org_acme" else 0.00,
+            mttr="3m 42s" if target_org == "org_acme" else ("4m 12s" if resolved_count > 0 else "0m 00s"),
+            costSaved=42800.00 if target_org == "org_acme" else real_cost_saved,
             healthHistory=health_history,
             memoryUsage=memory_data,
             latencyData=latency_data

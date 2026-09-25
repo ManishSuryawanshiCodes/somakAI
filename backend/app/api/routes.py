@@ -1131,14 +1131,24 @@ async def get_canary(
 
     canary = incident_store.get_canary_status(incident_id)
     if not canary:
+        if org_id == "org_acme":
+            return CanaryStatus(
+                incidentId=incident_id,
+                trafficPercent=5,
+                baselineErrorRate=12.4,
+                canaryErrorRate=0.01,
+                baselineP99=450.5,
+                canaryP99=120.2,
+                status="IN_PROGRESS"
+            )
         return CanaryStatus(
             incidentId=incident_id,
-            trafficPercent=5,
-            baselineErrorRate=12.4,
-            canaryErrorRate=0.01,
-            baselineP99=450.5,
-            canaryP99=120.2,
-            status="IN_PROGRESS"
+            trafficPercent=0,
+            baselineErrorRate=0.0,
+            canaryErrorRate=0.0,
+            baselineP99=0.0,
+            canaryP99=0.0,
+            status="NOT_STARTED"
         )
     return canary
 
@@ -1214,71 +1224,101 @@ async def get_slos(
 ):
     """Returns Service Level Objectives, error budgets, and live burn rates scoped to org."""
     user, org_id, role = auth_ctx
-    active_incidents = incident_store.get_active_incidents(org_id)
-    active_auth_inc = next((i for i in active_incidents if i.service == "auth-service"), None)
+    if org_id == "org_acme":
+        active_incidents = incident_store.get_active_incidents(org_id)
+        active_auth_inc = next((i for i in active_incidents if i.service == "auth-service"), None)
+        return [
+            {
+                "id": f"slo-auth-{org_id}",
+                "service": "auth-service",
+                "target": 99.90,
+                "currentUptime": 99.82 if active_auth_inc else 99.94,
+                "budgetRemainingPercent": 18.4 if active_auth_inc else 78.5,
+                "burnRate": 14.2 if active_auth_inc else 0.8,
+                "burnState": "at_risk" if active_auth_inc else "healthy",
+                "windowDays": 30,
+                "projectedExhaustion": "14 hours (Mitigation Active)" if active_auth_inc else "Nominal",
+                "activeIncidentId": active_auth_inc.id if active_auth_inc else None,
+                "description": "User JWT verification & session credential issuance latency < 150ms",
+                "history": [
+                    {"day": "Day 1", "budget": 100, "burnRate": 0.6},
+                    {"day": "Day 5", "budget": 96, "burnRate": 0.8},
+                    {"day": "Day 10", "budget": 91, "burnRate": 0.9},
+                    {"day": "Day 15", "budget": 85, "burnRate": 1.1},
+                    {"day": "Day 20", "budget": 78, "burnRate": 1.0},
+                    {"day": "Day 25", "budget": 64, "burnRate": 2.4},
+                    {"day": "Day 28", "budget": 48, "burnRate": 4.8},
+                    {"day": "Today", "budget": 18.4 if active_auth_inc else 78.5, "burnRate": 14.2 if active_auth_inc else 0.8},
+                ]
+            },
+            {
+                "id": f"slo-ingress-{org_id}",
+                "service": "ingress-nginx",
+                "target": 99.99,
+                "currentUptime": 99.994,
+                "budgetRemainingPercent": 84.2,
+                "burnRate": 0.4,
+                "burnState": "healthy",
+                "windowDays": 30,
+                "projectedExhaustion": "> 30 days",
+                "activeIncidentId": None,
+                "description": "Public edge routing, HTTP reverse proxy, and SSL handshake success rate",
+                "history": [
+                    {"day": "Day 1", "budget": 100, "burnRate": 0.2},
+                    {"day": "Day 10", "budget": 96, "burnRate": 0.3},
+                    {"day": "Day 20", "budget": 91, "burnRate": 0.3},
+                    {"day": "Today", "budget": 84.2, "burnRate": 0.4},
+                ]
+            },
+            {
+                "id": f"slo-payment-{org_id}",
+                "service": "payment-gateway",
+                "target": 99.95,
+                "currentUptime": 99.96,
+                "budgetRemainingPercent": 62.0,
+                "burnRate": 1.1,
+                "burnState": "healthy",
+                "windowDays": 30,
+                "projectedExhaustion": "26 days",
+                "activeIncidentId": None,
+                "description": "Stripe & PayPal transaction processing idempotency & webhooks",
+                "history": [
+                    {"day": "Day 1", "budget": 100, "burnRate": 0.9},
+                    {"day": "Day 15", "budget": 80, "burnRate": 1.0},
+                    {"day": "Today", "budget": 62.0, "burnRate": 1.1},
+                ]
+            }
+        ]
 
-    return [
-        {
-            "id": f"slo-auth-{org_id}",
-            "service": "auth-service",
+    # For real organizations: dynamically derive SLOs from real incidents and services
+    all_incidents = incident_store.get_incidents(org_id)
+    services = sorted(list({inc.service for inc in all_incidents if inc.service}))
+    if not services:
+        return []
+
+    real_slos = []
+    for svc in services:
+        active_svc_inc = next((i for i in all_incidents if i.service == svc and i.status not in ("RESOLVED", "DEPLOYED")), None)
+        has_inc = active_svc_inc is not None
+        real_slos.append({
+            "id": f"slo-{svc}-{org_id}",
+            "service": svc,
             "target": 99.90,
-            "currentUptime": 99.82 if active_auth_inc else 99.94,
-            "budgetRemainingPercent": 18.4 if active_auth_inc else 78.5,
-            "burnRate": 14.2 if active_auth_inc else 0.8,
-            "burnState": "at_risk" if active_auth_inc else "healthy",
+            "currentUptime": 99.82 if has_inc else 99.98,
+            "budgetRemainingPercent": 24.5 if has_inc else 92.0,
+            "burnRate": 8.4 if has_inc else 0.5,
+            "burnState": "at_risk" if has_inc else "healthy",
             "windowDays": 30,
-            "projectedExhaustion": "14 hours (Mitigation Active)" if active_auth_inc else "Nominal",
-            "activeIncidentId": active_auth_inc.id if active_auth_inc else None,
-            "description": "User JWT verification & session credential issuance latency < 150ms",
+            "projectedExhaustion": "Under mitigation" if has_inc else "Nominal",
+            "activeIncidentId": active_svc_inc.id if has_inc else None,
+            "description": f"Availability and latency error budget tracking for {svc}",
             "history": [
-                {"day": "Day 1", "budget": 100, "burnRate": 0.6},
-                {"day": "Day 5", "budget": 96, "burnRate": 0.8},
-                {"day": "Day 10", "budget": 91, "burnRate": 0.9},
-                {"day": "Day 15", "budget": 85, "burnRate": 1.1},
-                {"day": "Day 20", "budget": 78, "burnRate": 1.0},
-                {"day": "Day 25", "budget": 64, "burnRate": 2.4},
-                {"day": "Day 28", "budget": 48, "burnRate": 4.8},
-                {"day": "Today", "budget": 18.4 if active_auth_inc else 78.5, "burnRate": 14.2 if active_auth_inc else 0.8},
+                {"day": "Day 1", "budget": 100, "burnRate": 0.5},
+                {"day": "Day 15", "budget": 95, "burnRate": 0.6},
+                {"day": "Today", "budget": 24.5 if has_inc else 92.0, "burnRate": 8.4 if has_inc else 0.5},
             ]
-        },
-        {
-            "id": f"slo-ingress-{org_id}",
-            "service": "ingress-nginx",
-            "target": 99.99,
-            "currentUptime": 99.994,
-            "budgetRemainingPercent": 84.2,
-            "burnRate": 0.4,
-            "burnState": "healthy",
-            "windowDays": 30,
-            "projectedExhaustion": "> 30 days",
-            "activeIncidentId": None,
-            "description": "Public edge routing, HTTP reverse proxy, and SSL handshake success rate",
-            "history": [
-                {"day": "Day 1", "budget": 100, "burnRate": 0.2},
-                {"day": "Day 10", "budget": 96, "burnRate": 0.3},
-                {"day": "Day 20", "budget": 91, "burnRate": 0.3},
-                {"day": "Today", "budget": 84.2, "burnRate": 0.4},
-            ]
-        },
-        {
-            "id": f"slo-payment-{org_id}",
-            "service": "payment-gateway",
-            "target": 99.95,
-            "currentUptime": 99.96,
-            "budgetRemainingPercent": 62.0,
-            "burnRate": 1.1,
-            "burnState": "healthy",
-            "windowDays": 30,
-            "projectedExhaustion": "26 days",
-            "activeIncidentId": None,
-            "description": "Stripe & PayPal transaction processing idempotency & webhooks",
-            "history": [
-                {"day": "Day 1", "budget": 100, "burnRate": 0.9},
-                {"day": "Day 15", "budget": 80, "burnRate": 1.0},
-                {"day": "Today", "budget": 62.0, "burnRate": 1.1},
-            ]
-        }
-    ]
+        })
+    return real_slos
 
 @router.get("/api/oncall/shifts")
 async def get_oncall_shifts(
@@ -1286,50 +1326,88 @@ async def get_oncall_shifts(
 ):
     """Returns active on-call shifts and escalation schedules for the caller's organization."""
     user, org_id, role = auth_ctx
+    if org_id == "org_acme":
+        members = org_store.list_org_members(org_id)
+        active_incidents = incident_store.get_active_incidents(org_id)
+        active_auth = next((i for i in active_incidents if i.service == "auth-service"), None)
+
+        m1 = members[0].user if len(members) > 0 else user
+        m2 = members[1].user if len(members) > 1 else m1
+        m3 = members[2].user if len(members) > 2 else m1
+
+        return [
+            {
+                "id": f"shift-auth-{org_id}",
+                "service": "auth-service",
+                "primary": {"name": m1.name, "email": m1.email, "avatar": m1.name[:2].upper(), "phone": "+1 (555) 234-5678"},
+                "secondary": {"name": m2.name, "email": m2.email, "avatar": m2.name[:2].upper(), "phone": "+1 (555) 876-5432"},
+                "escalationLead": {"name": m3.name, "email": m3.email, "avatar": m3.name[:2].upper()},
+                "status": "paging" if active_auth else "nominal",
+                "activeIncidentId": active_auth.id if active_auth else None,
+                "nextHandoff": "Tomorrow at 09:00 UTC",
+                "timezone": "UTC",
+                "schedule": [
+                    {"day": "Sun", "date": "Sep 20", "responder": m1.name, "avatar": m1.name[:2].upper(), "color": "bg-indigo-500", "isToday": True},
+                    {"day": "Mon", "date": "Sep 21", "responder": m1.name, "avatar": m1.name[:2].upper(), "color": "bg-indigo-500"},
+                    {"day": "Tue", "date": "Sep 22", "responder": m2.name, "avatar": m2.name[:2].upper(), "color": "bg-violet-500"},
+                    {"day": "Wed", "date": "Sep 23", "responder": m2.name, "avatar": m2.name[:2].upper(), "color": "bg-violet-500"},
+                    {"day": "Thu", "date": "Sep 24", "responder": m3.name, "avatar": m3.name[:2].upper(), "color": "bg-cyan-500"},
+                ]
+            },
+            {
+                "id": f"shift-ingress-{org_id}",
+                "service": "ingress-nginx",
+                "primary": {"name": m2.name, "email": m2.email, "avatar": m2.name[:2].upper(), "phone": "+1 (555) 876-5432"},
+                "secondary": {"name": m3.name, "email": m3.email, "avatar": m3.name[:2].upper(), "phone": "+1 (555) 999-1122"},
+                "escalationLead": {"name": m1.name, "email": m1.email, "avatar": m1.name[:2].upper()},
+                "status": "nominal",
+                "activeIncidentId": None,
+                "nextHandoff": "Friday at 18:00 UTC",
+                "timezone": "UTC",
+                "schedule": [
+                    {"day": "Sun", "date": "Sep 20", "responder": m2.name, "avatar": m2.name[:2].upper(), "color": "bg-violet-500", "isToday": True},
+                    {"day": "Mon", "date": "Sep 21", "responder": m2.name, "avatar": m2.name[:2].upper(), "color": "bg-violet-500"},
+                    {"day": "Tue", "date": "Sep 22", "responder": m3.name, "avatar": m3.name[:2].upper(), "color": "bg-cyan-500"},
+                ]
+            }
+        ]
+
+    # For real organizations: use real team members and real services
     members = org_store.list_org_members(org_id)
-    active_incidents = incident_store.get_active_incidents(org_id)
-    active_auth = next((i for i in active_incidents if i.service == "auth-service"), None)
+    all_incidents = incident_store.get_incidents(org_id)
+    services = sorted(list({inc.service for inc in all_incidents if inc.service}))
 
-    m1 = members[0].user if len(members) > 0 else user
-    m2 = members[1].user if len(members) > 1 else m1
-    m3 = members[2].user if len(members) > 2 else m1
+    if not members and not services:
+        return []
 
-    return [
-        {
-            "id": f"shift-auth-{org_id}",
-            "service": "auth-service",
-            "primary": {"name": m1.name, "email": m1.email, "avatar": m1.name[:2].upper(), "phone": "+1 (555) 234-5678"},
-            "secondary": {"name": m2.name, "email": m2.email, "avatar": m2.name[:2].upper(), "phone": "+1 (555) 876-5432"},
-            "escalationLead": {"name": m3.name, "email": m3.email, "avatar": m3.name[:2].upper()},
-            "status": "paging" if active_auth else "nominal",
-            "activeIncidentId": active_auth.id if active_auth else None,
-            "nextHandoff": "Tomorrow at 09:00 UTC",
+    real_members = [m.user for m in members] if members else [user]
+    m1 = real_members[0]
+    m2 = real_members[1] if len(real_members) > 1 else m1
+    m3 = real_members[2] if len(real_members) > 2 else m1
+
+    target_services = services if services else ["production-workloads"]
+    shifts = []
+    for idx, svc in enumerate(target_services):
+        p = real_members[idx % len(real_members)]
+        s = real_members[(idx + 1) % len(real_members)]
+        l = real_members[0]
+        active_inc = next((i for i in all_incidents if i.service == svc and i.status not in ("RESOLVED", "DEPLOYED")), None)
+        shifts.append({
+            "id": f"shift-{svc}-{org_id}",
+            "service": svc,
+            "primary": {"name": p.name, "email": p.email, "avatar": p.name[:2].upper(), "phone": ""},
+            "secondary": {"name": s.name, "email": s.email, "avatar": s.name[:2].upper(), "phone": ""},
+            "escalationLead": {"name": l.name, "email": l.email, "avatar": l.name[:2].upper()},
+            "status": "paging" if active_inc else "nominal",
+            "activeIncidentId": active_inc.id if active_inc else None,
+            "nextHandoff": "Weekly rotation at 09:00 UTC",
             "timezone": "UTC",
             "schedule": [
-                {"day": "Sun", "date": "Sep 20", "responder": m1.name, "avatar": m1.name[:2].upper(), "color": "bg-indigo-500", "isToday": True},
-                {"day": "Mon", "date": "Sep 21", "responder": m1.name, "avatar": m1.name[:2].upper(), "color": "bg-indigo-500"},
-                {"day": "Tue", "date": "Sep 22", "responder": m2.name, "avatar": m2.name[:2].upper(), "color": "bg-violet-500"},
-                {"day": "Wed", "date": "Sep 23", "responder": m2.name, "avatar": m2.name[:2].upper(), "color": "bg-violet-500"},
-                {"day": "Thu", "date": "Sep 24", "responder": m3.name, "avatar": m3.name[:2].upper(), "color": "bg-cyan-500"},
+                {"day": "Today", "date": datetime.now(timezone.utc).strftime("%b %d"), "responder": p.name, "avatar": p.name[:2].upper(), "color": "bg-indigo-500", "isToday": True},
+                {"day": "Secondary", "date": "Rotation", "responder": s.name, "avatar": s.name[:2].upper(), "color": "bg-violet-500"},
             ]
-        },
-        {
-            "id": f"shift-ingress-{org_id}",
-            "service": "ingress-nginx",
-            "primary": {"name": m2.name, "email": m2.email, "avatar": m2.name[:2].upper(), "phone": "+1 (555) 876-5432"},
-            "secondary": {"name": m3.name, "email": m3.email, "avatar": m3.name[:2].upper(), "phone": "+1 (555) 999-1122"},
-            "escalationLead": {"name": m1.name, "email": m1.email, "avatar": m1.name[:2].upper()},
-            "status": "nominal",
-            "activeIncidentId": None,
-            "nextHandoff": "Friday at 18:00 UTC",
-            "timezone": "UTC",
-            "schedule": [
-                {"day": "Sun", "date": "Sep 20", "responder": m2.name, "avatar": m2.name[:2].upper(), "color": "bg-violet-500", "isToday": True},
-                {"day": "Mon", "date": "Sep 21", "responder": m2.name, "avatar": m2.name[:2].upper(), "color": "bg-violet-500"},
-                {"day": "Tue", "date": "Sep 22", "responder": m3.name, "avatar": m3.name[:2].upper(), "color": "bg-cyan-500"},
-            ]
-        }
-    ]
+        })
+    return shifts
 
 @router.get("/api/runbooks")
 async def get_runbooks(
@@ -1337,80 +1415,124 @@ async def get_runbooks(
 ):
     """Returns validated autonomous AST remediation patterns scoped to caller's org."""
     user, org_id, role = auth_ctx
-    return [
-        {
-            "id": f"AST-PAT-01-{org_id}",
-            "title": "Unbounded Map to TTL-Bounded LRU Cache",
-            "fingerprint": "MEM_LEAK_AUTH_TOKEN_SVC",
-            "language": "TypeScript",
-            "targetService": "auth-service",
-            "category": "Memory Management",
-            "description": "Replaces unbounded JavaScript Map memory collections with size-limited, TTL-evicted LRU cache to prevent V8 heap exhaustion under heavy traffic spikes.",
-            "beforeSnippet": "const tokenCache = new Map<string, any>();\ntokenCache.set(token, payload); // Unbounded leak",
-            "afterSnippet": "const tokenCache = new LRUCache({ max: 5000, ttl: 1000 * 60 * 5 });\ntokenCache.set(token, payload); // Bounded memory",
-            "timesApplied": 14,
-            "confidenceScore": 99.4,
-            "linkedIncidentId": "INC-2041",
-            "originIncidents": ["INC-2041", "INC-1842"]
-        },
-        {
-            "id": f"AST-PAT-02-{org_id}",
-            "title": "Database Connection Pool Leak Mitigation",
-            "fingerprint": "ERR_POOL_EXHAUSTION_PG",
-            "language": "Python / SQLAlchemy",
-            "targetService": "data-pipeline",
-            "category": "Connection Safety",
-            "description": "Wraps raw cursor checkouts in deterministic try/finally context managers to guarantee immediate pool return.",
-            "beforeSnippet": "conn = pool.get_conn()\nresults = conn.execute(query)",
-            "afterSnippet": "with pool.connection() as conn:\n    results = conn.execute(query)",
-            "timesApplied": 8,
-            "confidenceScore": 98.7,
-            "linkedIncidentId": "INC-1904",
-            "originIncidents": ["INC-1904"]
-        },
-        {
-            "id": f"AST-PAT-03-{org_id}",
-            "title": "External HTTP Call Timeout & Exponential Circuit Breaker",
-            "fingerprint": "TIMEOUT_PAYMENT_WEBHOOK_IDEM",
-            "language": "TypeScript / Node.js",
-            "targetService": "payment-gateway",
-            "category": "Network Resilience",
-            "description": "Enforces strict 2.5s socket timeout and activates circuit breaker pattern to prevent thread pool starving on upstream provider outages.",
-            "beforeSnippet": "const res = await axios.post(partnerUrl, payload);",
-            "afterSnippet": "const res = await circuitBreaker.fire(async () => axios.post(partnerUrl, payload, { timeout: 2500 }));",
-            "timesApplied": 22,
-            "confidenceScore": 99.8,
-            "linkedIncidentId": "INC-1892",
-            "originIncidents": ["INC-1892", "INC-1755"]
-        }
-    ]
+    if org_id == "org_acme":
+        return [
+            {
+                "id": f"AST-PAT-01-{org_id}",
+                "title": "Unbounded Map to TTL-Bounded LRU Cache",
+                "fingerprint": "MEM_LEAK_AUTH_TOKEN_SVC",
+                "language": "TypeScript",
+                "targetService": "auth-service",
+                "category": "Memory Management",
+                "description": "Replaces unbounded JavaScript Map memory collections with size-limited, TTL-evicted LRU cache to prevent V8 heap exhaustion under heavy traffic spikes.",
+                "beforeSnippet": "const tokenCache = new Map<string, any>();\ntokenCache.set(token, payload); // Unbounded leak",
+                "afterSnippet": "const tokenCache = new LRUCache({ max: 5000, ttl: 1000 * 60 * 5 });\ntokenCache.set(token, payload); // Bounded memory",
+                "timesApplied": 14,
+                "confidenceScore": 99.4,
+                "linkedIncidentId": "INC-2041",
+                "originIncidents": ["INC-2041", "INC-1842"]
+            },
+            {
+                "id": f"AST-PAT-02-{org_id}",
+                "title": "Database Connection Pool Leak Mitigation",
+                "fingerprint": "ERR_POOL_EXHAUSTION_PG",
+                "language": "Python / SQLAlchemy",
+                "targetService": "data-pipeline",
+                "category": "Connection Safety",
+                "description": "Wraps raw cursor checkouts in deterministic try/finally context managers to guarantee immediate pool return.",
+                "beforeSnippet": "conn = pool.get_conn()\nresults = conn.execute(query)",
+                "afterSnippet": "with pool.connection() as conn:\n    results = conn.execute(query)",
+                "timesApplied": 8,
+                "confidenceScore": 98.7,
+                "linkedIncidentId": "INC-1904",
+                "originIncidents": ["INC-1904"]
+            },
+            {
+                "id": f"AST-PAT-03-{org_id}",
+                "title": "External HTTP Call Timeout & Exponential Circuit Breaker",
+                "fingerprint": "TIMEOUT_PAYMENT_WEBHOOK_IDEM",
+                "language": "TypeScript / Node.js",
+                "targetService": "payment-gateway",
+                "category": "Network Resilience",
+                "description": "Enforces strict 2.5s socket timeout and activates circuit breaker pattern to prevent thread pool starving on upstream provider outages.",
+                "beforeSnippet": "const res = await axios.post(partnerUrl, payload);",
+                "afterSnippet": "const res = await circuitBreaker.fire(async () => axios.post(partnerUrl, payload, { timeout: 2500 }));",
+                "timesApplied": 22,
+                "confidenceScore": 99.8,
+                "linkedIncidentId": "INC-1892",
+                "originIncidents": ["INC-1892", "INC-1755"]
+            }
+        ]
+
+    # For real organizations: derive runbooks strictly from real incidents with patches
+    all_incidents = incident_store.get_incidents(org_id)
+    patched = [i for i in all_incidents if i.patch]
+    if not patched:
+        return []
+
+    real_runbooks = []
+    for inc in patched:
+        target_file = inc.patch.targetFile if inc.patch else "source.ts"
+        ext = target_file.split(".")[-1].lower() if "." in target_file else "ts"
+        lang_map = {"ts": "TypeScript", "js": "JavaScript", "py": "Python", "go": "Go", "rs": "Rust"}
+        real_runbooks.append({
+            "id": f"RUNBOOK-{inc.id}",
+            "title": f"Remediation Pattern for {inc.fingerprint}",
+            "fingerprint": inc.fingerprint,
+            "language": lang_map.get(ext, ext.upper()),
+            "targetService": inc.service,
+            "category": "Autonomous Hotfix",
+            "description": inc.rootCauseAnalysis.summary if inc.rootCauseAnalysis else f"Validated AST remediation patch for {inc.service}.",
+            "beforeSnippet": inc.patch.unifiedDiff[:200] if inc.patch else "// Original implementation",
+            "afterSnippet": inc.patch.unifiedDiff[200:400] if inc.patch and len(inc.patch.unifiedDiff) > 200 else inc.patch.unifiedDiff if inc.patch else "// Hotfix patch",
+            "timesApplied": 1,
+            "confidenceScore": inc.confidenceScore,
+            "linkedIncidentId": inc.id,
+            "originIncidents": [inc.id]
+        })
+    return real_runbooks
 
 @router.get("/api/integrations")
 async def get_integrations(
     auth_ctx: tuple = Depends(require_org_member(required_role="Viewer"))
 ):
-    """Returns integration connector states and masked configuration for user's organization."""
+    """Returns integration connector states and configuration for user's organization."""
     user, org_id, role = auth_ctx
     org = org_store.get_org(org_id)
     checklist = org.setup_checklist if org else None
 
-    slack_connected = bool(checklist and (checklist.slack_webhook or checklist.notifications_connected))
-    pagerduty_connected = bool(checklist and (checklist.pagerduty_key or checklist.notifications_connected))
-    nebius_connected = True
-    datadog_connected = False
+    is_acme = (org_id == "org_acme")
+    slack_connected = bool(checklist and (checklist.slack_webhook or checklist.notifications_connected)) or is_acme
+    pagerduty_connected = bool(checklist and (checklist.pagerduty_key or checklist.notifications_connected)) or is_acme
+    sentry_connected = bool(checklist and (checklist.sentry_project or checklist.sentry_connected)) or is_acme
+    nebius_connected = bool(checklist and checklist.nebius_api_key) or is_acme
+    github_connected = bool(checklist and checklist.github_repo) or is_acme
 
     return [
+        {
+            "id": "sentry",
+            "name": "Sentry Error Ingestion",
+            "category": "Incident Alerting",
+            "iconColor": "bg-purple-600",
+            "status": "connected" if sentry_connected else "disconnected",
+            "lastSync": "Real-time webhook active" if sentry_connected else "Not connected",
+            "description": "Ingests live exception stack traces, event breadcrumbs, and tags via authenticated Webhook.",
+            "fields": [
+                {"label": "Project Slug", "value": checklist.sentry_project if (checklist and checklist.sentry_project) else ("acme-backend" if is_acme else "Not Configured")},
+                {"label": "Inbound URL", "value": checklist.sentry_inbound_url if (checklist and checklist.sentry_inbound_url) else ("https://api.somak.ai/v1/webhook/ingest/acme-demo" if is_acme else "Not Configured")},
+            ]
+        },
         {
             "id": "slack",
             "name": "Slack",
             "category": "Incident Alerting",
             "iconColor": "bg-emerald-500",
             "status": "connected" if slack_connected else "disconnected",
-            "lastSync": "2 minutes ago",
+            "lastSync": "Active" if slack_connected else "Not connected",
             "description": "Delivers real-time SEV-1 notifications and interactive canary deployment approval buttons to #incident-alerts.",
             "fields": [
                 {"label": "Webhook URL", "value": "••••••••s3nt" if slack_connected else "Not Configured", "isSecret": True},
-                {"label": "Channel", "value": "#incident-alerts"},
+                {"label": "Channel", "value": "#incident-alerts" if slack_connected else "Not Configured"},
             ]
         },
         {
@@ -1419,11 +1541,11 @@ async def get_integrations(
             "category": "On-Call",
             "iconColor": "bg-green-600",
             "status": "connected" if pagerduty_connected else "disconnected",
-            "lastSync": "10 minutes ago",
+            "lastSync": "Active" if pagerduty_connected else "Not connected",
             "description": "Triggers primary/secondary on-call escalation paging and automatically resolves alerts upon verified canary rollout.",
             "fields": [
                 {"label": "Integration Key", "value": "••••••••c481" if pagerduty_connected else "Not Configured", "isSecret": True},
-                {"label": "Escalation Policy", "value": "Tier-1 Core SRE"},
+                {"label": "Escalation Policy", "value": "Tier-1 Core SRE" if pagerduty_connected else "Not Configured"},
             ]
         },
         {
@@ -1431,25 +1553,24 @@ async def get_integrations(
             "name": "Nebius Token Factory",
             "category": "AI Inference",
             "iconColor": "bg-indigo-500",
-            "status": "connected",
-            "lastSync": "Real-time active",
-            "description": "Provides dedicated high-throughput NVIDIA Nemotron-3 Ultra 550B & Nano 30B reasoning inference with zero data retention.",
+            "status": "connected" if nebius_connected else "disconnected",
+            "lastSync": "Real-time active" if nebius_connected else "Not connected",
+            "description": "Dedicated high-throughput NVIDIA Nemotron-3 Ultra 550B & Nano 30B reasoning inference with zero data retention.",
             "fields": [
-                {"label": "Cluster Region", "value": "us-central1 (Nebius Token Factory)"},
-                {"label": "API Key", "value": "••••••••live", "isSecret": True},
+                {"label": "Cluster Region", "value": "us-central1 (Nebius Token Factory)" if nebius_connected else "Not Configured"},
+                {"label": "API Key", "value": "••••••••live" if nebius_connected else "Not Configured", "isSecret": True},
             ]
         },
         {
-            "id": "datadog",
-            "name": "Datadog APM",
-            "category": "APM Telemetry",
-            "iconColor": "bg-purple-600",
-            "status": "connected" if datadog_connected else "disconnected",
-            "lastSync": "1 minute ago",
-            "description": "Streams real-time P99 latency percentiles, error rates, and CPU/memory telemetry during canary verification.",
+            "id": "github",
+            "name": "GitHub Source Control",
+            "category": "Source Control",
+            "iconColor": "bg-slate-900",
+            "status": "connected" if github_connected else "disconnected",
+            "lastSync": "Active" if github_connected else "Not connected",
+            "description": "Opens verified pull requests containing AST hotfixes and test suites.",
             "fields": [
-                {"label": "Datadog Site", "value": "datadoghq.com"},
-                {"label": "API Key", "value": "••••••••7890" if datadog_connected else "Not Configured", "isSecret": True},
+                {"label": "Target Repository", "value": checklist.github_repo if (checklist and checklist.github_repo) else ("acme/auth-service" if is_acme else "Not Configured")},
             ]
         }
     ]
@@ -1476,7 +1597,7 @@ async def get_history(
             "confidence": inc.confidenceScore
         })
 
-    if not history_items:
+    if not history_items and org_id == "org_acme":
         history_items = [
             {
                 "id": "INC-2041",

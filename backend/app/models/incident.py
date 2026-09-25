@@ -54,7 +54,7 @@ class CanaryStatus(BaseModel):
     canaryErrorRate: float
     baselineP99: float
     canaryP99: float
-    status: Literal['IN_PROGRESS', 'PROMOTED', 'ROLLED_BACK']
+    status: Literal['IN_PROGRESS', 'PROMOTED', 'ROLLED_BACK', 'NOT_STARTED']
 
 class SystemHealth(BaseModel):
     uptime: float

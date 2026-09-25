@@ -22,6 +22,7 @@ import {
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
 import { getAuditEvents, AuditEvent } from '@/lib/api';
+import { useOrg } from '@/context/OrgContext';
 
 const FALLBACK_AUDIT_EVENTS: AuditEvent[] = [
   {
@@ -82,7 +83,9 @@ const FALLBACK_AUDIT_EVENTS: AuditEvent[] = [
 ];
 
 export default function AuditPage() {
-  const [events, setEvents] = useState<AuditEvent[]>(FALLBACK_AUDIT_EVENTS);
+  const { currentOrg } = useOrg();
+  const isAcme = !currentOrg || currentOrg.id === 'org_acme';
+  const [events, setEvents] = useState<AuditEvent[]>(isAcme ? FALLBACK_AUDIT_EVENTS : []);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('ALL');
@@ -93,9 +96,18 @@ export default function AuditPage() {
       const data = await getAuditEvents(100);
       if (data && Array.isArray(data) && data.length > 0) {
         setEvents(data);
+      } else if (isAcme) {
+        setEvents(FALLBACK_AUDIT_EVENTS);
+      } else {
+        setEvents([]);
       }
     } catch (err) {
       console.error('Failed to fetch live audit events:', err);
+      if (isAcme) {
+        setEvents(FALLBACK_AUDIT_EVENTS);
+      } else {
+        setEvents([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -103,7 +115,7 @@ export default function AuditPage() {
 
   useEffect(() => {
     fetchLiveEvents();
-  }, []);
+  }, [currentOrg, isAcme]);
 
   const filtered = events.filter((e) => {
     if (filterCategory !== 'ALL' && e.actionCategory !== filterCategory) return false;
@@ -215,19 +227,27 @@ export default function AuditPage() {
                 <Search className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">No Audit Events Found</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">No immutable audit records match your query.</p>
+                <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  {events.length === 0 ? `No Audit Events Recorded Yet` : 'No Matching Audit Events'}
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5 max-w-sm mx-auto">
+                  {events.length === 0
+                    ? `Immutable cryptographic audit records are captured automatically as team actions, canary rollouts, and integrations are configured for ${currentOrg?.name || 'this organization'}.`
+                    : 'No immutable audit records match your query.'}
+                </p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery('');
-                  setFilterCategory('ALL');
-                }}
-                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors"
-              >
-                Reset Filters
-              </button>
+              {events.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterCategory('ALL');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors"
+                >
+                  Reset Filters
+                </button>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
