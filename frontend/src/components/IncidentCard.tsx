@@ -134,18 +134,22 @@ export default function IncidentCard({
       onClick={() => onSelect?.(incident.id)}
       onMouseEnter={() => onHoverService?.(incident.service)}
       onMouseLeave={() => onHoverService?.(null)}
-      className={`rounded-2xl p-4 sm:p-5 border border-l-4 bg-white/90 dark:bg-slate-900/90 transition-all duration-200 ${
-        isSev1
-          ? 'border-l-rose-500 border-slate-200/90 dark:border-slate-800'
-          : 'border-l-amber-500 border-slate-200/90 dark:border-slate-800'
-      } ${
+      className={`rounded-2xl p-4 sm:p-5 pl-5 sm:pl-6 border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0A0A0A] relative overflow-hidden transition-all duration-200 ${
         selected
           ? 'ring-2 ring-indigo-500 dark:ring-indigo-400 shadow-md shadow-indigo-500/10'
-          : 'shadow-xs hover:shadow-sm hover:border-slate-300 dark:hover:border-slate-700'
+          : 'shadow-xs hover:shadow-sm hover:border-slate-300 dark:hover:border-white/20'
       }`}
     >
+      {/* Solid single-color left border accent (Zero gradient/blend) */}
+      <div
+        className={`absolute left-0 top-0 bottom-0 w-1 ${
+          isSev1 ? 'bg-[#F43F5E]' : 'bg-[#F59E0B]'
+        }`}
+        style={{ backgroundColor: isSev1 ? 'var(--status-danger)' : 'var(--status-warning)' }}
+      />
+
       {/* Card Header: Service name + Max 2 Badges (Severity, Status) + Expandable +2 More Chip */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100 dark:border-slate-800/80">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100 dark:border-white/10">
         <div className="flex flex-wrap items-center gap-2">
           {/* Microservice Identifier */}
           <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -195,7 +199,7 @@ export default function IncidentCard({
               e.stopPropagation();
               setShowMeta((prev) => !prev);
             }}
-            className="text-[10px] font-mono text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="text-[10px] font-mono text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-white/10/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             {showMeta ? 'Hide details' : '+ details'}
           </button>
@@ -228,7 +232,7 @@ export default function IncidentCard({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden py-2 px-2.5 my-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 text-xs space-y-1 font-mono text-[11px]"
+            className="overflow-hidden py-2 px-2.5 my-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/70 dark:border-white/10/60 text-xs space-y-1 font-mono text-[11px]"
           >
             <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
               <span>Fingerprint:</span>
@@ -277,7 +281,7 @@ export default function IncidentCard({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden mt-2 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-950 text-slate-200 font-mono text-[11px] shadow-2xs"
+              className="overflow-hidden mt-2 rounded-xl border border-slate-200/90 dark:border-white/10 bg-slate-950 text-slate-200 font-mono text-[11px] shadow-2xs"
             >
               <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900 border-b border-slate-800 text-[10px] text-slate-400">
                 <span className="text-slate-300">{incident.patch?.targetFile || 'src/services/tokenService.ts'}</span>
@@ -310,7 +314,7 @@ export default function IncidentCard({
       </div>
 
       {/* Action Bar: Prominent Canary Launch CTA */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-slate-100 dark:border-white/10">
         <div className="flex flex-wrap items-center gap-2">
           {incident.status === 'READY_FOR_DEPLOY' ? (
             <>
@@ -329,7 +333,7 @@ export default function IncidentCard({
               <button
                 type="button"
                 onClick={handleStudioClick}
-                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition-all"
+                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition-all"
               >
                 <span>Remediation Studio</span>
                 <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
@@ -359,7 +363,7 @@ export default function IncidentCard({
               <button
                 type="button"
                 onClick={handleStudioClick}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold text-xs"
+                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 font-semibold text-xs"
               >
                 Studio
               </button>
@@ -390,8 +394,8 @@ export default function IncidentCard({
             className="overflow-hidden pt-3 space-y-3"
           >
             {/* 1. The 4-step reasoning trace */}
-            <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
-              <div className="flex items-center justify-between text-[11px] font-bold text-slate-800 dark:text-slate-200 pb-1.5 border-b border-slate-200/70 dark:border-slate-800">
+            <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 space-y-2.5">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-800 dark:text-slate-200 pb-1.5 border-b border-slate-200/70 dark:border-white/10">
                 <span className="flex items-center gap-1.5">
                   <Cpu className="w-3.5 h-3.5 text-indigo-500" />
                   Reasoning Trace
@@ -407,7 +411,7 @@ export default function IncidentCard({
                   return (
                     <div
                       key={s.step}
-                      className="p-2.5 rounded-lg bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 flex items-start gap-2.5"
+                      className="p-2.5 rounded-lg bg-white dark:bg-white/5 border border-slate-200/70 dark:border-white/10/60 flex items-start gap-2.5"
                     >
                       <div className="w-6 h-6 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-200/60 dark:border-indigo-900/50 mt-0.5">
                         <Icon className="w-3.5 h-3.5" />

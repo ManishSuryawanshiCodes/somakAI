@@ -224,7 +224,62 @@ class OrgStore:
         )
 
         self._members[org_id] = [initial_member]
+        self._sync_org_to_db(org)
         return org
+
+    def hydrate_from_db(self):
+        """Hydrates organizations from Supabase PostgreSQL database into memory."""
+        try:
+            import json
+            from app.core.database import db
+            rows = db.execute_query("SELECT * FROM organizations;")
+            if rows:
+                for r in rows:
+                    ch_data = r.get("setup_checklist")
+                    if isinstance(ch_data, str):
+                        try:
+                            ch_data = json.loads(ch_data)
+                        except Exception:
+                            ch_data = {}
+                    elif not isinstance(ch_data, dict):
+                        ch_data = {}
+                    checklist = SetupChecklist(**ch_data)
+                    org = Organization(
+                        id=r["id"],
+                        name=r["name"],
+                        slug=r["slug"],
+                        team_size=r.get("team_size") or "2-10",
+                        primary_use_case=r.get("primary_use_case") or "Autonomous Incident Remediation",
+                        mfa_enforced=r.get("mfa_enforced", False),
+                        plan=r.get("plan", "business"),
+                        created_at=r["created_at"],
+                        created_by=r["created_by"],
+                        setup_checklist=checklist
+                    )
+                    self._organizations[org.id] = org
+
+                    if org.id not in self._members:
+                        creator_id = org.created_by
+                        self._members[org.id] = [
+                            OrganizationMember(
+                                id=f"mem_{org.id[:8]}",
+                                organization_id=org.id,
+                                user_id=creator_id,
+                                role="Admin",
+                                joined_at=org.created_at,
+                                user=OrgMemberUser(
+                                    id=creator_id,
+                                    name="Workspace Admin",
+                                    email=f"admin@{org.slug}.com",
+                                    avatar="WA",
+                                    team="SecOps & Infrastructure",
+                                    mfa_enabled=False,
+                                    email_verified=True,
+                                )
+                            )
+                        ]
+        except Exception as e:
+            pass
 
     def get_org(self, org_id: str) -> Organization | None:
         return self._organizations.get(org_id)

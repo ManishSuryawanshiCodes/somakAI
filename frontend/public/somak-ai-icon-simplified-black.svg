@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
+  <rect width="192" height="192" rx="36" fill="#0A0A0A"/>
+  <!-- Somak AI Simplified Ring: Alabaster warm off-white #F2EFE7 arc with round caps -->
+  <path d="M 52 50 A 67 67 0 1 0 159 105 A 67 67 0 0 0 157 85" stroke="#F2EFE7" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Somak AI Gold Accent Dot: Champagne gold #C9A24B -->
+  <circle cx="142" cy="49" r="14.5" fill="#C9A24B"/>
+</svg>

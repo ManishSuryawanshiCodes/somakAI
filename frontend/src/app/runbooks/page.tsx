@@ -97,7 +97,7 @@ const RUNBOOKS: RunbookPattern[] = [
   },
   {
     id: 'AST-PAT-04',
-    title: 'Stripe Webhook Idempotency Lock Contention Resolution',
+    title: 'Payment Gateway Webhook Idempotency Lock Contention Resolution',
     fingerprint: 'TIMEOUT_PAYMENT_WEBHOOK_IDEM',
     language: 'TypeScript',
     targetService: 'payment-gateway',
@@ -295,7 +295,7 @@ export default function RunbooksPage() {
         </Link>
         
         {/* Header Ribbon */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/10">
           <div>
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
@@ -347,7 +347,7 @@ export default function RunbooksPage() {
         ) : (
           <>
         {/* Rule 6: Compact Unified Toolbar (Search + Filter + Group + Sort + View Toggle) */}
-        <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="p-3 rounded-2xl bg-white/80 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-wrap items-center justify-between gap-3">
           
           {/* Search Input */}
           <div className="relative flex-1 min-w-[220px] max-w-md">
@@ -357,7 +357,7 @@ export default function RunbooksPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by pattern, fingerprint (MEM_LEAK...), or service..."
-              className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-slate-50 dark:bg-white/5 text-xs text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             {searchQuery && (
               <button
@@ -377,7 +377,7 @@ export default function RunbooksPage() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-1.5 px-3 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-1.5 px-3 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
               >
                 <option value="ALL">All Categories ({RUNBOOKS.length})</option>
                 <option value="Memory Management">Memory Management</option>
@@ -393,7 +393,7 @@ export default function RunbooksPage() {
               <select
                 value={groupBy}
                 onChange={(e) => setGroupBy(e.target.value as any)}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-1.5 px-3 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-1.5 px-3 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
                 title="Group patterns by service or category"
               >
                 <option value="none">Grouping: None</option>
@@ -407,7 +407,7 @@ export default function RunbooksPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-1.5 px-3 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-1.5 px-3 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
               >
                 <option value="confidence">Sort: Highest Confidence</option>
                 <option value="runs">Sort: Most Applied</option>
@@ -420,7 +420,7 @@ export default function RunbooksPage() {
               <button
                 type="button"
                 onClick={toggleExpandAll}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1"
+                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1"
                 title={allExpanded ? 'Collapse all code diffs' : 'Expand all code diffs'}
               >
                 {allExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -429,12 +429,12 @@ export default function RunbooksPage() {
             )}
 
             {/* Rule 5: Card vs Table View Toggle */}
-            <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
               <button
                 onClick={() => setViewMode('card')}
                 className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${
                   viewMode === 'card'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    ? 'bg-white dark:bg-[#0A0A0A] text-indigo-600 dark:text-indigo-400 shadow-xs'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="Card View (Collapsible)"
@@ -445,7 +445,7 @@ export default function RunbooksPage() {
                 onClick={() => setViewMode('table')}
                 className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${
                   viewMode === 'table'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    ? 'bg-white dark:bg-[#0A0A0A] text-indigo-600 dark:text-indigo-400 shadow-xs'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="Table View (Dense)"
@@ -459,7 +459,7 @@ export default function RunbooksPage() {
 
         {/* Rule 7: Empty State when no results found */}
         {filteredPatterns.length === 0 ? (
-          <div className="p-12 text-center bg-white/70 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+          <div className="p-12 text-center bg-white/70 dark:bg-white/5 rounded-2xl border border-slate-200/80 dark:border-white/10 space-y-3">
             <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
               <Search className="w-6 h-6" />
             </div>
@@ -496,7 +496,7 @@ export default function RunbooksPage() {
                     <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                       {group.groupName} ({group.patterns.length} {group.patterns.length === 1 ? 'Pattern' : 'Patterns'})
                     </h2>
-                    <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1 ml-2" />
+                    <div className="h-px bg-slate-200 dark:bg-white/5 flex-1 ml-2" />
                   </div>
                 )}
 
@@ -507,7 +507,7 @@ export default function RunbooksPage() {
                     return (
                       <div
                         key={rb.id}
-                        className="glass-card rounded-2xl border border-slate-200/90 dark:border-slate-800 overflow-hidden shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+                        className="glass-card rounded-2xl border border-slate-200/90 dark:border-white/10 overflow-hidden shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all"
                       >
                         {/* Summary Header Row (Always Visible) */}
                         <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -521,10 +521,10 @@ export default function RunbooksPage() {
                               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                                 {rb.title}
                               </h3>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/10">
                                 {rb.targetService}
                               </span>
-                              <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                              <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400">
                                 {rb.category}
                               </span>
                             </div>
@@ -557,7 +557,7 @@ export default function RunbooksPage() {
                           </div>
 
                           {/* Right: Rule 3 Visual Stats + Rule 4 Consistent Card Actions */}
-                          <div className="flex items-center gap-4 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center gap-4 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-white/10">
                             
                             {/* Visual Stats Block */}
                             <div className="flex items-center gap-3 text-right">
@@ -602,7 +602,7 @@ export default function RunbooksPage() {
                               <button
                                 type="button"
                                 onClick={() => toggleCard(rb.id)}
-                                className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                                className="p-1.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
                                 title={isExpanded ? 'Collapse code diff' : 'View code diff'}
                               >
                                 {isExpanded ? (
@@ -624,9 +624,9 @@ export default function RunbooksPage() {
                               animate={{ opacity: 1, height: 'auto' }}
                               exit={{ opacity: 0, height: 0 }}
                               transition={{ duration: 0.2 }}
-                              className="border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 sm:p-5"
+                              className="border-t border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-[#0A0A0A]/40 p-4 sm:p-5"
                             >
-                              <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60 dark:border-slate-800/60 text-[11px] font-mono text-slate-500">
+                              <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60 dark:border-white/10/60 text-[11px] font-mono text-slate-500">
                                 <div className="flex items-center gap-1.5">
                                   <Code2 className="w-3.5 h-3.5 text-indigo-500" />
                                   <span>Fingerprint: <strong className="text-slate-800 dark:text-slate-200">{rb.fingerprint}</strong></span>
@@ -667,11 +667,11 @@ export default function RunbooksPage() {
         ) : (
           
           /* VIEW MODE 2: HIGH-DENSITY DATA TABLE (Rule 5) */
-          <div className="rounded-2xl bg-white/90 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
+          <div className="rounded-2xl bg-white/90 dark:bg-[#0A0A0A] backdrop-blur-sm border border-slate-200/80 dark:border-white/10 overflow-hidden shadow-xs">
             <div className="overflow-x-auto no-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono text-[10px]">
+                  <tr className="border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono text-[10px]">
                     <th className="py-3 px-4">Pattern ID</th>
                     <th className="py-3 px-4">Title & Fingerprint</th>
                     <th className="py-3 px-4">Service</th>

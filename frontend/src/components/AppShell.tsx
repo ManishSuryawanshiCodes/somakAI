@@ -66,6 +66,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith('/docs') ||
     pathname.startsWith('/status') ||
     pathname.startsWith('/changelog') ||
+    pathname.startsWith('/contact') ||
+    pathname.startsWith('/soc-audit') ||
     pathname.startsWith('/privacy') ||
     pathname.startsWith('/terms') ||
     pathname.startsWith('/forbidden') ||
@@ -85,6 +87,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith('/invite') ||
     pathname.startsWith('/status') ||
     pathname.startsWith('/docs') ||
+    pathname.startsWith('/changelog') ||
+    pathname.startsWith('/contact') ||
+    pathname.startsWith('/soc-audit') ||
     pathname.startsWith('/privacy') ||
     pathname.startsWith('/terms') ||
     pathname.startsWith('/forbidden') ||

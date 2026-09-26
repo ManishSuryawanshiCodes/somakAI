@@ -165,10 +165,10 @@ export default function DocsPage() {
   const nextSection = currentSectionIndex < DOCS_NAV.length - 1 ? DOCS_NAV[currentSectionIndex + 1] : null;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#090D16] text-slate-900 dark:text-slate-100 transition-colors selection:bg-indigo-500/20">
+    <div className="min-h-screen bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-slate-100 transition-colors selection:bg-indigo-500/20">
       
       {/* 1. Docs Header */}
-      <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-[#090D16]/90 border-b border-slate-200/80 dark:border-slate-800 transition-colors">
+      <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-[#0A0A0A]/90 border-b border-slate-200/80 dark:border-white/10 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           
           <div className="flex items-center gap-3">
@@ -237,7 +237,7 @@ export default function DocsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex">
         
         {/* Desktop Fixed Left Sidebar */}
-        <aside className="hidden lg:block w-64 shrink-0 py-8 pr-6 border-r border-slate-200/80 dark:border-slate-800 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto space-y-6">
+        <aside className="hidden lg:block w-64 shrink-0 py-8 pr-6 border-r border-slate-200/80 dark:border-white/10 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto space-y-6">
           {/* Search Input */}
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -246,7 +246,7 @@ export default function DocsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search docs (e.g. AST, Canary)..."
-              className="w-full pl-9 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-900 dark:text-white"
+              className="w-full pl-9 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-900 dark:text-white"
             />
             {searchQuery && (
               <button
@@ -324,7 +324,7 @@ export default function DocsPage() {
                 animate={{ x: 0 }}
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                className="relative z-10 w-72 max-w-[80vw] h-full bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 p-6 flex flex-col justify-between"
+                className="relative z-10 w-72 max-w-[80vw] h-full bg-white dark:bg-[#0A0A0A] border-r border-slate-200 dark:border-white/10 p-6 flex flex-col justify-between"
               >
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
@@ -382,7 +382,7 @@ export default function DocsPage() {
           {/* Section 1: Getting Started */}
           {activeSection === 'getting-started' && (
             <article className="space-y-10 leading-relaxed text-sm">
-              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-slate-800">
+              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-white/10">
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                   Getting Started with SOMAK AI
                 </h1>
@@ -404,13 +404,13 @@ export default function DocsPage() {
                 <p className="text-slate-600 dark:text-slate-300">
                   Every workspace in Somak AI is strictly isolated with independent error budgets, runbook patterns, and role-based permissions. Sign up at <Link href="/signup" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">/signup</Link> or visit <Link href="/onboarding/create-org" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">/onboarding/create-org</Link>.
                 </p>
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 space-y-2">
                   <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                     <Info className="w-4 h-4 text-indigo-500" />
                     <span>Workspace Slug Architecture</span>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Organization slugs are unique lowercase identifiers used in your dedicated inbound webhook endpoints (e.g. <code className="font-mono text-[11px] bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">https://api.somak.ai/v1/webhook/ingest/your-slug</code>). The user creating the workspace is automatically provisioned the <strong>Admin</strong> role.
+                    Organization slugs are unique lowercase identifiers used in your dedicated inbound webhook endpoints (e.g. <code className="font-mono text-[11px] bg-slate-200 dark:bg-white/5 px-1 py-0.5 rounded">https://api.somak.ai/v1/webhook/ingest/your-slug</code>). The user creating the workspace is automatically provisioned the <strong>Admin</strong> role.
                   </p>
                 </div>
               </section>
@@ -430,7 +430,7 @@ export default function DocsPage() {
                 </p>
 
                 {/* Code Block */}
-                <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 text-slate-200">
+                <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 bg-slate-900 text-slate-200">
                   <div className="px-4 py-2 bg-slate-950 flex items-center justify-between text-xs text-slate-400">
                     <span className="font-mono">Inbound Webhook Configuration</span>
                     <button
@@ -503,7 +503,7 @@ export default function DocsPage() {
           {/* Section 2: Core Concepts */}
           {activeSection === 'core-concepts' && (
             <article className="space-y-10 leading-relaxed text-sm">
-              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-slate-800">
+              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-white/10">
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                   Core Concepts & Glossary
                 </h1>
@@ -520,7 +520,7 @@ export default function DocsPage() {
                     <span>Triage & Fingerprinting</span>
                   </h3>
                   <p className="text-slate-600 dark:text-slate-300">
-                    When hundreds of errors hit an application simultaneously during an outage, triage groups them by their structural root cause rather than raw volume. A <strong>fingerprint</strong> (such as <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">MEM_LEAK_AUTH_TOKEN_SVC</code>) identifies the precise call stack and code block responsible.
+                    When hundreds of errors hit an application simultaneously during an outage, triage groups them by their structural root cause rather than raw volume. A <strong>fingerprint</strong> (such as <code className="font-mono text-xs bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded">MEM_LEAK_AUTH_TOKEN_SVC</code>) identifies the precise call stack and code block responsible.
                   </p>
                 </section>
 
@@ -591,7 +591,7 @@ export default function DocsPage() {
           {/* Section 3: Integrations */}
           {activeSection === 'integrations' && (
             <article className="space-y-10 leading-relaxed text-sm">
-              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-slate-800">
+              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-white/10">
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                   Telemetry & Infrastructure Integrations
                 </h1>
@@ -613,7 +613,7 @@ export default function DocsPage() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Configure a webhook in Sentry pointing to your organization endpoint. Somak AI listens for <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">event.alert</code> and <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">issue.created</code> payloads.
+                    Configure a webhook in Sentry pointing to your organization endpoint. Somak AI listens for <code className="font-mono text-xs bg-slate-100 dark:bg-white/5 px-1 py-0.5 rounded">event.alert</code> and <code className="font-mono text-xs bg-slate-100 dark:bg-white/5 px-1 py-0.5 rounded">issue.created</code> payloads.
                   </p>
                   <div className="p-3 bg-slate-900 rounded-xl text-xs font-mono text-slate-300 overflow-x-auto">
                     {`POST /api/v1/webhook/ingest/{org_slug} HTTP/1.1\nHost: api.somak.ai\nSentry-Hook-Resource: issue\nContent-Type: application/json`}
@@ -672,7 +672,7 @@ export default function DocsPage() {
           {/* Section 4: Roles & Permissions */}
           {activeSection === 'roles-permissions' && (
             <article className="space-y-10 leading-relaxed text-sm">
-              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-slate-800">
+              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-white/10">
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                   Roles & Access Control (RBAC)
                 </h1>
@@ -682,9 +682,9 @@ export default function DocsPage() {
               </header>
 
               {/* Comparison Table */}
-              <div id="rp-matrix" className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-800">
+              <div id="rp-matrix" className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-white/10">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200/80 dark:border-slate-800">
+                  <thead className="bg-slate-50 dark:bg-[#0A0A0A] text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200/80 dark:border-white/10">
                     <tr>
                       <th className="py-3 px-4">Action / Capability</th>
                       <th className="py-3 px-4">Admin</th>
@@ -738,7 +738,7 @@ export default function DocsPage() {
           {/* Section 5: FAQ */}
           {activeSection === 'faq' && (
             <article className="space-y-10 leading-relaxed text-sm">
-              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-slate-800">
+              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-white/10">
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                   Frequently Asked Questions
                 </h1>
@@ -799,7 +799,7 @@ export default function DocsPage() {
           {/* Section 6: API Reference */}
           {activeSection === 'api-reference' && (
             <article className="space-y-10 leading-relaxed text-sm">
-              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-slate-800">
+              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-white/10">
                 <div className="flex items-center gap-2">
                   <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                     API Reference
@@ -848,7 +848,7 @@ export default function DocsPage() {
           )}
 
           {/* Next / Previous Pagination Footer */}
-          <div className="pt-8 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs">
+          <div className="pt-8 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between text-xs">
             {prevSection ? (
               <button
                 onClick={() => {

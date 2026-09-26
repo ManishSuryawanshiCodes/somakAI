@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Sparkles } from 'lucide-react';
 
 export default function SplashScreen() {
   const [visible, setVisible] = useState(true);
@@ -23,7 +22,7 @@ export default function SplashScreen() {
           key="splash"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.28, ease: 'easeOut' } }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-[#090D16] transition-colors duration-150 select-none pointer-events-none"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#0A0A0A] transition-colors duration-150 select-none pointer-events-none"
         >
           {/* Subtle Ambient Radial Pulse */}
           <div className="absolute w-[420px] h-[420px] rounded-full bg-gradient-to-tr from-indigo-500/15 via-violet-500/10 to-transparent dark:from-indigo-600/20 dark:via-purple-600/10 dark:to-transparent blur-[90px] animate-pulse" />
@@ -38,8 +37,8 @@ export default function SplashScreen() {
             }}
             className="relative z-10 flex flex-col items-center space-y-4"
           >
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-xl shadow-indigo-600/30">
-              <Bot className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl bg-[#0A0A0A] border border-black/10 dark:border-white/10 p-2.5 flex items-center justify-center text-white shadow-2xl overflow-hidden">
+              <img src="/somak-ai-icon-transparent.png" alt="SOMAK AI" className="w-full h-full object-contain aspect-square" />
             </div>
 
             <div className="text-center space-y-1">
@@ -52,7 +51,7 @@ export default function SplashScreen() {
             </div>
 
             {/* Sleek Minimal Progress Bar */}
-            <div className="w-36 h-1 bg-slate-200/80 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
+            <div className="w-36 h-1 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden mt-2">
               <motion.div
                 initial={{ x: '-100%' }}
                 animate={{ x: '100%' }}

@@ -14,6 +14,7 @@ from app.core.tenant_limiter import tenant_limiter
 from app.core.cache import cache_service
 from app.services.incident_store import incident_store
 from app.services.auth_service import auth_service
+from app.services.org_store import org_store
 from app.middleware.rate_limiter import RateLimiterMiddleware
 from app.api.routes import router
 
@@ -55,7 +56,11 @@ async def lifespan(app: FastAPI):
     auth_service.hydrate_from_db()
     logger.info("User accounts: Successfully hydrated user accounts from Supabase PostgreSQL.")
 
-    # 4. Start background job queue workers
+    # 4. Organization Hydration: Hydrate tenant workspaces and checklists from PostgreSQL
+    org_store.hydrate_from_db()
+    logger.info("Organizations: Successfully hydrated tenant organizations from Supabase PostgreSQL.")
+
+    # 5. Start background job queue workers
     job_queue.start_workers(worker_count=4)
 
     yield

@@ -61,6 +61,9 @@ def test_provider_catalog():
         print(f"  [OK] Provider [{p_id}] validated: {total_models} models available.")
     print("  [PASS] Catalog registry intact for all 4 LLM providers.")
 
+import pytest
+
+@pytest.mark.asyncio
 async def test_triage_schema_parity():
     print("\n[2/8] Testing Triage Schema Parity across Nebius, Anthropic, OpenAI, Google...")
     providers = [
@@ -86,6 +89,7 @@ async def test_triage_schema_parity():
 
     print("  [PASS] All 4 providers satisfy identical Triage JSON schema contracts.")
 
+@pytest.mark.asyncio
 async def test_patch_schema_parity():
     print("\n[3/8] Testing AST Patch Synthesis Schema Parity...")
     providers = [
@@ -109,6 +113,7 @@ async def test_patch_schema_parity():
 
     print("  [PASS] All 4 providers satisfy AST Patch schema requirements.")
 
+@pytest.mark.asyncio
 async def test_unified_diff_syntax():
     print("\n[4/8] Testing Unified Diff Syntax Compliance (---, +++, @@)...")
     providers = [
@@ -128,6 +133,7 @@ async def test_unified_diff_syntax():
 
     print("  [PASS] Synthesized patches conform strictly to unified diff standards.")
 
+@pytest.mark.asyncio
 async def test_graceful_degradation():
     print("\n[5/8] Testing Resilient Retry & Graceful Degradation to Platform Nebius...")
     runner = AgentRunner()

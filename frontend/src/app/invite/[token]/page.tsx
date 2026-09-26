@@ -213,8 +213,8 @@ export default function InviteAcceptancePage() {
         className="text-center mb-8"
       >
         <Link href="/" className="inline-flex items-center gap-2.5 group mb-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-xl shadow-indigo-500/30">
-            <Shield className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-[#0A0A0A] border border-black/10 dark:border-white/10 p-1.5 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform overflow-hidden">
+            <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-7 h-7 object-contain aspect-square" />
           </div>
           <div className="text-left">
             <div className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">

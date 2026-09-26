@@ -16,6 +16,8 @@ import {
   EyeOff,
   X,
   KeyRound,
+  ArrowLeft,
+  Loader2,
 } from 'lucide-react';
 import { useAuth, UserRole } from '@/context/AuthContext';
 import { useOrg } from '@/context/OrgContext';
@@ -37,11 +39,38 @@ export default function LoginPage() {
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const validateLoginForm = (): boolean => {
+    let valid = true;
+    setEmailError('');
+    setPasswordError('');
+    setError('');
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setEmailError('Work email address is required.');
+      valid = false;
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanEmail)) {
+        setEmailError('Please enter a valid work email format (e.g. name@company.com).');
+        valid = false;
+      }
+    }
+
+    if (!password) {
+      setPasswordError('Password is required.');
+      valid = false;
+    }
+
+    return valid;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email && !selectedRole) {
-      setError('Please provide an email address or select a demo role');
+    if (!validateLoginForm()) {
       return;
     }
 
@@ -158,6 +187,17 @@ export default function LoginPage() {
       <div className="absolute top-1/4 -left-32 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
 
+      {/* Back to Home Button */}
+      <div className="w-full max-w-md mb-4 flex items-center justify-start z-10">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors py-1.5 px-3 rounded-xl border border-white/10 hover:border-white/20 bg-white/5 backdrop-blur-sm shadow-sm hover:bg-white/10"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
+
       {/* Brand Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -166,8 +206,8 @@ export default function LoginPage() {
         className="text-center mb-8"
       >
         <Link href="/" className="inline-flex items-center gap-2.5 group mb-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-xl shadow-indigo-500/30 group-hover:scale-105 transition-transform">
-            <Shield className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-[#0A0A0A] border border-black/10 dark:border-white/10 p-1.5 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform overflow-hidden">
+            <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-7 h-7 object-contain aspect-square" />
           </div>
           <div className="text-left">
             <div className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
@@ -227,7 +267,7 @@ export default function LoginPage() {
                     value={mfaCode}
                     onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="123456"
-                    className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2.5 text-center font-mono text-lg tracking-widest text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    className="w-full bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl py-2.5 text-center font-mono text-lg tracking-widest text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                   />
                 </div>
               </div>
@@ -303,7 +343,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => handleQuickLogin('Viewer', 'audit.observer@somak.internal', 'Audit Observer')}
-                  className="px-2 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100/60 dark:bg-slate-800/60 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-300 transition-all flex flex-col items-center text-center group"
+                  className="px-2 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition-all flex flex-col items-center text-center group"
                 >
                   <span className="text-[10px] font-mono uppercase font-bold text-slate-500">
                     Viewer
@@ -323,7 +363,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => handleSSO('Google')}
                   disabled={isLoading}
-                  className="min-h-[44px] flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
+                  className="min-h-[44px] flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
                     <path
@@ -385,11 +425,22 @@ export default function LoginPage() {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError('');
+                    }}
                     placeholder="name@company.com"
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    className={`w-full min-h-[44px] bg-white dark:bg-white/5 border ${
+                      emailError ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-white/10 focus:ring-indigo-500'
+                    } rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all`}
                   />
                 </div>
+                {emailError && (
+                  <p className="text-red-500 dark:text-red-400 text-[11px] mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{emailError}</span>
+                  </p>
+                )}
               </div>
 
               <div>
@@ -410,9 +461,14 @@ export default function LoginPage() {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (passwordError) setPasswordError('');
+                    }}
                     placeholder="••••••••••••"
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-9 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    className={`w-full min-h-[44px] bg-white dark:bg-white/5 border ${
+                      passwordError ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-white/10 focus:ring-indigo-500'
+                    } rounded-xl py-2 pl-9 pr-9 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all`}
                   />
                   <button
                     type="button"
@@ -422,16 +478,25 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {passwordError && (
+                  <p className="text-red-500 dark:text-red-400 text-[11px] mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{passwordError}</span>
+                  </p>
+                )}
               </div>
 
               {/* Single primary button */}
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full min-h-[44px] py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 active:scale-98 btn-glow-primary"
+                className="w-full min-h-[44px] py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 active:scale-98 btn-glow-primary"
               >
                 {isLoading ? (
-                  <span>Authenticating Session...</span>
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Authenticating Session...</span>
+                  </span>
                 ) : (
                   <>
                     <span>Sign In</span>

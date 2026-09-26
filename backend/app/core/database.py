@@ -97,6 +97,16 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS contact_submissions (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    company TEXT,
+    subject TEXT DEFAULT 'General Inquiry',
+    message TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
 -- =============================================================
 -- Production Performance & Multi-Tenant Partitioning Indexes
 -- =============================================================
@@ -108,6 +118,7 @@ CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents (status);
 CREATE INDEX IF NOT EXISTS idx_provider_usage_org ON provider_usage (org_id, timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_provider_usage_provider ON provider_usage (provider, model);
 CREATE INDEX IF NOT EXISTS idx_audit_events_org ON audit_events (org_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_contact_created_at ON contact_submissions (created_at DESC);
 
 -- =============================================================
 -- Database-Enforced Append-Only Audit Trail (Zero Update/Delete)

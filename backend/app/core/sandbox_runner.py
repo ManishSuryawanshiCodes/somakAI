@@ -86,6 +86,7 @@ class SandboxManager:
                     org_queue_pos = idx + 1
                     break
 
+        available_slots = max(0, self.default_concurrency - active_count)
         return {
             "activeSandboxes": active_count,
             "maxConcurrency": self.default_concurrency,
@@ -94,6 +95,12 @@ class SandboxManager:
             "orgQueuePosition": org_queue_pos,
             "totalExecutions": self.total_executions,
             "escalatedExecutions": self.escalated_executions,
+            # snake_case compatibility fields for API consumers
+            "available_slots": available_slots,
+            "max_parallel": self.default_concurrency,
+            "active_count": active_count,
+            "queued_count": queue_len,
+            "active_sandboxes": list(self._active_sandboxes.keys()) if hasattr(self._active_sandboxes, 'keys') else []
         }
 
     async def execute_isolated_test(

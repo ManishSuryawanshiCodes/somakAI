@@ -66,7 +66,16 @@ class AgentRunner:
 
         # Both attempts failed — Graceful Degradation to Platform Default (Nebius)
         platform_model = "nvidia/nemotron-3-nano-30b-a3b" if stage == "triage" else "nvidia/nemotron-3-ultra-550b"
-        fallback_msg = f"{target_provider_name.capitalize()} unavailable ({last_error}), falling back to Platform {platform_model.split('/')[-1]}"
+        
+        # Scrub any potential credentials or query strings from error string
+        clean_err = "API connection error"
+        if last_error:
+            import re
+            clean_err = re.sub(r'(sk-ant-[a-zA-Z0-9_\-]{8,}|sk-[a-zA-Z0-9_\-]{8,}|AIzaSy[a-zA-Z0-9_\-]{8,}|neb-tok-[a-zA-Z0-9_\-]{8,}|tvly-[a-zA-Z0-9_\-]{8,})', '[REDACTED_KEY]', str(last_error))
+            clean_err = re.sub(r'Bearer\s+[a-zA-Z0-9_\-\.]{10,}', 'Bearer [REDACTED]', clean_err, flags=re.IGNORECASE)
+            clean_err = re.sub(r'key=[a-zA-Z0-9_\-]{8,}', 'key=[REDACTED]', clean_err, flags=re.IGNORECASE)[:150]
+
+        fallback_msg = f"{target_provider_name.capitalize()} unavailable ({clean_err}), falling back to Platform {platform_model.split('/')[-1]}"
         logger.warning(f"[Graceful Degradation] {fallback_msg}")
 
         fallback_provider = NebiusProvider()
@@ -102,27 +111,37 @@ class AgentRunner:
         req_synth_model = webhook_data.get("synthesis_model") or (checklist.synthesis_model if checklist else "nvidia/nemotron-3-ultra-550b")
         synth_key = org_store.get_decrypted_provider_key(org_id, req_synth_provider) if org else ""
 
-        # 1. Create incident in store
-        incident = Incident(
-            id=incident_id,
-            organization_id=org_id,
-            fingerprint=fingerprint,
-            severity=severity,
-            service=service,
-            timestamp=start_time.isoformat(),
-            status="TRIAGING",
-            confidenceScore=99.4,
-            astValidated=True,
-            correctionLoops=0,
-            triage_provider=req_triage_provider,
-            triage_model=req_triage_model,
-            synthesis_provider=req_synth_provider,
-            synthesis_model=req_synth_model,
-            fallback_occurred=False,
-            fallback_message=None,
-            reasoning_steps=[]
-        )
-        incident_store.add_incident(incident)
+        # 1. Deduplication / Idempotent reuse: check if incident exists by ID or active fingerprint
+        existing = incident_store.get_incident(incident_id) or incident_store.find_active_by_fingerprint(org_id, fingerprint)
+        if existing:
+            incident = existing
+            incident.timestamp = start_time.isoformat()
+            if req_triage_provider:
+                incident.triage_provider = req_triage_provider
+            if req_synth_provider:
+                incident.synthesis_provider = req_synth_provider
+            incident_store.update_incident(incident)
+        else:
+            incident = Incident(
+                id=incident_id,
+                organization_id=org_id,
+                fingerprint=fingerprint,
+                severity=severity,
+                service=service,
+                timestamp=start_time.isoformat(),
+                status="TRIAGING",
+                confidenceScore=99.4,
+                astValidated=True,
+                correctionLoops=0,
+                triage_provider=req_triage_provider,
+                triage_model=req_triage_model,
+                synthesis_provider=req_synth_provider,
+                synthesis_model=req_synth_model,
+                fallback_occurred=False,
+                fallback_message=None,
+                reasoning_steps=[]
+            )
+            incident_store.add_incident(incident)
         await asyncio.sleep(0.1)
 
         try:

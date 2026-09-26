@@ -14,8 +14,6 @@ import {
   Zap,
   Terminal,
 } from 'lucide-react';
-import TopNav from '@/components/TopNav';
-import FloatingDock from '@/components/FloatingDock';
 
 interface Release {
   version: string;
@@ -102,30 +100,45 @@ const RELEASES: Release[] = [
 
 export default function ChangelogPage() {
   return (
-    <div className="min-h-screen text-slate-900 dark:text-slate-100 flex flex-col pb-36 md:pb-12 relative z-10 transition-colors">
-      <TopNav />
+    <div className="min-h-screen bg-black text-white flex flex-col justify-between selection:bg-indigo-500/30">
+      {/* Ambient background glow */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-gradient-to-b from-indigo-900/15 via-purple-900/5 to-transparent blur-3xl opacity-60" />
+      </div>
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors w-fit"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Radar</span>
+      {/* Top Navigation */}
+      <header className="relative z-10 border-b border-white/10 px-6 py-4 flex items-center justify-between max-w-7xl mx-auto w-full">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-400 hover:text-white transition-colors py-1.5 px-3 rounded-xl border border-white/10 hover:border-white/20 bg-white/5"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Home</span>
+          </Link>
+        </div>
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/10 p-1 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform overflow-hidden">
+            <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-6 h-6 object-contain aspect-square" />
+          </div>
+          <span className="text-base font-black tracking-tight text-white leading-none">SOMAK AI</span>
         </Link>
+      </header>
 
+      {/* Main Content */}
+      <main className="relative z-10 flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
           <div>
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+              <span className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-400">
                 <Sparkles className="w-5 h-5" />
               </span>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
                 Changelog
               </h1>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs sm:text-sm text-neutral-400 mt-1">
               Recent platform updates and release notes.
             </p>
           </div>
@@ -136,7 +149,7 @@ export default function ChangelogPage() {
           {RELEASES.map((rel, idx) => (
             <div
               key={rel.version}
-              className="glass-card p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 space-y-4 shadow-xs"
+              className="glass-card p-6 sm:p-7 rounded-3xl border border-white/10 space-y-4 shadow-xs bg-white/5"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5">
@@ -145,24 +158,24 @@ export default function ChangelogPage() {
                   </span>
                   <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
                     idx === 0
-                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                      : 'bg-white/5 text-neutral-400'
                   }`}>
                     {rel.badge}
                   </span>
                 </div>
-                <span className="text-xs text-slate-400 font-mono">
+                <span className="text-xs text-neutral-400 font-mono">
                   {rel.date}
                 </span>
               </div>
 
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              <h2 className="text-base font-bold text-white">
                 {rel.title}
               </h2>
 
               <ul className="space-y-2 pt-1">
                 {rel.highlights.map((item, itemIdx) => (
-                  <li key={itemIdx} className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                  <li key={itemIdx} className="flex items-start gap-2.5 text-xs text-neutral-300 leading-relaxed">
                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
                     <span>{item}</span>
                   </li>
@@ -173,7 +186,10 @@ export default function ChangelogPage() {
         </div>
       </main>
 
-      <FloatingDock />
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-white/10 py-6 px-6 text-center text-xs text-neutral-500">
+        © {new Date().getFullYear()} SOMAK AI Inc. All rights reserved.
+      </footer>
     </div>
   );
 }

@@ -23,7 +23,7 @@ interface AuthContextType {
   completeMfaLogin: (ticket: string, code: string) => Promise<{ user: User; hasOrgs: boolean }>;
   loginAsDemo: () => Promise<User>;
   signup: (email: string, password?: string, name?: string) => Promise<User>;
-  logout: () => void;
+  logout: () => Promise<void> | void;
   switchRole: (role: UserRole) => void;
   canDeploy: boolean;
   canRollback: boolean;
@@ -145,6 +145,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem('somak_user', JSON.stringify(newUser));
       localStorage.setItem('sentryops_user', JSON.stringify(newUser));
+      if (backendRes?.session_token) {
+        localStorage.setItem('somak_session_token', backendRes.session_token);
+      }
     } catch {}
 
     const hasOrgs = ((backendRes as any)?.organizations?.length > 0) || (backendRes as any)?.has_organizations || isDemoUser;
@@ -170,6 +173,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem('somak_user', JSON.stringify(newUser));
       localStorage.setItem('sentryops_user', JSON.stringify(newUser));
+      if (res.session_token) {
+        localStorage.setItem('somak_session_token', res.session_token);
+      }
     } catch {}
     const hasOrgs = (res.organizations?.length || 0) > 0;
     return { user: newUser, hasOrgs };
@@ -184,12 +190,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return DEFAULT_USER;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      const { backendLogout } = await import('@/lib/api');
+      await backendLogout();
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
     setUser(null);
     try {
       localStorage.removeItem('somak_user');
       localStorage.removeItem('sentryops_user');
+      localStorage.removeItem('somak_session_token');
     } catch {}
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   };
 
   const switchRole = (role: UserRole) => {

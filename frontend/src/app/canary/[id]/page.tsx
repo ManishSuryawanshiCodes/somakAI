@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -135,24 +137,36 @@ export default function CanaryRolloutMonitor() {
 
   useEffect(() => {
     setMounted(true);
-    getCanaryStatus(id)
-      .then((data) => {
-        if (data) setCanaryStatus(data as CanaryStatus);
-      })
-      .catch((err) => {
-        console.error(err);
-        if (!isDemo) {
-          setCanaryStatus({
-            incidentId: id,
-            trafficPercent: 0,
-            baselineErrorRate: 0,
-            canaryErrorRate: 0,
-            baselineP99: 0,
-            canaryP99: 0,
-            status: 'NOT_STARTED',
-          });
-        }
-      });
+    let active = true;
+
+    const fetchCanary = () => {
+      getCanaryStatus(id)
+        .then((data) => {
+          if (active && data) setCanaryStatus(data as CanaryStatus);
+        })
+        .catch((err) => {
+          if (active && !isDemo) {
+            setCanaryStatus({
+              incidentId: id,
+              trafficPercent: 0,
+              baselineErrorRate: 0,
+              canaryErrorRate: 0,
+              baselineP99: 0,
+              canaryP99: 0,
+              status: 'NOT_STARTED',
+            });
+          }
+        });
+    };
+
+    fetchCanary();
+    // Live push/poll interval for real-time traffic updates without manual refresh
+    const pollTimer = setInterval(fetchCanary, 4000);
+
+    return () => {
+      active = false;
+      clearInterval(pollTimer);
+    };
   }, [id, isDemo]);
 
   // Timer Countdown Effect
@@ -317,7 +331,7 @@ export default function CanaryRolloutMonitor() {
           <div className="flex items-center gap-2.5">
             <Link
               href={`/postmortem/${id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 transition-all shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 transition-all shadow-2xs"
             >
               <FileText className="w-3.5 h-3.5 text-indigo-500" />
               <span>Post-Mortem</span>
@@ -328,7 +342,7 @@ export default function CanaryRolloutMonitor() {
         </motion.div>
 
         {/* Compact Top Event Ticker Strip (Directive 5) */}
-        <div className="w-full rounded-xl px-3.5 py-2 bg-slate-100/80 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 text-xs font-mono">
+        <div className="w-full rounded-xl px-3.5 py-2 bg-slate-100/80 dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-3 text-xs font-mono">
           <div className="flex items-center gap-2.5 truncate">
             <span className="flex h-2 w-2 relative shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -435,11 +449,11 @@ export default function CanaryRolloutMonitor() {
               className={`rounded-2xl p-5 border transition-all ${
                 rolledBack
                   ? 'bg-red-50/70 dark:bg-red-950/20 border-red-200 dark:border-red-900/50'
-                  : 'bg-white/80 dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800/80 shadow-xs backdrop-blur-sm'
+                  : 'bg-white/80 dark:bg-[#0A0A0A] border-slate-200/80 dark:border-white/10 shadow-xs backdrop-blur-sm'
               }`}
             >
               {/* Section Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
                 <div className="flex items-center gap-2">
                   <Gauge className="w-4 h-4 text-indigo-500" />
                   <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
@@ -488,7 +502,7 @@ export default function CanaryRolloutMonitor() {
               </div>
 
               {/* Mode Toggle: Automatic Policy vs Manual Override (Directive 1) */}
-              <div className="mt-4 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 flex text-xs font-bold">
+              <div className="mt-4 p-1 rounded-xl bg-slate-100 dark:bg-white/5 flex text-xs font-bold">
                 <button
                   type="button"
                   onClick={() => setControlMode('auto')}
@@ -521,7 +535,7 @@ export default function CanaryRolloutMonitor() {
               <div className="mt-3">
                 {controlMode === 'auto' ? (
                   /* Mode A: Automatic Policy Countdown */
-                  <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
+                  <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="relative flex h-2 w-2">
@@ -557,7 +571,7 @@ export default function CanaryRolloutMonitor() {
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-200 dark:bg-white/5 h-1.5 rounded-full overflow-hidden">
                       <motion.div
                         className="h-full bg-indigo-500"
                         style={{ width: `${Math.min(100, ((300 - autoPromoteSeconds) / 300) * 100)}%` }}
@@ -599,7 +613,7 @@ export default function CanaryRolloutMonitor() {
                       value={currentTraffic}
                       disabled={actionsDisabled}
                       onChange={(e) => handleManualPreset(Number(e.target.value))}
-                      className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                      className="w-full h-2 bg-slate-200 dark:bg-white/5 rounded-lg appearance-none cursor-pointer"
                       style={{ accentColor: risk.color }}
                     />
 
@@ -617,7 +631,7 @@ export default function CanaryRolloutMonitor() {
                             className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all border ${
                               isSelected
                                 ? 'text-white shadow-xs'
-                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                                : 'bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-slate-400'
                             }`}
                             style={{
                               backgroundColor: isSelected ? pRisk.color : undefined,
@@ -645,8 +659,8 @@ export default function CanaryRolloutMonitor() {
             </div>
 
             {/* SECTION 2: Manual Actions (Directives 3 & 8) */}
-            <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs backdrop-blur-sm flex flex-col gap-3.5">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800/80">
+            <div className="bg-white/80 dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-2xl p-5 shadow-xs backdrop-blur-sm flex flex-col gap-3.5">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/10">
                 <div className="flex items-center gap-2">
                   <Sliders className="w-4 h-4 text-indigo-500" />
                   <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
@@ -741,8 +755,8 @@ export default function CanaryRolloutMonitor() {
             className="lg:col-span-8 flex flex-col gap-5"
           >
             {/* SECTION 3: Live Telemetry Comparison (Side-by-Side 2-Column Grid, Directive 4) */}
-            <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs backdrop-blur-sm flex flex-col gap-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+            <div className="bg-white/80 dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-2xl p-5 shadow-xs backdrop-blur-sm flex flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-white/10">
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-indigo-500" />
                   <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
@@ -762,7 +776,7 @@ export default function CanaryRolloutMonitor() {
               {/* Side-by-Side Charts (Reclaiming Vertical Space) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Chart 1: Error Rate */}
-                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 flex flex-col justify-between">
+                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/5 border border-slate-200/70 dark:border-white/10 flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                       Error Rate Comparison
@@ -776,18 +790,19 @@ export default function CanaryRolloutMonitor() {
                     {mounted && (
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={mockCanaryTimeSeries} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" opacity={0.5} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#64748B" opacity={0.2} />
                           <XAxis dataKey="time" tick={{ fontSize: 9, fill: '#64748B' }} />
                           <YAxis tick={{ fontSize: 9, fill: '#64748B' }} unit="%" />
                           <Tooltip
                             contentStyle={{
-                              backgroundColor: '#FFFFFF',
-                              border: '1px solid #E2E8F0',
+                              backgroundColor: 'var(--bg-surface)',
+                              borderColor: 'var(--border)',
                               borderRadius: '10px',
                               fontSize: '11px',
+                              color: 'var(--text-primary)',
                             }}
                           />
-                          <Line type="monotone" dataKey="baselineError" name="Baseline %" stroke="#EF4444" strokeWidth={1.8} dot={false} />
+                          <Line type="monotone" dataKey="baselineError" name="Baseline %" stroke="#64748B" strokeWidth={1.8} strokeDasharray="4 4" dot={false} />
                           <Line type="monotone" dataKey="canaryError" name="Canary %" stroke="#10B981" strokeWidth={2.2} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
@@ -796,12 +811,12 @@ export default function CanaryRolloutMonitor() {
                 </div>
 
                 {/* Chart 2: P99 Latency */}
-                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 flex flex-col justify-between">
+                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/5 border border-slate-200/70 dark:border-white/10 flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                       P99 Latency Normalization
                     </span>
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-500/20">
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                       148ms &rarr; 28ms
                     </span>
                   </div>
@@ -810,19 +825,20 @@ export default function CanaryRolloutMonitor() {
                     {mounted && (
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={mockCanaryTimeSeries} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" opacity={0.5} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#64748B" opacity={0.2} />
                           <XAxis dataKey="time" tick={{ fontSize: 9, fill: '#64748B' }} />
                           <YAxis tick={{ fontSize: 9, fill: '#64748B' }} unit="ms" />
                           <Tooltip
                             contentStyle={{
-                              backgroundColor: '#FFFFFF',
-                              border: '1px solid #E2E8F0',
+                              backgroundColor: 'var(--bg-surface)',
+                              borderColor: 'var(--border)',
                               borderRadius: '10px',
                               fontSize: '11px',
+                              color: 'var(--text-primary)',
                             }}
                           />
-                          <Line type="monotone" dataKey="baselineP99" name="Baseline (ms)" stroke="#F59E0B" strokeWidth={1.8} dot={false} />
-                          <Line type="monotone" dataKey="canaryP99" name="Canary (ms)" stroke="#06B6D4" strokeWidth={2.2} dot={false} />
+                          <Line type="monotone" dataKey="baselineP99" name="Baseline (ms)" stroke="#64748B" strokeWidth={1.8} strokeDasharray="4 4" dot={false} />
+                          <Line type="monotone" dataKey="canaryP99" name="Canary (ms)" stroke="#10B981" strokeWidth={2.2} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     )}
@@ -832,8 +848,8 @@ export default function CanaryRolloutMonitor() {
             </div>
 
             {/* SECTION 4: Real-Time Event Stream (Directive 6) */}
-            <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs backdrop-blur-sm flex flex-col gap-3">
-              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800/80">
+            <div className="bg-white/80 dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-2xl p-5 shadow-xs backdrop-blur-sm flex flex-col gap-3">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-white/10">
                 <div className="flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-emerald-500" />
                   <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
@@ -848,7 +864,7 @@ export default function CanaryRolloutMonitor() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsTickerLive(!isTickerLive)}
-                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 transition-colors"
+                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-1 rounded-md bg-slate-100 dark:bg-white/5 transition-colors"
                   >
                     {isTickerLive ? 'Pause Stream' : 'Resume Stream'}
                   </button>
@@ -870,7 +886,7 @@ export default function CanaryRolloutMonitor() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0 }}
-                        className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 text-xs font-mono"
+                        className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-xs font-mono"
                       >
                         <div className="flex items-center gap-2.5 truncate">
                           <span className="text-[10px] text-slate-400 shrink-0">

@@ -183,7 +183,7 @@ export default function SetupChecklistPage() {
         </p>
 
         {/* Progress Bar Strip */}
-        <div className="mt-5 p-4 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 backdrop-blur-md shadow-xs text-left">
+        <div className="mt-5 p-4 rounded-2xl bg-white/70 dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 backdrop-blur-md shadow-xs text-left">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
               Setup Progress
@@ -192,7 +192,7 @@ export default function SetupChecklistPage() {
               {completedCount} of {totalItems} completed ({progressPercent}%)
             </span>
           </div>
-          <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+          <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full"
               initial={{ width: 0 }}
@@ -211,7 +211,7 @@ export default function SetupChecklistPage() {
         className="w-full max-w-2xl glass-modal rounded-3xl p-6 shadow-2xl relative z-10 space-y-4"
       >
         {/* Accordion Item 1: Connect Error Monitoring */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 transition-all">
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden bg-slate-50/50 dark:bg-[#0A0A0A]/50 transition-all">
           <button
             type="button"
             onClick={() => toggleExpand('sentry')}
@@ -258,7 +258,7 @@ export default function SetupChecklistPage() {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="p-4 pt-0 border-t border-slate-100 dark:border-slate-800/80 space-y-3"
+                className="p-4 pt-0 border-t border-slate-100 dark:border-white/10 space-y-3"
               >
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -269,7 +269,7 @@ export default function SetupChecklistPage() {
                       type="text"
                       readOnly
                       value={inboundWebhookUrl}
-                      className="flex-1 font-mono text-xs bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-slate-600 dark:text-slate-300"
+                      className="flex-1 font-mono text-xs bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-600 dark:text-slate-300"
                     />
                     <button
                       type="button"
@@ -291,7 +291,7 @@ export default function SetupChecklistPage() {
                     value={sentryDsn}
                     onChange={(e) => setSentryDsn(e.target.value)}
                     placeholder="https://o123456@sentry.io/789012"
-                    className="w-full font-mono text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-slate-900 dark:text-white placeholder-slate-400"
+                    className="w-full font-mono text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-900 dark:text-white placeholder-slate-400"
                   />
                 </div>
 
@@ -318,7 +318,7 @@ export default function SetupChecklistPage() {
         </div>
 
         {/* Accordion Item 2: Connect AI Provider */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 transition-all">
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden bg-slate-50/50 dark:bg-[#0A0A0A]/50 transition-all">
           <button
             type="button"
             onClick={() => toggleExpand('ai')}
@@ -365,7 +365,7 @@ export default function SetupChecklistPage() {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="p-4 pt-0 border-t border-slate-100 dark:border-slate-800/80 space-y-3"
+                className="p-4 pt-0 border-t border-slate-100 dark:border-white/10 space-y-3"
               >
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -378,7 +378,7 @@ export default function SetupChecklistPage() {
                       value={aiKey}
                       onChange={(e) => setAiKey(e.target.value)}
                       placeholder="neb-tok-live-..."
-                      className="w-full font-mono text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-slate-900 dark:text-white placeholder-slate-400"
+                      className="w-full font-mono text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-9 pr-3 text-slate-900 dark:text-white placeholder-slate-400"
                     />
                   </div>
                 </div>
@@ -390,7 +390,7 @@ export default function SetupChecklistPage() {
                   <select
                     value={modelTier}
                     onChange={(e) => setModelTier(e.target.value)}
-                    className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-slate-900 dark:text-white font-mono"
+                    className="w-full text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-900 dark:text-white font-mono"
                   >
                     <option value="nvidia/nemotron-3-nano-30b-a3b">
                       Nemotron-3-Nano (30B dense — sub-10ms fast triage)
@@ -424,7 +424,7 @@ export default function SetupChecklistPage() {
         </div>
 
         {/* Accordion Item 3: Connect Tavily Search */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 transition-all">
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden bg-slate-50/50 dark:bg-[#0A0A0A]/50 transition-all">
           <button
             type="button"
             onClick={() => toggleExpand('tavily')}
@@ -474,7 +474,7 @@ export default function SetupChecklistPage() {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="p-4 pt-0 border-t border-slate-100 dark:border-slate-800/80 space-y-3"
+                className="p-4 pt-0 border-t border-slate-100 dark:border-white/10 space-y-3"
               >
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -487,7 +487,7 @@ export default function SetupChecklistPage() {
                       value={tavilyKey}
                       onChange={(e) => setTavilyKey(e.target.value)}
                       placeholder="tvly-prod-..."
-                      className="w-full font-mono text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-slate-900 dark:text-white placeholder-slate-400"
+                      className="w-full font-mono text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-9 pr-3 text-slate-900 dark:text-white placeholder-slate-400"
                     />
                   </div>
                 </div>
@@ -515,7 +515,7 @@ export default function SetupChecklistPage() {
         </div>
 
         {/* Accordion Item 4: Connect Notifications */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 transition-all">
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden bg-slate-50/50 dark:bg-[#0A0A0A]/50 transition-all">
           <button
             type="button"
             onClick={() => toggleExpand('notifications')}
@@ -562,7 +562,7 @@ export default function SetupChecklistPage() {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="p-4 pt-0 border-t border-slate-100 dark:border-slate-800/80 space-y-3"
+                className="p-4 pt-0 border-t border-slate-100 dark:border-white/10 space-y-3"
               >
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -573,7 +573,7 @@ export default function SetupChecklistPage() {
                     value={slackWebhook}
                     onChange={(e) => setSlackWebhook(e.target.value)}
                     placeholder="https://hooks.slack.com/services/..."
-                    className="w-full font-mono text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-slate-900 dark:text-white placeholder-slate-400"
+                    className="w-full font-mono text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-900 dark:text-white placeholder-slate-400"
                   />
                 </div>
 
@@ -586,7 +586,7 @@ export default function SetupChecklistPage() {
                     value={pagerdutyKey}
                     onChange={(e) => setPagerdutyKey(e.target.value)}
                     placeholder="pd_live_..."
-                    className="w-full font-mono text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-slate-900 dark:text-white placeholder-slate-400"
+                    className="w-full font-mono text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-900 dark:text-white placeholder-slate-400"
                   />
                 </div>
 
@@ -594,7 +594,7 @@ export default function SetupChecklistPage() {
                   <button
                     type="button"
                     onClick={handleTestNotification}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   >
                     <Send className="w-3.5 h-3.5 text-indigo-500" />
                     <span>Send test notification</span>
@@ -624,7 +624,7 @@ export default function SetupChecklistPage() {
         </div>
 
         {/* Accordion Item 5: Invite Your Team */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 transition-all">
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden bg-slate-50/50 dark:bg-[#0A0A0A]/50 transition-all">
           <button
             type="button"
             onClick={() => toggleExpand('team')}
@@ -671,7 +671,7 @@ export default function SetupChecklistPage() {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="p-4 pt-0 border-t border-slate-100 dark:border-slate-800/80"
+                className="p-4 pt-0 border-t border-slate-100 dark:border-white/10"
               >
                 <div className="pt-3">
                   <InviteTeam compact={true} onInvitesSent={() => setExpandedId(null)} />
@@ -682,7 +682,7 @@ export default function SetupChecklistPage() {
         </div>
 
         {/* Primary Screen Button: Go to Dashboard */}
-        <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="pt-4 border-t border-slate-200/80 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link
             href="/settings"
             className="text-xs text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 underline"

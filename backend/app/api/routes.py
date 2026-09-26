@@ -9,7 +9,9 @@ from fastapi import APIRouter, HTTPException, Request, Response, Depends, Header
 from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+import uuid
 from app.core.config import settings
+from app.core.database import db
 from app.core.job_queue import job_queue
 from app.core.tenant_limiter import tenant_limiter
 from app.core.cache import cache_service
@@ -108,6 +110,13 @@ class DisableMfaRequest(BaseModel):
 class VerifyEmailRequest(BaseModel):
     email: str = Field(..., min_length=5, max_length=120)
     code: str = Field(..., min_length=6, max_length=10)
+
+class ContactSubmissionRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    email: str = Field(..., min_length=5, max_length=120)
+    company: Optional[str] = Field(None, max_length=100)
+    subject: Optional[str] = Field("General Inquiry", max_length=150)
+    message: str = Field(..., min_length=10, max_length=3000)
 
 # -------------------------------------------------------------
 # 1. Authentication Endpoints (Argon2id, Lockout, MFA, Sessions)
@@ -334,7 +343,12 @@ async def verify_email(req: VerifyEmailRequest):
 
 @router.post("/api/auth/logout")
 async def logout(request: Request, response: Response):
-    token = request.cookies.get("somak_session")
+    token = None
+    auth_hdr = request.headers.get("authorization")
+    if auth_hdr and auth_hdr.startswith("Bearer "):
+        token = auth_hdr[7:].strip()
+    if not token:
+        token = request.cookies.get("somak_session")
     if token:
         revoke_session(token)
     clear_session_cookie(response)
@@ -358,6 +372,9 @@ async def create_organization(
     current_user: UserRecord = Depends(require_email_verified)
 ):
     """Requires verified email to prevent spam organization creation."""
+    req.user_id = current_user.id
+    req.user_email = current_user.email
+    req.user_name = current_user.name
     org = org_store.create_org(req)
     audit_store.record_event(
         actor_name=current_user.name,
@@ -686,6 +703,29 @@ async def receive_sentry_webhook(
             headers={"Retry-After": str(retry_after)}
         )
 
+    # Idempotency / deduplication check: check if event or active incident with fingerprint exists
+    event_id = payload.get("event_id") or payload.get("id")
+    fingerprint = payload.get("fingerprint") or payload.get("culprit") or "ERR_EVENTEMITTER_LEAK"
+
+    existing = None
+    if event_id:
+        existing = incident_store.get_incident(event_id)
+    if not existing and fingerprint:
+        existing = incident_store.find_active_by_fingerprint(org_id, fingerprint)
+
+    if existing:
+        existing.timestamp = datetime.now(timezone.utc).isoformat()
+        incident_store.update_incident(existing)
+        return {
+            "status": "deduplicated",
+            "event_id": event_id or existing.id,
+            "job_id": f"dedup_{existing.id}",
+            "incident_id": existing.id,
+            "organization_id": org_id,
+            "message": f"Duplicate event acknowledged. Existing active incident {existing.id} updated.",
+            "queue_depth": job_queue._queue.qsize()
+        }
+
     # Move long-running pipeline execution off the HTTP request/response cycle
     job = job_queue.enqueue(payload)
     return {
@@ -716,6 +756,13 @@ async def simulate_incident(
                 status_code=429,
                 detail="Free plan monthly quota reached (5 incidents/month). Upgrade to Team or Business plan for higher incident volume."
             )
+
+    # Cooldown & Deduplication: Prevent creating duplicate active incidents for the same fingerprint/service
+    active_incident = incident_store.find_active_by_fingerprint(request_data.organization_id, request_data.fingerprint)
+    if active_incident:
+        active_incident.timestamp = datetime.now(timezone.utc).isoformat()
+        incident_store.update_incident(active_incident)
+        return active_incident
 
     payload = {
         "trace": request_data.trace,
@@ -1158,13 +1205,27 @@ async def get_canary(
 
 @router.get("/api/audit/events", response_model=List[AuditEvent])
 async def get_audit_events(
+    org_id: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     auth_ctx: tuple = Depends(require_org_member(required_role="Viewer"))
 ):
-    """Returns append-only tamper-evident audit records scoped to user's org."""
-    _, effective_org, _ = auth_ctx
-    return audit_store.list_events(effective_org, limit=limit, offset=offset)
+    """Returns append-only tamper-evident audit records scoped to user's org with plan tier gating."""
+    user, effective_org, role = auth_ctx
+    target_org_id = org_id or effective_org
+    if org_id and org_id != effective_org:
+        user_memberships = org_store.list_user_orgs(user.id, user.email)
+        if not any(m["organization"].id == org_id for m in user_memberships):
+            raise HTTPException(status_code=404, detail="Organization not found")
+        target_org_id = org_id
+
+    org = org_store.get_org(target_org_id)
+    if org and org.plan == "free":
+        raise HTTPException(
+            status_code=403,
+            detail="Append-only compliance audit logs are available on Team, Business, and Enterprise plans. Upgrade to access."
+        )
+    return audit_store.list_events(target_org_id, limit=limit, offset=offset)
 
 # -------------------------------------------------------------
 # 6. Post-Mortem & Incident Escalation
@@ -1281,7 +1342,7 @@ async def get_slos(
                 "windowDays": 30,
                 "projectedExhaustion": "26 days",
                 "activeIncidentId": None,
-                "description": "Stripe & PayPal transaction processing idempotency & webhooks",
+                "description": "Dodo Payments & PayPal transaction processing idempotency & webhooks",
                 "history": [
                     {"day": "Day 1", "budget": 100, "burnRate": 0.9},
                     {"day": "Day 15", "budget": 80, "burnRate": 1.0},
@@ -1615,7 +1676,7 @@ async def get_history(
                 "id": "INC-1892",
                 "severity": "SEV-2",
                 "service": "payment-gateway",
-                "title": "Stripe Webhook Event Idempotency Timeout Under Load",
+                "title": "Dodo Webhook Event Idempotency Timeout Under Load",
                 "fingerprint": "TIMEOUT_PAYMENT_WEBHOOK_IDEM",
                 "status": "RESOLVED",
                 "mttr": "6m 45s",
@@ -1777,4 +1838,113 @@ async def get_default_usage(
     user, org_id, role = auth_ctx
     from app.services.usage_store import usage_store
     return usage_store.get_org_usage(org_id)
+
+@router.post("/api/contact")
+async def submit_contact_form(req: ContactSubmissionRequest):
+    """Stores incoming customer inquiries directly to Supabase PostgreSQL."""
+    submission_id = f"cnt_{uuid.uuid4().hex[:12]}"
+    created_at = datetime.now(timezone.utc).isoformat()
+    try:
+        res = db.execute_query(
+            """
+            INSERT INTO contact_submissions (id, name, email, company, subject, message, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (submission_id, req.name, req.email, req.company or "", req.subject or "General Inquiry", req.message, created_at)
+        )
+        if res is None:
+            raise Exception("Database write returned None")
+        return {
+            "status": "success",
+            "message": "Thank you for reaching out! A Somak AI reliability engineer will contact you shortly.",
+            "id": submission_id
+        }
+    except Exception as e:
+        logger.error(f"Failed to save contact inquiry: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save inquiry. Please try again.")
+
+
+class CreateCheckoutRequest(BaseModel):
+    plan: str = Field(..., min_length=3, max_length=32)
+    success_url: Optional[str] = None
+    cancel_url: Optional[str] = None
+    idempotency_key: Optional[str] = None
+
+@router.get("/api/billing/config")
+async def get_billing_config(
+    auth_ctx: tuple = Depends(require_org_member(required_role="Viewer"))
+):
+    """Returns Dodo Payments test mode status."""
+    from app.services.dodo_service import dodo_service
+    return {
+        "test_mode": dodo_service.is_test_mode,
+        "currency": "usd"
+    }
+
+@router.post("/api/billing/create-checkout-session")
+async def create_checkout_session(
+    req: CreateCheckoutRequest,
+    request: Request,
+    auth_ctx: tuple = Depends(require_org_member(required_role="Operator"))
+):
+    """
+    Creates a hosted Dodo Checkout session for plan upgrades.
+    Enforces PCI compliance (zero sensitive card numbers hit backend).
+    Uses idempotency keys to prevent double-charging.
+    """
+    user, org_id, role = auth_ctx
+    from app.services.dodo_service import dodo_service
+    
+    origin = request.headers.get("origin") or "http://localhost:3000"
+    success_url = req.success_url or f"{origin}/settings?checkout=success"
+    cancel_url = req.cancel_url or f"{origin}/settings?checkout=cancelled"
+
+    try:
+        session_info = dodo_service.create_checkout_session(
+            org_id=org_id,
+            plan_id=req.plan,
+            customer_email=user.email,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            idempotency_key=req.idempotency_key
+        )
+        return session_info
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[Dodo] Checkout creation failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to initialize secure checkout session.")
+
+@router.post("/api/billing/dodo-webhook")
+async def dodo_webhook(
+    request: Request,
+    webhook_id: Optional[str] = Header(None, alias="webhook-id"),
+    webhook_timestamp: Optional[str] = Header(None, alias="webhook-timestamp"),
+    webhook_signature: Optional[str] = Header(None, alias="webhook-signature")
+):
+    """
+    Dodo Webhook Endpoint with fail-closed cryptographic signature verification.
+    Synchronizes organization subscription state.
+    """
+    from app.services.dodo_service import dodo_service
+
+    raw_body = await request.body()
+    if not webhook_id or not webhook_timestamp or not webhook_signature:
+        raise HTTPException(status_code=401, detail="Missing Dodo webhook headers.")
+
+    try:
+        event_dict = dodo_service.verify_webhook_signature(
+            raw_body, 
+            webhook_id=webhook_id, 
+            webhook_timestamp=webhook_timestamp, 
+            webhook_signature=webhook_signature
+        )
+        result = dodo_service.handle_webhook_event(event_dict)
+        return {"status": "success", "result": result}
+    except ValueError as ve:
+        raise HTTPException(status_code=401, detail=str(ve))
+    except Exception as e:
+        logger.error(f"[Dodo Webhook] Processing error: {e}")
+        raise HTTPException(status_code=500, detail="Webhook processing failed.")
+
 

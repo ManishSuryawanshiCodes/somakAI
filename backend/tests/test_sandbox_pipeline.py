@@ -17,6 +17,7 @@ import tempfile
 
 sys.path.insert(0, r"d:\PROJECT\SentryOps\backend")
 
+from app.core.config import settings
 from app.core.sandbox_runner import (
     SandboxManager,
     sandbox_manager,
@@ -150,9 +151,9 @@ try:
     print("SECURITY LEAK: Connected to internal service!")
     sys.exit(0)
 except ConnectionRefusedError as e:
-    print(f"PASS: Connection to internal service blocked by policy: {e}")
+    print(f"PASS: Connection to internal service blocked by policy: {{e}}")
 except Exception as e:
-    print(f"PASS: Connection blocked ({type(e).__name__}): {e}")
+    print(f"PASS: Connection blocked ({{type(e).__name__}}): {{e}}")
 
 sys.exit(42) # Custom exit code indicating network probe blocked all attempts
 """

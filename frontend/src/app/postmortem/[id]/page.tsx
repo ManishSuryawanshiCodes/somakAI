@@ -489,7 +489,7 @@ Verified AST diff merged into canary image.
           <div className="flex items-center gap-3">
             <Link
               href={`/canary/${id}`}
-              className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+              className="p-2.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
               title="Return to Canary Monitor"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -511,12 +511,12 @@ Verified AST diff merged into canary image.
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             {/* View Mode Toggle */}
-            <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 mr-1">
+            <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 mr-1">
               <button
                 onClick={() => setViewMode('rich')}
                 className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                   viewMode === 'rich'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                    ? 'bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -526,7 +526,7 @@ Verified AST diff merged into canary image.
                 onClick={() => setViewMode('raw')}
                 className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                   viewMode === 'raw'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                    ? 'bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -536,7 +536,7 @@ Verified AST diff merged into canary image.
 
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition-all shadow-2xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 transition-all shadow-2xs"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copied ? 'Copied' : 'Copy'}</span>
@@ -544,7 +544,7 @@ Verified AST diff merged into canary image.
 
             <button
               onClick={handleExportPDF}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition-all shadow-2xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 transition-all shadow-2xs"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export PDF</span>
@@ -585,7 +585,7 @@ Verified AST diff merged into canary image.
             </div>
 
             {/* State Machine Stepper Tabs */}
-            <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
               <button
                 type="button"
                 onClick={() => handleStatusChange('draft')}
@@ -629,7 +629,7 @@ Verified AST diff merged into canary image.
           </div>
 
           {/* Workflow Stage Details & Action Banner */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-xs">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
               {workflowStatus === 'draft' && (
                 <>
@@ -685,7 +685,7 @@ Verified AST diff merged into canary image.
                 <>
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                   <span className="text-emerald-700 dark:text-emerald-300 font-semibold">
-                    Published & Signed • SOC-2 Immutable Hash: <code className="font-mono text-[11px] bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">0x9f82c41a-8841</code> • Compliance Locked.
+                    Published & Signed • SOC-2 Immutable Hash: <code className="font-mono text-[11px] bg-slate-200 dark:bg-white/5 px-1 py-0.5 rounded">0x9f82c41a-8841</code> • Compliance Locked.
                   </span>
                 </>
               )}
@@ -710,7 +710,7 @@ Verified AST diff merged into canary image.
                 <button
                   type="button"
                   onClick={() => handleStatusChange('under_review')}
-                  className="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs transition-all"
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-200 dark:bg-white/5 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs transition-all"
                 >
                   Re-open for Review
                 </button>
@@ -724,7 +724,7 @@ Verified AST diff merged into canary image.
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="sticky top-14 z-20 mb-6 py-2 px-3 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between gap-2 overflow-x-auto no-scrollbar"
+          className="sticky top-14 z-20 mb-6 py-2 px-3 rounded-xl bg-white/90 dark:bg-[#0A0A0A] backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-2 overflow-x-auto no-scrollbar"
         >
           <div className="flex items-center gap-1.5 min-w-max">
             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline">
@@ -746,7 +746,7 @@ Verified AST diff merged into canary image.
                     className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono font-bold ${
                       isActive
                         ? 'bg-white/20 text-white'
-                        : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        : 'bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-400'
                     }`}
                   >
                     {sec.num}
@@ -779,16 +779,16 @@ Verified AST diff merged into canary image.
                 Remediation Performance
               </span>
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                   <span className="text-[10px] text-slate-500 font-semibold block">Total MTTR</span>
                   <span className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">2m 07s</span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                   <span className="text-[10px] text-slate-500 font-semibold block">Confidence</span>
                   <span className="text-xl font-extrabold text-indigo-600 dark:text-indigo-400">99.4%</span>
                 </div>
               </div>
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
                 <div className="flex justify-between">
                   <span className="font-medium text-slate-500">Downtime Loss Avoided:</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400">~$42,800</span>
@@ -823,7 +823,7 @@ Verified AST diff merged into canary image.
               </div>
 
               {/* Scrubber slider */}
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex flex-col gap-1.5">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 flex flex-col gap-1.5">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-semibold text-slate-600 dark:text-slate-400">
                     Timeline Scrubber:
@@ -840,7 +840,7 @@ Verified AST diff merged into canary image.
                   step={1}
                   value={scrubIndex}
                   onChange={(e) => handleScrubChange(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  className="w-full h-2 bg-slate-200 dark:bg-white/5 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
 
                 <div className="flex justify-between text-[9px] text-slate-400 font-mono pt-0.5">
@@ -850,7 +850,7 @@ Verified AST diff merged into canary image.
               </div>
 
               <div className="relative pl-6 space-y-3">
-                <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-slate-200 dark:bg-slate-800"></div>
+                <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-slate-200 dark:bg-white/5"></div>
 
                 {timelineEvents.map((evt, idx) => {
                   const Icon = evt.icon;
@@ -872,7 +872,7 @@ Verified AST diff merged into canary image.
                         className={`absolute -left-6 top-3 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
                           isSelected
                             ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
-                            : 'bg-white dark:bg-slate-900 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                            : 'bg-white dark:bg-[#0A0A0A] border-indigo-500 text-indigo-600 dark:text-indigo-400'
                         }`}
                       >
                         <Icon className="w-2.5 h-2.5" />
@@ -902,7 +902,7 @@ Verified AST diff merged into canary image.
             transition={{ delay: 0.05 }}
             className="lg:col-span-8 glass-card rounded-2xl p-6 sm:p-8 flex flex-col gap-6"
           >
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <FileCheck2 className="w-5 h-5 text-indigo-500" />
                 <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
@@ -918,7 +918,7 @@ Verified AST diff merged into canary image.
             {viewMode === 'raw' ? (
               /* RAW MARKDOWN VIEW */
               <div className="prose prose-slate dark:prose-invert max-w-none">
-                <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed p-6 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 overflow-x-auto">
+                <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed p-6 rounded-2xl bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 overflow-x-auto">
                   {postMortemText}
                 </pre>
               </div>
@@ -927,7 +927,7 @@ Verified AST diff merged into canary image.
               <div className="space-y-7">
                 
                 {/* Hero Header Card with Pill Badges */}
-                <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-50 to-indigo-50/40 dark:from-slate-900 dark:to-indigo-950/20 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
+                <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-50 to-indigo-50/40 dark:from-slate-900 dark:to-indigo-950/20 border border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
                       Incident Summary & Executive Metadata
@@ -951,7 +951,7 @@ Verified AST diff merged into canary image.
                 </div>
 
                 {/* Section 1: Executive Overview */}
-                <div id="sec-summary" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col gap-4">
+                <div id="sec-summary" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-indigo-500" />
@@ -963,7 +963,7 @@ Verified AST diff merged into canary image.
                     <button
                       type="button"
                       onClick={() => setActiveCommentSection(activeCommentSection === 'sec-summary' ? null : 'sec-summary')}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
                       <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
@@ -972,18 +972,18 @@ Verified AST diff merged into canary image.
                   </div>
 
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                    At 14:02:11 UTC, an unhandled V8 heap memory leak triggered production crash alerts on <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-xs text-red-600 dark:text-red-400">{incident.service}</code>. Somak AI autonomously routed incoming crash telemetry via <strong className="text-slate-900 dark:text-white">NVIDIA Nemotron-3-Nano</strong> (latency: 11ms) for stack fingerprint extraction, grounded resolution patterns via <strong className="text-slate-900 dark:text-white">Tavily Search API</strong>, and synthesized a zero-regression AST patch via <strong className="text-slate-900 dark:text-white">NVIDIA Nemotron-3-Ultra</strong> (latency: 42ms).
+                    At 14:02:11 UTC, an unhandled V8 heap memory leak triggered production crash alerts on <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 font-mono text-xs text-red-600 dark:text-red-400">{incident.service}</code>. Somak AI autonomously routed incoming crash telemetry via <strong className="text-slate-900 dark:text-white">NVIDIA Nemotron-3-Nano</strong> (latency: 11ms) for stack fingerprint extraction, grounded resolution patterns via <strong className="text-slate-900 dark:text-white">Tavily Search API</strong>, and synthesized a zero-regression AST patch via <strong className="text-slate-900 dark:text-white">NVIDIA Nemotron-3-Ultra</strong> (latency: 42ms).
                   </p>
 
                   {/* Inline Comments Drawer */}
                   {activeCommentSection === 'sec-summary' && (
-                    <div className="mt-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-indigo-500/30 flex flex-col gap-3">
+                    <div className="mt-2 p-3.5 rounded-xl bg-slate-50 dark:bg-[#0A0A0A] border border-indigo-500/30 flex flex-col gap-3">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                         Peer Review Comments (Section 1)
                       </span>
                       <div className="space-y-2">
                         {comments['sec-summary']?.map((c) => (
-                          <div key={c.id} className="p-2.5 rounded-lg bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs">
+                          <div key={c.id} className="p-2.5 rounded-lg bg-white dark:bg-white/5/90 border border-slate-200 dark:border-white/10 text-xs">
                             <div className="flex items-center justify-between mb-1">
                               <span className="font-bold text-slate-900 dark:text-white">{c.author} <span className="text-[10px] text-slate-400 font-normal">({c.role})</span></span>
                               <span className="text-[10px] text-slate-400">{c.timestamp}</span>
@@ -999,7 +999,7 @@ Verified AST diff merged into canary image.
                           value={commentInput}
                           onChange={(e) => setCommentInput(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment('sec-summary'); }}
-                          className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
                         <button
                           type="button"
@@ -1014,7 +1014,7 @@ Verified AST diff merged into canary image.
                 </div>
 
                 {/* Section 2: Root Cause Analysis */}
-                <div id="sec-rca" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col gap-4">
+                <div id="sec-rca" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-amber-500" />
@@ -1026,7 +1026,7 @@ Verified AST diff merged into canary image.
                     <button
                       type="button"
                       onClick={() => setActiveCommentSection(activeCommentSection === 'sec-rca' ? null : 'sec-rca')}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                       <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
@@ -1035,13 +1035,13 @@ Verified AST diff merged into canary image.
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10">
                       <strong className="text-slate-900 dark:text-white block mb-1">Primary Defect:</strong>
                       <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                         Unbounded <code className="font-mono text-indigo-600 dark:text-indigo-400">Map&lt;string, any&gt;</code> in <code className="font-mono">TokenService.verify()</code>. Session validation results were cached indefinitely without eviction.
                       </p>
                     </div>
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10">
                       <strong className="text-slate-900 dark:text-white block mb-1">Traffic Trigger:</strong>
                       <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                         Marketing campaign surge (~50k req/min) generated 2.3M unique keys, overflowing the 2GB V8 container heap limit.
@@ -1051,13 +1051,13 @@ Verified AST diff merged into canary image.
 
                   {/* Inline Comments Drawer */}
                   {activeCommentSection === 'sec-rca' && (
-                    <div className="mt-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-amber-500/30 flex flex-col gap-3">
+                    <div className="mt-2 p-3.5 rounded-xl bg-slate-50 dark:bg-[#0A0A0A] border border-amber-500/30 flex flex-col gap-3">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
                         Peer Review Comments (Section 2 - Root Cause)
                       </span>
                       <div className="space-y-2">
                         {comments['sec-rca']?.map((c) => (
-                          <div key={c.id} className="p-2.5 rounded-lg bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs">
+                          <div key={c.id} className="p-2.5 rounded-lg bg-white dark:bg-white/5/90 border border-slate-200 dark:border-white/10 text-xs">
                             <div className="flex items-center justify-between mb-1">
                               <span className="font-bold text-slate-900 dark:text-white">{c.author} <span className="text-[10px] text-slate-400 font-normal">({c.role})</span></span>
                               <span className="text-[10px] text-slate-400">{c.timestamp}</span>
@@ -1073,7 +1073,7 @@ Verified AST diff merged into canary image.
                           value={commentInput}
                           onChange={(e) => setCommentInput(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment('sec-rca'); }}
-                          className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                          className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                         />
                         <button
                           type="button"
@@ -1088,7 +1088,7 @@ Verified AST diff merged into canary image.
                 </div>
 
                 {/* Section 3: Ground Truth Citations (Sources Component) */}
-                <div id="sec-citations" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col gap-4">
+                <div id="sec-citations" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
@@ -1122,7 +1122,7 @@ Verified AST diff merged into canary image.
                           href={cite.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="p-4 rounded-xl glass-card border border-slate-200/90 dark:border-slate-800 hover:border-cyan-500/50 dark:hover:border-cyan-500/50 transition-all duration-150 group flex flex-col justify-between shadow-xs hover:shadow-md"
+                          className="p-4 rounded-xl glass-card border border-slate-200/90 dark:border-white/10 hover:border-cyan-500/50 dark:hover:border-cyan-500/50 transition-all duration-150 group flex flex-col justify-between shadow-xs hover:shadow-md"
                         >
                           <div>
                             <div className="flex items-center justify-between mb-2">
@@ -1130,7 +1130,7 @@ Verified AST diff merged into canary image.
                                 <span className="w-4 h-4 rounded-full bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-[9px] font-mono font-bold text-cyan-600 dark:text-cyan-400">
                                    {idx + 1}
                                 </span>
-                                <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-mono font-medium border border-slate-200/80 dark:border-slate-700">
+                                <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-mono font-medium border border-slate-200/80 dark:border-white/10">
                                   {domain}
                                 </span>
                               </div>
@@ -1146,7 +1146,7 @@ Verified AST diff merged into canary image.
                             </p>
                           </div>
 
-                          <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                          <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-between text-[10px] text-slate-400 font-mono">
                             <span className="text-cyan-600 dark:text-cyan-400 font-semibold">Verified Match</span>
                             <span>Citation [{idx + 1}]</span>
                           </div>
@@ -1157,7 +1157,7 @@ Verified AST diff merged into canary image.
                 </div>
 
                 {/* Section 4: Nebius Sandbox Verification */}
-                <div id="sec-sandbox" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col gap-4">
+                <div id="sec-sandbox" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-500" />
@@ -1171,19 +1171,19 @@ Verified AST diff merged into canary image.
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10">
                       <span className="text-[10px] text-slate-400 block font-medium">Sandbox Hash</span>
                       <span className="font-mono font-bold text-slate-800 dark:text-slate-200">nbx-sbx-8841</span>
                     </div>
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10">
                       <span className="text-[10px] text-slate-400 block font-medium">Test Suite</span>
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">14/14 Passed</span>
                     </div>
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10">
                       <span className="text-[10px] text-slate-400 block font-medium">Self-Correction</span>
                       <span className="font-bold text-slate-800 dark:text-slate-200">1 Loop (Exit 0)</span>
                     </div>
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10">
                       <span className="text-[10px] text-slate-400 block font-medium">Peak Heap Delta</span>
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">-84.2%</span>
                     </div>
@@ -1191,7 +1191,7 @@ Verified AST diff merged into canary image.
                 </div>
 
                 {/* Section 5: Unified Code Hotfix Diff */}
-                <div id="sec-patch" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col gap-4">
+                <div id="sec-patch" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Code2 className="w-4 h-4 text-indigo-500" />
@@ -1203,7 +1203,7 @@ Verified AST diff merged into canary image.
                     <button
                       type="button"
                       onClick={() => setActiveCommentSection(activeCommentSection === 'sec-patch' ? null : 'sec-patch')}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
                       <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
@@ -1215,13 +1215,13 @@ Verified AST diff merged into canary image.
 
                   {/* Inline Comments Drawer */}
                   {activeCommentSection === 'sec-patch' && (
-                    <div className="mt-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-indigo-500/30 flex flex-col gap-3">
+                    <div className="mt-2 p-3.5 rounded-xl bg-slate-50 dark:bg-[#0A0A0A] border border-indigo-500/30 flex flex-col gap-3">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                         Peer Review Comments (Section 5 - Hotfix Diff)
                       </span>
                       <div className="space-y-2">
                         {comments['sec-patch']?.map((c) => (
-                          <div key={c.id} className="p-2.5 rounded-lg bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs">
+                          <div key={c.id} className="p-2.5 rounded-lg bg-white dark:bg-white/5/90 border border-slate-200 dark:border-white/10 text-xs">
                             <div className="flex items-center justify-between mb-1">
                               <span className="font-bold text-slate-900 dark:text-white">{c.author} <span className="text-[10px] text-slate-400 font-normal">({c.role})</span></span>
                               <span className="text-[10px] text-slate-400">{c.timestamp}</span>
@@ -1237,7 +1237,7 @@ Verified AST diff merged into canary image.
                           value={commentInput}
                           onChange={(e) => setCommentInput(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment('sec-patch'); }}
-                          className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
                         <button
                           type="button"
@@ -1252,7 +1252,7 @@ Verified AST diff merged into canary image.
                 </div>
 
                 {/* Section 6: Audit Trail & Sign-off */}
-                <div id="sec-audit" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col gap-4">
+                <div id="sec-audit" className="scroll-mt-28 p-6 rounded-2xl bg-white/90 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col gap-4">
                   <div className="flex items-center gap-2">
                     <Layers className="w-4 h-4 text-indigo-500" />
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -1260,15 +1260,15 @@ Verified AST diff merged into canary image.
                     </h3>
                   </div>
                   <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                    <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-white/10">
                       <span className="font-semibold text-slate-500">Autonomous Reasoning Agent:</span>
                       <span className="font-mono text-slate-800 dark:text-slate-200">NVIDIA Nemotron-3-Ultra-550b</span>
                     </div>
-                    <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-white/10">
                       <span className="font-semibold text-slate-500">Fast Triage Model:</span>
                       <span className="font-mono text-slate-800 dark:text-slate-200">NVIDIA Nemotron-3-Nano-30b-a3b</span>
                     </div>
-                    <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-white/10">
                       <span className="font-semibold text-slate-500">Canary Verification:</span>
                       <span className="text-emerald-600 dark:text-emerald-400 font-bold">5% Split -&gt; 100% Production</span>
                     </div>
@@ -1322,7 +1322,7 @@ Verified AST diff merged into canary image.
                     {relatedIncidents.map((past) => (
                       <div
                         key={past.id}
-                        className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs"
+                        className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs"
                       >
                         <div className="flex items-center gap-3">
                           <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">

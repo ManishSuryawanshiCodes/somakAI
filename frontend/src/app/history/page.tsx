@@ -56,7 +56,7 @@ const HISTORICAL_INCIDENTS: HistoricalIncident[] = [
     id: 'INC-1892',
     severity: 'SEV-2',
     service: 'payment-gateway',
-    title: 'Stripe Webhook Event Idempotency Timeout Under Load',
+    title: 'Payment Gateway Webhook Idempotency Timeout Under Load',
     fingerprint: 'TIMEOUT_PAYMENT_WEBHOOK_IDEM',
     status: 'RESOLVED',
     mttr: '3m 50s',

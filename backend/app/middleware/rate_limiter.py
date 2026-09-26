@@ -19,11 +19,14 @@ class RateLimitRule:
         self.description = description
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):
+    _instances = []
+
     def __init__(self, app):
         super().__init__(app)
         self.lock = threading.Lock()
         # storage: { key: deque([timestamps...]) }
         self.storage: Dict[str, deque] = {}
+        RateLimiterMiddleware._instances.append(self)
 
         # Route matching rules: (path_prefix, RateLimitRule)
         self.rules: Dict[str, RateLimitRule] = {
@@ -32,6 +35,12 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
             "/api/simulate": RateLimitRule(30, 60, "30 requests per minute"),
             "/api/v1/webhook": RateLimitRule(30, 60, "30 requests per minute"),
         }
+
+    @classmethod
+    def reset(cls):
+        for inst in cls._instances:
+            with inst.lock:
+                inst.storage.clear()
 
     def _get_client_ip(self, request: Request) -> str:
         forwarded = request.headers.get("x-forwarded-for")

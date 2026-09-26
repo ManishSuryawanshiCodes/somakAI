@@ -5,69 +5,102 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  /* Semantic Tokens (Light Mode - Somak Cream & Liquid Glass Theme) */
-  --color-success: #059669;
-  --color-critical: #E11D48;
-  --color-warning: #D97706;
-  --color-info: #0891B2;
-  --color-accent: #4F46E5;
-  --color-accent-hover: #4338CA;
+  /* Core Color System Tokens (Light Mode - Porcelain Cream) */
+  --bg-page: #FAF8F5;
+  --bg-surface: #FFFFFF;
+  --border: #E2E8F0;
+  --border-subtle: rgba(15, 23, 42, 0.08);
 
-  --bg-primary: #FAF8F5; /* Warm Cream / Ivory */
-  --bg-secondary: #FFFFFF;
-  --bg-tertiary: #F5F2EB;
-  --border-primary: #E8E3D9;
-  --text-primary: #181614;
-  --text-secondary: #666056;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+
+  --brand: #C9A24B; /* Somak Gold - reserved for brand moments */
+
+  /* Semantic Roles (Single deliberate color per meaning) */
+  --status-success: #059669;
+  --status-danger: #E11D48;
+  --status-warning: #D97706;
+  --status-info: #0284C7;
+  --status-neutral: #64748B;
+
+  /* Aliases for backwards compatibility */
+  --color-success: var(--status-success);
+  --color-critical: var(--status-danger);
+  --color-warning: var(--status-warning);
+  --color-info: var(--status-info);
+  --color-accent: var(--brand);
+  --color-accent-hover: #B58F3B;
+
+  --bg-primary: var(--bg-page);
+  --bg-secondary: var(--bg-surface);
+  --bg-tertiary: #F1EFE9;
+  --border-primary: var(--border);
 
   /* Liquid Glass Tokens (Light Cream) */
-  --glass-bg: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(215, 205, 190, 0.45);
-  --glass-border-subtle: #E8E3D9;
-  --glass-highlight: inset 0 1px 1.5px rgba(255, 255, 255, 0.98);
-  --glass-shadow: 0 4px 20px -2px rgba(180, 160, 140, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+  --glass-bg: rgba(255, 255, 255, 0.90);
+  --glass-border: rgba(226, 232, 240, 0.8);
+  --glass-border-subtle: #E2E8F0;
+  --glass-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.95);
+  --glass-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 1px 3px 0 rgba(0, 0, 0, 0.03);
 
   /* Elevation Tiers (Cream) */
-  --elevation-flat: 0 1px 2px 0 rgba(180, 160, 140, 0.06);
-  --elevation-raised: 0 6px 16px -2px rgba(180, 160, 140, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
-  --elevation-floating: 0 16px 36px -4px rgba(140, 120, 100, 0.15), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  --elevation-flat: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --elevation-raised: 0 6px 16px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  --elevation-floating: 0 16px 36px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
 
-  --card-bg: #FFFFFF;
-  --card-border: #E8E3D9;
-  --card-shadow: 0 2px 8px -1px rgba(180, 160, 140, 0.08);
+  --card-bg: var(--bg-surface);
+  --card-border: var(--border);
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
 }
 
 .dark {
-  /* Semantic Tokens (Dark Mode - Pure Obsidian Black & Neon Minimalist) */
-  --color-success: #10B981;
-  --color-critical: #EF4444;
-  --color-warning: #F59E0B;
-  --color-info: #06B6D4;
-  --color-accent: #6366F1;
-  --color-accent-hover: #818CF8;
+  /* Core Color System Tokens (Dark Mode - Pure Near-Black #0A0A0A & Subtle Light Border) */
+  --bg-page: #0A0A0A;
+  --bg-surface: #0A0A0A;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-subtle: rgba(255, 255, 255, 0.06);
 
-  --bg-primary: #030306; /* Pure Obsidian Black */
-  --bg-secondary: #06080F;
-  --bg-tertiary: #0B0E17;
-  --border-primary: rgba(255, 255, 255, 0.08);
   --text-primary: #F8FAFC;
   --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+
+  --brand: #C9A24B; /* Somak Gold */
+
+  /* Semantic Roles (Single deliberate color per meaning) */
+  --status-success: #10B981;
+  --status-danger: #F43F5E;
+  --status-warning: #F59E0B;
+  --status-info: #06B6D4;
+  --status-neutral: #64748B;
+
+  /* Aliases for backwards compatibility */
+  --color-success: var(--status-success);
+  --color-critical: var(--status-danger);
+  --color-warning: var(--status-warning);
+  --color-info: var(--status-info);
+  --color-accent: var(--brand);
+  --color-accent-hover: #E0BA63;
+
+  --bg-primary: var(--bg-page);
+  --bg-secondary: var(--bg-surface);
+  --bg-tertiary: #111111;
+  --border-primary: var(--border);
 
   /* Liquid Glass Tokens (Dark Obsidian) */
-  --glass-bg: rgba(8, 10, 18, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.09);
-  --glass-border-subtle: rgba(255, 255, 255, 0.06);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  --glass-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.9), 0 4px 14px -2px rgba(0, 0, 0, 0.5);
+  --glass-bg: rgba(10, 10, 10, 0.90);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-border-subtle: rgba(255, 255, 255, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.8), 0 4px 14px -2px rgba(0, 0, 0, 0.4);
 
-  /* Elevation Tiers (Dark) */
-  --elevation-flat: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --elevation-raised: 0 10px 32px -4px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --elevation-floating: 0 28px 64px -8px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --elevation-flat: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elevation-raised: 0 10px 32px -4px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --elevation-floating: 0 28px 64px -8px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.10);
 
-  --card-bg: #06080F;
-  --card-border: rgba(255, 255, 255, 0.08);
-  --card-shadow: 0 6px 24px -2px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --card-bg: var(--bg-surface);
+  --card-border: var(--border);
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 body {

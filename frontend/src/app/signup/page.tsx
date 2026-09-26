@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  Shield,
   Lock,
   Mail,
   User,
@@ -14,6 +13,8 @@ import {
   EyeOff,
   CheckCircle2,
   AlertCircle,
+  ArrowLeft,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { analytics } from '@/lib/analytics';
@@ -28,19 +29,50 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const validateForm = (): boolean => {
+    let valid = true;
+    setEmailError('');
+    setPasswordError('');
+    setError('');
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setEmailError('Work email address is required.');
+      valid = false;
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanEmail)) {
+        setEmailError('Please enter a valid work email format (e.g. name@company.com).');
+        valid = false;
+      }
+    }
+
+    if (!password) {
+      setPasswordError('Password is required.');
+      valid = false;
+    } else if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters long.');
+      valid = false;
+    } else if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+      setPasswordError('Password must contain both letters and numbers.');
+      valid = false;
+    }
+
+    return valid;
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Please fill in all required fields.');
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
     setError('');
 
     try {
-      await signup(email, password, name);
+      await signup(email.trim(), password, name.trim());
       analytics.track('signup_completed', {
         method: 'email',
         domain: email.includes('@') ? email.split('@')[1] : undefined,
@@ -50,10 +82,14 @@ export default function SignupPage() {
         router.push('/onboarding/create-org');
       }, 400);
     } catch (err: unknown) {
-      if ((err as Error)?.name === 'RateLimitError' || (err as { retryAfter?: number })?.retryAfter) {
+      const msg = (err as Error)?.message || '';
+      if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists') || msg.includes('409')) {
+        setEmailError('An account with this email address already exists. Please sign in instead.');
+        setError('An account with this email address already exists. Please sign in instead.');
+      } else if ((err as Error)?.name === 'RateLimitError' || (err as { retryAfter?: number })?.retryAfter) {
         setError((err as Error).message);
       } else {
-        setError('Failed to create account. Please try again.');
+        setError(msg || 'Failed to create account. Please try again.');
       }
       setIsLoading(false);
     }
@@ -85,6 +121,17 @@ export default function SignupPage() {
       <div className="absolute top-1/4 -left-32 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
 
+      {/* Back to Home Button */}
+      <div className="w-full max-w-md mb-4 flex items-center justify-start z-10">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors py-1.5 px-3 rounded-xl border border-white/10 hover:border-white/20 bg-white/5 backdrop-blur-sm shadow-sm hover:bg-white/10"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
+
       {/* Brand Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -93,8 +140,8 @@ export default function SignupPage() {
         className="text-center mb-8"
       >
         <Link href="/" className="inline-flex items-center gap-2.5 group mb-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-xl shadow-indigo-500/30 group-hover:scale-105 transition-transform">
-            <Shield className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-[#0A0A0A] border border-black/10 dark:border-white/10 p-1.5 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform overflow-hidden">
+            <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-7 h-7 object-contain aspect-square" />
           </div>
           <div className="text-left">
             <div className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
@@ -127,7 +174,7 @@ export default function SignupPage() {
               type="button"
               onClick={() => handleSSO('Google')}
               disabled={isLoading}
-              className="min-h-[44px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors shadow-2xs"
+              className="min-h-[44px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors shadow-2xs"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
@@ -154,7 +201,7 @@ export default function SignupPage() {
               type="button"
               onClick={() => handleSSO('GitHub')}
               disabled={isLoading}
-              className="min-h-[44px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors shadow-2xs"
+              className="min-h-[44px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors shadow-2xs"
             >
               <svg className="w-4 h-4 fill-current text-slate-800 dark:text-white" viewBox="0 0 24 24">
                 <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
@@ -191,7 +238,7 @@ export default function SignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Alex Mercer"
-                className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full min-h-[44px] bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               />
             </div>
           </div>
@@ -206,11 +253,22 @@ export default function SignupPage() {
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError('');
+                }}
                 placeholder="alex@company.com"
-                className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className={`w-full min-h-[44px] bg-white dark:bg-white/5 border ${
+                  emailError ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-white/10 focus:ring-indigo-500'
+                } rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all`}
               />
             </div>
+            {emailError && (
+              <p className="text-red-500 dark:text-red-400 text-[11px] mt-1.5 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{emailError}</span>
+              </p>
+            )}
           </div>
 
           <div>
@@ -223,9 +281,14 @@ export default function SignupPage() {
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimum 6 characters"
-                className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-9 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (passwordError) setPasswordError('');
+                }}
+                placeholder="Min. 8 characters (letters & numbers)"
+                className={`w-full min-h-[44px] bg-white dark:bg-white/5 border ${
+                  passwordError ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-white/10 focus:ring-indigo-500'
+                } rounded-xl py-2 pl-9 pr-9 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all`}
               />
               <button
                 type="button"
@@ -235,16 +298,25 @@ export default function SignupPage() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            {passwordError && (
+              <p className="text-red-500 dark:text-red-400 text-[11px] mt-1.5 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{passwordError}</span>
+              </p>
+            )}
           </div>
 
           {/* Single primary button */}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full min-h-[44px] py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 active:scale-98 btn-glow-primary"
+            className="w-full min-h-[44px] py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 active:scale-98 btn-glow-primary"
           >
             {isLoading ? (
-              <span>Creating your account...</span>
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Creating your account...</span>
+              </span>
             ) : (
               <>
                 <span>Continue to Organization Setup</span>

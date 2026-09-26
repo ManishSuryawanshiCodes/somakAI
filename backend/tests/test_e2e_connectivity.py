@@ -17,17 +17,15 @@ from app.core.database import db, init_db
 from app.core.security import verify_password
 from app.services.auth_service import auth_service
 from app.services.org_store import org_store
+from app.middleware.rate_limiter import RateLimiterMiddleware
 
-def run_e2e_verification():
-    client = TestClient(app)
+client = TestClient(app)
 
-    print("==================================================================")
-    print("SOMAK AI — FULL END-TO-END SYSTEM VERIFICATION AUDIT")
-    print("==================================================================")
+# Shared test email/pwd generated for sequential tests if needed
+shared_test_email = None
+shared_test_password = "SecurePassword2026!#"
 
-    # ==================================================================
-    # 1. DATABASE CONNECTION CHECK
-    # ==================================================================
+def test_check_1_database_connection_and_raw_schema():
     print("\n[CHECK 1] Database Connection & Raw Schema Query...")
     # Verify pool and connection to real Supabase PostgreSQL
     init_success = init_db()
@@ -50,13 +48,13 @@ def run_e2e_verification():
 
     print("  >>> CHECK 1 PASSED: Real Postgres database connected and verified.")
 
-    # ==================================================================
-    # 2. REGISTER FLOW — FULL TRACE
-    # ==================================================================
+def test_check_2_register_flow_and_database_persistence():
     print("\n[CHECK 2] Register Flow — Full Trace & Database Persistence...")
+    global shared_test_email
     test_uuid = uuid.uuid4().hex[:8]
     test_email = f"audit-user-{test_uuid}@acme-testing.com"
-    test_password = "SecurePassword2026!#"
+    shared_test_email = test_email
+    test_password = shared_test_password
     test_name = f"Audit Engineer {test_uuid}"
 
     # Submit registration request
@@ -104,13 +102,13 @@ def run_e2e_verification():
     assert db_user_updated["email_verified"] is True, "Database did not reflect email_verified=True after verification!"
     assert db_user_updated["verification_code"] is None, "Verification code should be cleared upon verification!"
     print("  [OK] Email verified: PostgreSQL updated to email_verified=True, verification_code=NULL")
-
     print("  >>> CHECK 2 PASSED: Real registration persisted and verified in PostgreSQL.")
 
-    # ==================================================================
-    # 3. LOGIN FLOW — FULL TRACE
-    # ==================================================================
+def test_check_3_login_flow_password_verification_and_session():
+    RateLimiterMiddleware.reset()
     print("\n[3] Login Flow — Full Trace, Password Verification & Session Security...")
+    test_email = shared_test_email or "audit-user-fallback@acme-testing.com"
+    test_password = shared_test_password
 
     # A. Test non-existent user
     non_existent_res = client.post(
@@ -154,15 +152,14 @@ def run_e2e_verification():
     print("  [OK] Authenticated request with session cookie succeeded (HTTP 200).")
 
     # F. Test stripping auth header / cookie -> must be rejected with 401 or 403
+    client.cookies.clear()
     unauth_req = client.get("/api/organizations/org_acme/members")
     assert unauth_req.status_code in (401, 403), f"Expected 401/403 for unauthenticated access, got {unauth_req.status_code}"
     print(f"  [OK] Stripping session cookie strictly rejected request with HTTP {unauth_req.status_code}.")
-
     print("  >>> CHECK 3 PASSED: Login flow validated against PostgreSQL Argon2id hash.")
 
-    # ==================================================================
-    # 4. FRONTEND-BACKEND DATA FLOW CHECK (3 Pages)
-    # ==================================================================
+def test_check_4_frontend_backend_data_flow_across_pages():
+    RateLimiterMiddleware.reset()
     print("\n[CHECK 4] Frontend-Backend Data Flow across 3 User-Facing Pages...")
 
     # Pre-authenticated admin headers for testing endpoints (with TOTP if MFA is active)
@@ -226,12 +223,10 @@ def run_e2e_verification():
     found_invite = any(inv["email"] == invite_email for inv in invites_list_res.json())
     assert found_invite is True, "Created invite was not found upon fresh query!"
     print("  [OK] Confirmed invite record persisted and retrievable on fresh query.")
-
     print("  >>> CHECK 4 PASSED: Real data flowing across Dashboard, Settings, and Team pages.")
 
-    # ==================================================================
-    # 5. ERROR STATE VERIFICATION
-    # ==================================================================
+def test_check_5_error_state_and_boundary_verification():
+    RateLimiterMiddleware.reset()
     print("\n[CHECK 5] Error State & Boundary Verification...")
     # Test invalid / malformed request payload (FastAPI 422 validation error)
     bad_payload_res = client.post("/api/auth/login", json={"role": "Admin"})
@@ -250,12 +245,9 @@ def run_e2e_verification():
     )
     assert forbidden_res.status_code == 403, f"Expected 403 Forbidden, got {forbidden_res.status_code}"
     print(f"  [OK] Insufficient role access properly rejected with HTTP 403: {forbidden_res.json()['detail']}")
-
     print("  >>> CHECK 5 PASSED: Error and boundary states properly handled.")
 
-    # ==================================================================
-    # 6. ENVIRONMENT CONFIG CHECK
-    # ==================================================================
+def test_check_6_environment_configuration():
     print("\n[CHECK 6] Environment Configuration Check...")
     # Confirm backend database URL is read from environment / settings
     db_url = settings.DATABASE_URL
@@ -269,6 +261,16 @@ def run_e2e_verification():
     assert "process.env.NEXT_PUBLIC_API_BASE" in api_ts_content, "API_BASE in frontend is not reading NEXT_PUBLIC_API_BASE!"
     print("  [OK] Frontend API_BASE reads dynamically from process.env.NEXT_PUBLIC_API_BASE.")
 
+def run_e2e_verification():
+    print("==================================================================")
+    print("SOMAK AI — FULL END-TO-END SYSTEM VERIFICATION AUDIT")
+    print("==================================================================")
+    test_check_1_database_connection_and_raw_schema()
+    test_check_2_register_flow_and_database_persistence()
+    test_check_3_login_flow_password_verification_and_session()
+    test_check_4_frontend_backend_data_flow_across_pages()
+    test_check_5_error_state_and_boundary_verification()
+    test_check_6_environment_configuration()
     print("\n==================================================================")
     print("ALL 6 END-TO-END VERIFICATION CHECKS PASSED (100% GREEN)")
     print("==================================================================")

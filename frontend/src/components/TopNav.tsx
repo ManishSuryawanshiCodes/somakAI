@@ -223,7 +223,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
     {
       id: 'inc-1892',
       category: 'Incidents',
-      title: 'INC-1892: payment-gateway Stripe Webhook Timeout',
+      title: 'INC-1892: payment-gateway Webhook Timeout',
       subtitle: 'SEV-2 • Resolved • MTTR 3m 50s',
       icon: CheckCircle2,
       action: () => router.push('/postmortem/INC-2041'),
@@ -289,14 +289,14 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
 
   return (
     <>
-      <header className="sticky top-0 z-30 h-16 backdrop-blur-xl bg-[#FAF8F5]/85 dark:bg-[#030306]/85 border-b border-[#E8E3D9] dark:border-white/10 px-3 sm:px-6 flex items-center justify-between transition-colors shadow-xs">
+      <header className="sticky top-0 z-30 h-16 backdrop-blur-xl bg-[#FAF8F5]/85 dark:bg-[#0A0A0A]/85 border-b border-[#E8E3D9] dark:border-white/10 px-3 sm:px-6 flex items-center justify-between transition-colors shadow-xs">
         {/* Element 1: Global Search / ⌘K (+ Mobile Drawer Hamburger) */}
         <div className="flex items-center gap-2 sm:gap-2.5 flex-1 max-w-md">
           {/* Mobile Hamburger Drawer Trigger (< md) */}
           <button
             onClick={() => setMobileDrawerOpen(true)}
             aria-label="Open navigation menu"
-            className="md:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 transition-all focus:outline-none active:scale-95"
+            className="md:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 dark:bg-white/5/80 border border-slate-200/80 dark:border-white/10 transition-all focus:outline-none active:scale-95"
           >
             <Menu className="w-4 h-4" />
           </button>
@@ -306,7 +306,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
             onClick={toggleSidebar}
             aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="hidden md:flex p-2 rounded-xl text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 transition-all focus:outline-none active:scale-95 shrink-0"
+            className="hidden md:flex p-2 rounded-xl text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100/80 dark:bg-white/5/60 border border-slate-200/80 dark:border-white/10/60 hover:border-slate-300 dark:hover:border-slate-600 transition-all focus:outline-none active:scale-95 shrink-0"
           >
             {sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </button>
@@ -317,13 +317,13 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
               setSearchOpen(true);
               setSearchQuery('');
             }}
-            className="hidden md:flex w-full items-center justify-between bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 rounded-xl py-2 px-3 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 transition-all focus:outline-none shadow-2xs"
+            className="hidden md:flex w-full items-center justify-between bg-slate-100/80 dark:bg-white/[0.08] border border-slate-200/80 dark:border-white/[0.15] rounded-xl py-2 px-3 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/25 transition-all focus:outline-none shadow-2xs"
           >
             <span className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5 text-slate-400" />
               <span>Search incidents, telemetry, actions...</span>
             </span>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[10px] text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600">
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-white/[0.12] font-mono text-[10px] text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-white/20">
               ⌘K
             </kbd>
           </button>
@@ -335,22 +335,22 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
               setSearchQuery('');
             }}
             aria-label="Open command search"
-            className="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 transition-all"
+            className="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl bg-slate-100/80 dark:bg-white/5/80 border border-slate-200/80 dark:border-white/10 transition-all"
           >
             <Search className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Elements 2-5: Live Status Dot, Notification Bell, Theme Toggle, User Profile */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Elements 2-5: Live Status Dot, Notification Bell, Docs Link, User Profile */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
           {/* Element 2: Live Connection Status Dot */}
           <button
             onClick={() => setConnectionModalOpen(true)}
             title="Click to view live connection telemetry"
-            className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-full border border-slate-200/80 dark:border-slate-700/60 bg-white/60 dark:bg-slate-800/50 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 transition-colors focus:outline-none shadow-2xs"
+            className="h-9 px-3 flex items-center gap-2 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-xs text-xs font-medium text-slate-700 dark:text-slate-200 transition-all duration-150 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 shadow-2xs"
           >
             <span
-              className={`w-2 h-2 rounded-full ${
+              className={`w-2 h-2 rounded-full shrink-0 ${
                 connectionState === 'connected'
                   ? 'bg-emerald-500 animate-pulse glow-healthy'
                   : connectionState === 'reconnecting'
@@ -358,7 +358,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                   : 'bg-red-500 glow-critical'
               }`}
             />
-            <span className="text-slate-700 dark:text-slate-300 font-mono text-[11px] tracking-tight">
+            <span className="font-mono text-[11px] tracking-tight">
               {connectionState === 'connected' ? 'Live SSE' : connectionState}
             </span>
           </button>
@@ -368,11 +368,11 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
             <button
               onClick={() => setNotifOpen((prev) => !prev)}
               aria-label="Notifications"
-              className="relative p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all active:scale-95"
+              className="relative h-9 w-9 flex items-center justify-center rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all duration-150 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 shadow-2xs active:scale-95"
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-4 h-4 shrink-0" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-xs animate-pulse">
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-xs pointer-events-none ring-2 ring-[#FAF8F5] dark:ring-[#0A0A0A] animate-pulse">
                   {unreadCount}
                 </span>
               )}
@@ -388,7 +388,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                   transition={{ duration: 0.15 }}
                   className="absolute right-0 mt-2 w-80 sm:w-96 glass-modal rounded-2xl overflow-hidden z-50 flex flex-col"
                 >
-                  <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div className="px-4 py-3 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-sm text-slate-900 dark:text-white">
                         Notifications
@@ -461,7 +461,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                     )}
                   </div>
 
-                  <div className="p-2.5 bg-slate-50/70 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                  <div className="p-2.5 bg-slate-50/70 dark:bg-[#0A0A0A]/40 border-t border-slate-100 dark:border-white/10 flex items-center justify-between text-xs">
                     <Link
                       href="/history"
                       onClick={() => setNotifOpen(false)}
@@ -486,10 +486,10 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
             href="/docs"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors"
+            className="hidden sm:flex h-9 px-3 items-center gap-1.5 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-xs text-xs font-semibold text-slate-700 dark:text-slate-200 transition-all duration-150 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 shadow-2xs"
             title="Open Somak AI Documentation"
           >
-            <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
+            <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
             <span>Docs</span>
           </Link>
 
@@ -497,7 +497,8 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
           <button
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all active:scale-95"
+            title={theme === 'dark' ? 'Switch to Porcelain Light' : 'Switch to Obsidian Dark'}
+            className="flex h-9 w-9 items-center justify-center text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-colors shadow-2xs"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
           </button>
@@ -506,9 +507,9 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
           <Link
             href="/settings"
             title={`Signed in as ${user?.name || 'Marcus Vance'} (${user?.role || 'Operator'})`}
-            className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 hover:border-indigo-500/40 transition-all select-none group"
+            className="h-9 flex items-center gap-2 pl-1.5 pr-2.5 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-xs text-xs font-medium transition-all duration-150 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:border-indigo-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 shadow-2xs select-none group"
           >
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center font-bold text-[10px] shadow-xs">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center font-bold text-[10px] shadow-xs shrink-0">
               {user?.avatar || (user?.name ? user.name.slice(0, 2).toUpperCase() : 'MV')}
             </div>
             <div className="hidden sm:flex flex-col text-left leading-none">
@@ -516,7 +517,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                 {user?.name?.split(' ')[0] || 'Marcus'}
               </span>
             </div>
-            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md ${
+            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
               user?.role === 'Admin'
                 ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20'
                 : user?.role === 'Operator'
@@ -541,7 +542,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
               className="w-full max-w-xl glass-modal rounded-2xl shadow-2xl overflow-hidden flex flex-col"
             >
               {/* Search Header Input */}
-              <div className="flex items-center px-4 py-3.5 border-b border-slate-200/80 dark:border-slate-800/80 gap-3">
+              <div className="flex items-center px-4 py-3.5 border-b border-slate-200/80 dark:border-white/10/80 gap-3">
                 <Search className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                 <input
                   ref={searchInputRef}
@@ -588,7 +589,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`p-2 rounded-lg ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                          <div className={`p-2 rounded-lg ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}>
                             <Icon className="w-4 h-4" />
                           </div>
                           <div className="min-w-0">
@@ -604,7 +605,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500">
                             {cmd.category}
                           </span>
                           {isSelected && <ArrowRight className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />}
@@ -616,11 +617,11 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
               </div>
 
               {/* Footer */}
-              <div className="px-4 py-2.5 bg-slate-50/80 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+              <div className="px-4 py-2.5 bg-slate-50/80 dark:bg-[#0A0A0A]/40 border-t border-slate-100 dark:border-white/10 flex items-center justify-between text-[11px] text-slate-400">
                 <div className="flex items-center gap-3">
-                  <span><kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-[10px]">↑</kbd> <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-[10px]">↓</kbd> to navigate</span>
-                  <span><kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-[10px]">↵</kbd> select</span>
-                  <span><kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-[10px]">ESC</kbd> dismiss</span>
+                  <span><kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-white/5 font-mono text-[10px]">↑</kbd> <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-white/5 font-mono text-[10px]">↓</kbd> to navigate</span>
+                  <span><kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-white/5 font-mono text-[10px]">↵</kbd> select</span>
+                  <span><kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-white/5 font-mono text-[10px]">ESC</kbd> dismiss</span>
                 </div>
                 <span className="text-indigo-600 dark:text-indigo-400 font-medium">
                   Somak AI
@@ -657,19 +658,19 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
               </div>
 
               <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-white/10">
                   <span className="text-slate-400">Transport:</span>
                   <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">Server-Sent Events (SSE)</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-white/10">
                   <span className="text-slate-400">Ingress Region:</span>
                   <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">us-east-1 (N. Virginia)</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-white/10">
                   <span className="text-slate-400">Stream RTT:</span>
                   <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">12ms</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-white/10">
                   <span className="text-slate-400">Packet Loss:</span>
                   <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">0.00%</span>
                 </div>
@@ -679,7 +680,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                     <button
                       onClick={() => setConnectionState('connected')}
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        connectionState === 'connected' ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'
+                        connectionState === 'connected' ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-600'
                       }`}
                     >
                       Live
@@ -687,7 +688,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                     <button
                       onClick={() => setConnectionState('reconnecting')}
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        connectionState === 'reconnecting' ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'
+                        connectionState === 'reconnecting' ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-600'
                       }`}
                     >
                       Reconn
@@ -695,7 +696,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                     <button
                       onClick={() => setConnectionState('offline')}
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        connectionState === 'offline' ? 'bg-red-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'
+                        connectionState === 'offline' ? 'bg-red-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-600'
                       }`}
                     >
                       Offline

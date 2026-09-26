@@ -102,7 +102,7 @@ const MOCK_SLOS: ServiceSLO[] = [
     burnState: 'healthy',
     windowDays: 30,
     projectedExhaustion: '28 days at current burn',
-    description: 'Stripe webhook ingestion & idempotent ledger commits',
+    description: 'Payment gateway webhook ingestion & idempotent ledger commits',
     history: [
       { day: 'Day 1', budget: 100, burnRate: 0.9 },
       { day: 'Day 10', budget: 94, burnRate: 1.0 },
@@ -216,7 +216,7 @@ export default function SLOPage() {
         </Link>
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/10">
           <div>
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
@@ -237,7 +237,7 @@ export default function SLOPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors"
             >
               <Activity className="w-3.5 h-3.5" />
               <span>Incident Radar</span>
@@ -272,7 +272,7 @@ export default function SLOPage() {
           <>
 
         {/* Sticky Section Jump Navigation Bar */}
-        <div className="sticky top-14 z-20 p-1.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+        <div className="sticky top-14 z-20 p-1.5 rounded-2xl bg-white/90 dark:bg-[#0A0A0A] backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           {[
             { id: 'sec-overview', label: 'Overview' },
             { id: 'sec-visualizer', label: 'Burn Visualizer' },
@@ -351,7 +351,7 @@ export default function SLOPage() {
 
         {/* Featured Service Burn-Down Telemetry Card */}
         <div id="sec-visualizer" className="glass-panel rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-white/10">
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -456,7 +456,7 @@ export default function SLOPage() {
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
                   statusFilter === 'all'
                     ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400'
                 }`}
               >
                 All ({slos.length})
@@ -466,7 +466,7 @@ export default function SLOPage() {
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
                   statusFilter === 'at_risk'
                     ? 'bg-amber-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400'
                 }`}
               >
                 At Risk ({slos.filter(s => s.burnState === 'at_risk').length})
@@ -476,7 +476,7 @@ export default function SLOPage() {
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
                   statusFilter === 'healthy'
                     ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400'
                 }`}
               >
                 Healthy ({slos.filter(s => s.burnState === 'healthy').length})
@@ -494,7 +494,7 @@ export default function SLOPage() {
                   className={`glass-card p-5 rounded-2xl cursor-pointer border transition-all flex flex-col justify-between gap-4 ${
                     isSelected
                       ? 'border-indigo-500 ring-2 ring-indigo-500/20 shadow-md'
-                      : 'border-slate-200/90 dark:border-slate-800 hover:border-indigo-500/40'
+                      : 'border-slate-200/90 dark:border-white/10 hover:border-indigo-500/40'
                   }`}
                 >
                   <div className="space-y-2">
@@ -516,14 +516,14 @@ export default function SLOPage() {
                     </p>
                   </div>
 
-                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/10">
                     <div className="flex justify-between text-xs font-mono">
                       <span className="text-slate-500">Target: {slo.target}%</span>
                       <span className="font-bold text-slate-900 dark:text-white">Current: {slo.currentUptime}%</span>
                     </div>
 
                     {/* Mini Budget Bar */}
-                    <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
                       <div
                         className={`h-full transition-all ${
                           slo.budgetRemainingPercent < 20
@@ -547,7 +547,7 @@ export default function SLOPage() {
 
         {/* Automated Canary Gate Policy Card */}
         <div id="sec-gates" className="glass-panel rounded-2xl p-5 sm:p-6 shadow-xs space-y-3">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-slate-800">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-white/10">
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-indigo-500" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
@@ -560,7 +560,7 @@ export default function SLOPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-1">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/70 dark:border-white/10/60 space-y-1">
               <span className="font-bold text-slate-800 dark:text-slate-200">Budget &gt; 20% (Nominal)</span>
               <p className="text-slate-500 text-[11px] leading-relaxed">
                 Standard autonomous canary pipelines proceed with automated 5% &rarr; 25% &rarr; 50% &rarr; 100% rollout.

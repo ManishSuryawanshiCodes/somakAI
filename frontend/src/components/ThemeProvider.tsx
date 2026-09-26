@@ -31,18 +31,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Read saved theme from localStorage, or default to light
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
-    const initialTheme: Theme = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : 'light';
-    
-    setThemeState(initialTheme);
-    applyTheme(initialTheme);
+    // Read saved theme from localStorage, or default to system or dark
+    try {
+      const savedTheme = (localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem('theme')) as Theme | null;
+      const systemDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const initialTheme: Theme = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : (systemDark ? 'dark' : 'light');
+      
+      setThemeState(initialTheme);
+      applyTheme(initialTheme);
+    } catch {}
     setMounted(true);
   }, []);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+      localStorage.setItem('theme', newTheme);
+    } catch {}
     applyTheme(newTheme);
   };
 

@@ -258,6 +258,33 @@ describe('TokenService Memory Management', () => {
         self._incidents[incident.id] = incident
         self._sync_incident_to_db(incident)
 
+    def find_active_by_fingerprint(self, org_id: str, fingerprint: str) -> Incident | None:
+        """Finds any active, unresolved incident matching organization and fingerprint."""
+        active_statuses = ("TRIAGING", "SANDBOX_VERIFYING", "READY_FOR_DEPLOY", "CANARY_EVALUATING")
+        for inc in self._incidents.values():
+            if getattr(inc, 'organization_id', 'org_acme') == org_id and inc.fingerprint == fingerprint and inc.status in active_statuses:
+                return inc
+
+        try:
+            from app.core.database import db
+            rows = db.execute_query(
+                """
+                SELECT * FROM incidents 
+                WHERE organization_id = %s 
+                  AND fingerprint = %s 
+                  AND status IN ('TRIAGING', 'SANDBOX_VERIFYING', 'READY_FOR_DEPLOY', 'CANARY_EVALUATING')
+                ORDER BY timestamp DESC LIMIT 1;
+                """,
+                (org_id, fingerprint)
+            )
+            if rows:
+                inc = self._row_to_incident(rows[0])
+                self._incidents[inc.id] = inc
+                return inc
+        except Exception:
+            pass
+        return None
+
     def get_incident(self, incident_id: str) -> Incident | None:
         if incident_id in self._incidents:
             return self._incidents[incident_id]
@@ -276,28 +303,37 @@ describe('TokenService Memory Management', () => {
 
     def get_active_incidents(self, org_id: str | None = None, limit: int = 50, offset: int = 0) -> list[Incident]:
         effective_org = org_id or "org_acme"
-        # 1. Batch query indexed by organization_id to avoid N+1 query patterns
+        db_incidents = []
         try:
             from app.core.database import db
             rows = db.execute_query(
                 "SELECT * FROM incidents WHERE organization_id = %s ORDER BY timestamp DESC LIMIT %s OFFSET %s;",
                 (effective_org, limit, offset)
             )
-            if rows is not None:
+            if rows:
                 db_incidents = [self._row_to_incident(r) for r in rows]
                 for inc in db_incidents:
                     self._incidents[inc.id] = inc
-                return db_incidents
         except Exception:
             pass
 
-        # In-memory fallback
-        if not org_id or org_id == "org_acme":
-            return [i for i in self._incidents.values() if getattr(i, 'organization_id', 'org_acme') == "org_acme"][offset:offset+limit]
-        return [i for i in self._incidents.values() if getattr(i, 'organization_id', None) == org_id][offset:offset+limit]
+        mem_incidents = [
+            i for i in self._incidents.values()
+            if getattr(i, 'organization_id', 'org_acme') == effective_org
+        ]
+
+        seen_ids = set()
+        merged = []
+        for inc in db_incidents + mem_incidents:
+            if inc.id not in seen_ids:
+                seen_ids.add(inc.id)
+                merged.append(inc)
+
+        merged.sort(key=lambda x: x.timestamp or "", reverse=True)
+        return merged[offset:offset+limit]
 
     def get_incidents(self, org_id: str | None = None) -> list[Incident]:
-        return self.get_active_incidents(org_id)
+        return self.get_active_incidents(org_id, limit=200)
 
     def update_incident(self, incident: Incident):
         self._incidents[incident.id] = incident

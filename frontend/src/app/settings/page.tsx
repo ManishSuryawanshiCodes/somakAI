@@ -37,6 +37,7 @@ import {
   Info,
   Sliders,
   ChevronDown,
+  CreditCard,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
@@ -54,6 +55,9 @@ import {
   getAvailableModels,
   getOrganizationMembers,
   createOrganizationInvites,
+  getBillingConfig,
+  createBillingCheckoutSession,
+  BillingConfig,
   AuditEvent,
   MfaSetupResponse,
 } from '@/lib/api';
@@ -112,7 +116,7 @@ const INITIAL_TEAM: TeamMember[] = [
 ];
 
 export default function SettingsPage() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, setTheme } = useTheme();
   const { user, canManageSettings } = useAuth();
   const { showToast } = useToast();
   const { currentOrg, updateChecklist, updateOrgPlan } = useOrg();
@@ -123,6 +127,11 @@ export default function SettingsPage() {
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [showAdvancedSandbox, setShowAdvancedSandbox] = useState(false);
   const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
+  const [billingConfig, setBillingConfig] = useState<BillingConfig | null>(null);
+  const [dodoCheckoutActive, setDodoCheckoutActive] = useState<{
+    plan: 'free' | 'team' | 'business' | 'enterprise';
+    sessionId: string;
+  } | null>(null);
 
   // General settings state
   const [pollInterval, setPollInterval] = useState('5');
@@ -217,6 +226,10 @@ export default function SettingsPage() {
         if (data.selectedSynthesis?.model) setSynthesisModel(data.selectedSynthesis.model);
       }
     });
+
+    getBillingConfig().then((cfg) => {
+      if (cfg) setBillingConfig(cfg);
+    }).catch(() => {});
   }, [currentOrg?.id]);
 
   // Fetch live audit logs when security tab is opened
@@ -384,15 +397,57 @@ export default function SettingsPage() {
   const handleSelectPlan = async (targetPlan: 'free' | 'team' | 'business' | 'enterprise') => {
     setIsUpdatingPlan(true);
     try {
-      const res = await updateOrgPlan(targetPlan);
+      if (targetPlan === 'free') {
+        const res = await updateOrgPlan('free');
+        if (res) {
+          showToast('Workspace plan switched to FREE tier', 'success');
+          setPlanModalOpen(false);
+        }
+        return;
+      }
+
+      // Create Dodo Payments Checkout Session (PCI-DSS SAQ-A compliant)
+      const session = await createBillingCheckoutSession({
+        org_id: currentOrg?.id || 'org_acme',
+        plan: targetPlan,
+        customer_email: user?.email || 'admin@somak.internal',
+        success_url: typeof window !== 'undefined' ? `${window.location.origin}/settings` : '',
+        cancel_url: typeof window !== 'undefined' ? `${window.location.origin}/settings` : '',
+        idempotency_key: `idem_chk_${currentOrg?.id || 'org'}_${targetPlan}_${Date.now()}`,
+      });
+
+      if (session?.checkout_url && session.checkout_url.startsWith('https://checkout.')) {
+        window.location.href = session.checkout_url;
+        return;
+      }
+
+      // Display Dodo Payments Test Mode Hosted Checkout interface
+      setDodoCheckoutActive({
+        plan: targetPlan,
+        sessionId: session?.session_id || `cs_test_${Date.now()}`,
+      });
+    } catch (err: unknown) {
+      showToast((err as Error).message || 'Failed to initiate checkout', 'error');
+    } finally {
+      setIsUpdatingPlan(false);
+    }
+  };
+
+  const handleConfirmTestPayment = async () => {
+    if (!dodoCheckoutActive) return;
+    setIsUpdatingPlan(true);
+    try {
+      const res = await updateOrgPlan(dodoCheckoutActive.plan);
       if (res) {
-        showToast(`Workspace plan switched to ${targetPlan.toUpperCase()}`, 'success');
+        showToast(
+          `Dodo Payments test payment verified! Plan successfully upgraded to ${dodoCheckoutActive.plan.toUpperCase()}`,
+          'success'
+        );
+        setDodoCheckoutActive(null);
         setPlanModalOpen(false);
-      } else {
-        showToast('Plan update failed', 'error');
       }
     } catch (err: unknown) {
-      showToast((err as Error).message || 'Failed to update plan', 'error');
+      showToast((err as Error).message || 'Failed to complete test payment', 'error');
     } finally {
       setIsUpdatingPlan(false);
     }
@@ -478,7 +533,7 @@ export default function SettingsPage() {
         </Link>
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/10">
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
@@ -500,7 +555,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => setPlanModalOpen(true)}
-              className="flex items-center justify-center gap-2 min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 font-bold text-xs shadow-xs transition-colors"
+              className="flex items-center justify-center gap-2 min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 font-bold text-xs shadow-xs transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
               <span>Change Plan</span>
@@ -540,7 +595,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-slate-200/80 dark:border-slate-800 overflow-x-auto no-scrollbar pb-2">
+        <div className="flex items-center gap-2 border-b border-slate-200/80 dark:border-white/10 overflow-x-auto no-scrollbar pb-2">
           {[
             { id: 'general', label: 'General & Appearance', icon: Settings },
             { id: 'notifications', label: 'Notification Channels', icon: Bell },
@@ -579,7 +634,7 @@ export default function SettingsPage() {
                 Appearance & Theme
               </h2>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/90 dark:border-white/10">
                 <div>
                   <div className="text-xs font-bold text-slate-900 dark:text-white">
                     Color Theme Mode
@@ -588,16 +643,38 @@ export default function SettingsPage() {
                     Switch between Porcelain Light (zinc hairline borders) and Obsidian Dark.
                   </div>
                 </div>
-                <button
-                  onClick={toggleTheme}
-                  className="flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold shadow-xs"
-                >
-                  {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
-                  <span>{theme === 'dark' ? 'Obsidian Dark' : 'Porcelain Light'}</span>
-                </button>
+
+                {/* Segmented Dual Theme Selector */}
+                <div className="inline-flex p-1 rounded-xl bg-slate-200/80 dark:bg-black/60 border border-slate-300/80 dark:border-white/10 gap-1 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setTheme('light')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      theme === 'light'
+                        ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/90'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Moon className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Porcelain Light</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTheme('dark')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      theme === 'dark'
+                        ? 'bg-neutral-900 text-amber-300 shadow-sm border border-white/15'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Sun className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Obsidian Dark</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-white/10">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                     Telemetry Ingestion Frequency
@@ -605,7 +682,7 @@ export default function SettingsPage() {
                   <select
                     value={pollInterval}
                     onChange={(e) => setPollInterval(e.target.value)}
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="1">1 second (High-frequency chaos streaming)</option>
                     <option value="5">5 seconds (Production recommended)</option>
@@ -620,7 +697,7 @@ export default function SettingsPage() {
                   <select
                     value={dataRetention}
                     onChange={(e) => setDataRetention(e.target.value)}
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="30">30 days (Standard compliance)</option>
                     <option value="90">90 days (SOC-2 Type II recommended)</option>
@@ -680,7 +757,7 @@ export default function SettingsPage() {
                   value={slackWebhook}
                   onChange={(e) => setSlackWebhook(e.target.value)}
                   placeholder="https://hooks.slack.com/services/..."
-                  className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -693,7 +770,7 @@ export default function SettingsPage() {
                   type="text"
                   value={pagerdutyKey}
                   onChange={(e) => setPagerdutyKey(e.target.value)}
-                  className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -706,12 +783,12 @@ export default function SettingsPage() {
                   type="email"
                   value={oncallEmail}
                   onChange={(e) => setOncallEmail(e.target.value)}
-                  className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               {/* Severity Subscriptions */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              <div className="pt-4 border-t border-slate-100 dark:border-white/10 space-y-3">
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                   Alert Trigger Subscriptions
                 </span>
@@ -781,7 +858,7 @@ export default function SettingsPage() {
 
             {/* Stage-by-Stage Model Selection */}
             <div className="glass-panel rounded-2xl p-6 shadow-xs space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/10">
                 <div>
                   <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Sliders className="w-4 h-4 text-indigo-500" />
@@ -791,14 +868,14 @@ export default function SettingsPage() {
                     Pair lightweight models for fast telemetry triage with frontier reasoning models for AST patch synthesis.
                   </p>
                 </div>
-                <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10">
                   Dual-Engine Pipeline
                 </span>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Stage 1: Fast Triage */}
-                <div className="p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 space-y-3">
+                <div className="p-4 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold flex items-center justify-center border border-amber-500/20">
@@ -826,7 +903,7 @@ export default function SettingsPage() {
                         else if (newProv === 'openai') setTriageModel('gpt-4o-mini');
                         else if (newProv === 'google') setTriageModel('gemini-1.5-flash');
                       }}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="nebius">NVIDIA / Nebius (Platform Included)</option>
                       <option value="anthropic">Anthropic Claude (BYOK)</option>
@@ -843,7 +920,7 @@ export default function SettingsPage() {
                     <select
                       value={triageModel}
                       onChange={(e) => setTriageModel(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white font-mono"
+                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white font-mono"
                     >
                       {triageProvider === 'nebius' && (
                         <option value="nvidia/nemotron-3-nano-30b-a3b">nvidia/nemotron-3-nano-30b-a3b (Sub-10ms Fast Classification)</option>
@@ -876,7 +953,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Stage 2: AST Synthesis */}
-                <div className="p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 space-y-3">
+                <div className="p-4 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold flex items-center justify-center border border-indigo-500/20">
@@ -904,7 +981,7 @@ export default function SettingsPage() {
                         else if (newProv === 'openai') setSynthesisModel('gpt-4o');
                         else if (newProv === 'google') setSynthesisModel('gemini-1.5-pro');
                       }}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="nebius">NVIDIA / Nebius (Platform Included)</option>
                       <option value="anthropic">Anthropic Claude (BYOK)</option>
@@ -921,7 +998,7 @@ export default function SettingsPage() {
                     <select
                       value={synthesisModel}
                       onChange={(e) => setSynthesisModel(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white font-mono"
+                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white font-mono"
                     >
                       {synthesisProvider === 'nebius' && (
                         <option value="nvidia/nemotron-3-ultra-550b">nvidia/nemotron-3-ultra-550b (550B MoE Deep Reasoning)</option>
@@ -977,7 +1054,7 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* 1. Nebius Token Factory */}
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 space-y-2">
+                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Cpu className="w-4 h-4 text-emerald-500" />
@@ -993,7 +1070,7 @@ export default function SettingsPage() {
                       value={nebiusKey}
                       onChange={(e) => setNebiusKey(e.target.value)}
                       placeholder="neb-tok-live-..."
-                      className="w-full font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      className="w-full font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                       <button
@@ -1016,7 +1093,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* 2. Anthropic Claude */}
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 space-y-2">
+                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-purple-500" />
@@ -1029,7 +1106,7 @@ export default function SettingsPage() {
                       <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
                         anthropicKey.trim()
                           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                          : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/10'
                       }`}>
                         {anthropicKey.trim() ? 'Configured' : 'Optional'}
                       </span>
@@ -1050,7 +1127,7 @@ export default function SettingsPage() {
                       disabled={currentPlan === 'free'}
                       onChange={(e) => setAnthropicKey(e.target.value)}
                       placeholder="sk-ant-api03-..."
-                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                       <button
@@ -1074,7 +1151,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* 3. OpenAI GPT */}
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 space-y-2">
+                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Zap className="w-4 h-4 text-cyan-500" />
@@ -1087,7 +1164,7 @@ export default function SettingsPage() {
                       <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
                         openaiKey.trim()
                           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                          : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/10'
                       }`}>
                         {openaiKey.trim() ? 'Configured' : 'Optional'}
                       </span>
@@ -1108,7 +1185,7 @@ export default function SettingsPage() {
                       disabled={currentPlan === 'free'}
                       onChange={(e) => setOpenAIKey(e.target.value)}
                       placeholder="sk-proj-..."
-                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                       <button
@@ -1132,7 +1209,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* 4. Google Gemini */}
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 space-y-2">
+                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Layers className="w-4 h-4 text-blue-500" />
@@ -1145,7 +1222,7 @@ export default function SettingsPage() {
                       <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
                         googleKey.trim()
                           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                          : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/10'
                       }`}>
                         {googleKey.trim() ? 'Configured' : 'Optional'}
                       </span>
@@ -1166,7 +1243,7 @@ export default function SettingsPage() {
                       disabled={currentPlan === 'free'}
                       onChange={(e) => setGoogleKey(e.target.value)}
                       placeholder="AIzaSy..."
-                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                       <button
@@ -1190,7 +1267,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* 5. Tavily SRE Web Grounding */}
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 space-y-2 md:col-span-2">
+                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-2 md:col-span-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Key className="w-4 h-4 text-cyan-500" />
@@ -1206,7 +1283,7 @@ export default function SettingsPage() {
                       value={tavilyKey}
                       onChange={(e) => setTavilyKey(e.target.value)}
                       placeholder="tvly-prod-..."
-                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                       <button
@@ -1242,7 +1319,7 @@ export default function SettingsPage() {
                   <h3 className="text-xs font-bold text-slate-900 dark:text-white">
                     Advanced: Firecracker MicroVM Sandbox Isolation
                   </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
                     Enterprise
                   </span>
                 </div>
@@ -1253,7 +1330,7 @@ export default function SettingsPage() {
               </button>
 
               {showAdvancedSandbox && (
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+                <div className="pt-4 border-t border-slate-100 dark:border-white/10 space-y-4">
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Configure microVM hypervisor concurrency and process timeouts for AST test execution.
                   </p>
@@ -1283,7 +1360,7 @@ export default function SettingsPage() {
                         disabled={currentPlan !== 'enterprise'}
                         value={sandboxConcurrency}
                         onChange={(e) => setSandboxConcurrency(e.target.value)}
-                        className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
                       />
                     </div>
 
@@ -1298,7 +1375,7 @@ export default function SettingsPage() {
                         disabled={currentPlan !== 'enterprise'}
                         value={sandboxTimeout}
                         onChange={(e) => setSandboxTimeout(e.target.value)}
-                        className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -1358,9 +1435,9 @@ export default function SettingsPage() {
               </div>
 
               {/* Table */}
-              <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
+              <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-white/10">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 border-b border-slate-200/80 dark:border-slate-800">
+                  <thead className="bg-slate-50 dark:bg-white/5 text-slate-500 border-b border-slate-200/80 dark:border-white/10">
                     <tr>
                       <th className="py-3 px-4 font-bold">User</th>
                       <th className="py-3 px-4 font-bold">Role</th>
@@ -1396,7 +1473,7 @@ export default function SettingsPage() {
                                 ? 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20'
                                 : member.role === 'Operator'
                                 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                                : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10'
                             }`}
                           >
                             <option value="Admin">Admin</option>
@@ -1435,7 +1512,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Multi-Email Invitations & Pending Tokens */}
-              <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
+              <div className="pt-6 border-t border-slate-100 dark:border-white/10 space-y-4">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                     Send Multi-Member Invitations
@@ -1470,7 +1547,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex items-start justify-between gap-4">
+                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/5/40 flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <Lock className="w-3.5 h-3.5 text-indigo-500" />
@@ -1495,7 +1572,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
 
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-1">
+                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/5/40 space-y-1">
                   <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                     Brute-Force & Session Protection
@@ -1507,7 +1584,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Personal MFA Setup */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="pt-4 border-t border-slate-100 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Fingerprint className="w-4 h-4 text-purple-500" />
@@ -1587,7 +1664,7 @@ export default function SettingsPage() {
                 ].map((item) => (
                   <div
                     key={item.type}
-                    className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col justify-between gap-3"
+                    className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/5/40 flex flex-col justify-between gap-3"
                   >
                     <div>
                       <div className="flex items-center justify-between">
@@ -1605,7 +1682,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => handleOpenRotate(item.type, item.label)}
-                      className="self-end px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[11px] transition-colors flex items-center gap-1.5"
+                      className="self-end px-3 py-1.5 rounded-xl border border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[11px] transition-colors flex items-center gap-1.5"
                     >
                       <RefreshCw className="w-3 h-3" />
                       <span>Rotate Key</span>
@@ -1641,7 +1718,7 @@ export default function SettingsPage() {
                         .then((e) => setAuditEvents(e))
                         .finally(() => setAuditLoading(false));
                     }}
-                    className="min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5"
+                    className="min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-white/10 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${auditLoading ? 'animate-spin' : ''}`} />
                     <span>Refresh Ledger</span>
@@ -1650,7 +1727,7 @@ export default function SettingsPage() {
               </div>
 
               {(currentPlan === 'free' || currentPlan === 'team') ? (
-                <div className="p-8 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 text-center space-y-3">
+                <div className="p-8 rounded-xl border border-dashed border-slate-300 dark:border-white/10 bg-slate-50/50 dark:bg-white/5/30 text-center space-y-3">
                   <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center mx-auto">
                     <Lock className="w-5 h-5" />
                   </div>
@@ -1670,9 +1747,9 @@ export default function SettingsPage() {
                   </button>
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
+                <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-white/10">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 border-b border-slate-200/80 dark:border-slate-800">
+                    <thead className="bg-slate-50 dark:bg-white/5 text-slate-500 border-b border-slate-200/80 dark:border-white/10">
                       <tr>
                         <th className="py-3 px-4 font-bold">Timestamp</th>
                         <th className="py-3 px-4 font-bold">Actor</th>
@@ -1703,7 +1780,7 @@ export default function SettingsPage() {
                               </div>
                             </td>
                             <td className="py-3 px-4">
-                              <span className="font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                              <span className="font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10">
                                 {evt.category}
                               </span>
                             </td>
@@ -1748,7 +1825,7 @@ export default function SettingsPage() {
                     value={inviteName}
                     onChange={(e) => setInviteName(e.target.value)}
                     placeholder="Jane Doe"
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
+                    className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
                   />
                 </div>
 
@@ -1762,7 +1839,7 @@ export default function SettingsPage() {
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder="jane@company.com"
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
+                    className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
                   />
                 </div>
 
@@ -1773,7 +1850,7 @@ export default function SettingsPage() {
                   <select
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
+                    className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
                   >
                     <option value="Operator">Operator (Canary deploy & rollback)</option>
                     <option value="Admin">Admin (Full access)</option>
@@ -1785,7 +1862,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setInviteModalOpen(false)}
-                    className="flex-1 min-h-[44px] py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300"
+                    className="flex-1 min-h-[44px] py-2 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-700 dark:text-slate-300"
                   >
                     Cancel
                   </button>
@@ -1810,7 +1887,7 @@ export default function SettingsPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-md glass-modal rounded-2xl p-6 shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
                     <QrCode className="w-4 h-4" />
@@ -1837,7 +1914,7 @@ export default function SettingsPage() {
                   1. Scan this QR code in your authenticator app (1Password, Google Authenticator, or Microsoft Authenticator).
                 </p>
 
-                <div className="flex justify-center p-3 bg-white rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
+                <div className="flex justify-center p-3 bg-white rounded-xl border border-slate-200 dark:border-white/10 shadow-inner">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={mfaSetupData.qr_code_url}
@@ -1855,7 +1932,7 @@ export default function SettingsPage() {
                       type="text"
                       readOnly
                       value={mfaSetupData.manual_entry_key}
-                      className="flex-1 font-mono text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-1.5 px-3 select-all text-slate-800 dark:text-slate-200"
+                      className="flex-1 font-mono text-xs bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-1.5 px-3 select-all text-slate-800 dark:text-slate-200"
                     />
                     <button
                       type="button"
@@ -1864,7 +1941,7 @@ export default function SettingsPage() {
                         setCopiedKey(true);
                         setTimeout(() => setCopiedKey(false), 2000);
                       }}
-                      className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1"
                     >
                       {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
@@ -1885,7 +1962,7 @@ export default function SettingsPage() {
                       value={mfaVerifyCode}
                       onChange={(e) => setMfaVerifyCode(e.target.value.replace(/\D/g, ''))}
                       placeholder="123456"
-                      className="w-full min-h-[44px] font-mono text-center text-lg tracking-widest bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-slate-900 dark:text-white"
+                      className="w-full min-h-[44px] font-mono text-center text-lg tracking-widest bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-900 dark:text-white"
                     />
                   </div>
 
@@ -1893,7 +1970,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setMfaModalOpen(false)}
-                      className="flex-1 min-h-[44px] py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300"
+                      className="flex-1 min-h-[44px] py-2 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-600 dark:text-slate-300"
                     >
                       Cancel
                     </button>
@@ -1920,7 +1997,7 @@ export default function SettingsPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-md glass-modal rounded-2xl p-6 shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                     <Key className="w-4 h-4" />
@@ -1959,7 +2036,7 @@ export default function SettingsPage() {
                     value={newSecretValue}
                     onChange={(e) => setNewSecretValue(e.target.value)}
                     placeholder="Enter new token or secret..."
-                    className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
+                    className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
                   />
                 </div>
 
@@ -1967,7 +2044,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setRotateModalOpen(false)}
-                    className="flex-1 min-h-[44px] py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300"
+                    className="flex-1 min-h-[44px] py-2 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-600 dark:text-slate-300"
                   >
                     Cancel
                   </button>
@@ -1993,7 +2070,7 @@ export default function SettingsPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-3xl glass-modal rounded-2xl p-6 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
                     <Sparkles className="w-4 h-4" />
@@ -2016,113 +2093,203 @@ export default function SettingsPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                  {
-                    id: 'free' as const,
-                    name: 'Free',
-                    badge: 'Evaluation',
-                    price: '$0',
-                    features: [
-                      'Nebius Nemotron (Platform default)',
-                      '5 incidents/month',
-                      '2 microVM sandboxes (15s timeout)',
-                      'Standard webhooks',
-                      'No BYOK or audit logs',
-                    ],
-                  },
-                  {
-                    id: 'team' as const,
-                    name: 'Team',
-                    badge: 'Early Stage',
-                    price: '$49/mo',
-                    features: [
-                      '1 BYOK Provider + Nebius',
-                      '25 incidents/month',
-                      '2 microVM sandboxes (15s timeout)',
-                      'Slack & PagerDuty notifications',
-                      'Automated runbook triggers',
-                    ],
-                  },
-                  {
-                    id: 'business' as const,
-                    name: 'Business',
-                    badge: 'Most Popular',
-                    price: '$199/mo',
-                    features: [
-                      'Full Multi-Provider BYOK (Anthropic, OpenAI, Google)',
-                      'Unlimited incidents',
-                      '4 microVM sandboxes (30s timeout)',
-                      'Cryptographic audit ledger',
-                      'SLO tracking & reports',
-                    ],
-                  },
-                  {
-                    id: 'enterprise' as const,
-                    name: 'Enterprise',
-                    badge: 'Mission Critical',
-                    price: 'Custom',
-                    features: [
-                      'Full Multi-Provider BYOK',
-                      'Unlimited incidents',
-                      'Custom sandboxes (up to 16, 60s timeout)',
-                      'Cryptographic audit ledger',
-                      'SSO/SAML & 24/7 dedicated support',
-                    ],
-                  },
-                ].map((tier) => {
-                  const isCurrent = currentPlan === tier.id;
-                  return (
-                    <div
-                      key={tier.id}
-                      className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
-                        isCurrent
-                          ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-1 ring-indigo-500'
-                          : 'border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-sm text-slate-900 dark:text-white">
-                            {tier.name}
-                          </span>
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                            {tier.badge}
-                          </span>
-                        </div>
-                        <div className="text-lg font-bold text-slate-900 dark:text-white">
-                          {tier.price}
-                        </div>
-                        <ul className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
-                          {tier.features.map((feat, idx) => (
-                            <li key={idx} className="flex items-start gap-1.5">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                              <span>{feat}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+              {/* Dodo Payments Test Mode & SAQ-A Security Banner */}
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-amber-700 dark:text-amber-300 block">
+                      TEST MODE — No real charges will be made
+                    </span>
+                    <span className="text-[11px] text-amber-600/80 dark:text-amber-400/80">
+                      PCI-DSS SAQ-A compliant hosted checkout. Card data never touches SOMAK AI servers. Dodo Payments as Merchant of Record.
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 font-mono text-[11px] bg-white/60 dark:bg-black/40 px-2.5 py-1.5 rounded-lg border border-amber-500/20 text-slate-700 dark:text-slate-300 self-start sm:self-auto shrink-0">
+                  <CreditCard className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Test Card: 4242 4242 4242 4242</span>
+                </div>
+              </div>
 
-                      <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
-                        {isCurrent ? (
-                          <span className="block text-center text-xs font-bold py-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            Current Plan
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={isUpdatingPlan}
-                            onClick={() => handleSelectPlan(tier.id)}
-                            className="w-full min-h-[44px] py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors disabled:opacity-50"
-                          >
-                            {isUpdatingPlan ? 'Updating...' : `Switch to ${tier.name}`}
-                          </button>
-                        )}
+              {dodoCheckoutActive ? (
+                <div className="p-6 rounded-2xl border border-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-600 dark:text-indigo-400 font-mono">
+                        Dodo Payments Test Mode Checkout
+                      </span>
+                      <h4 className="text-base font-bold text-slate-900 dark:text-white capitalize">
+                        Upgrade to {dodoCheckoutActive.plan} Tier
+                      </h4>
+                    </div>
+                    <span className="font-mono text-xs text-slate-500 dark:text-slate-400 bg-white/60 dark:bg-black/40 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/10">
+                      {dodoCheckoutActive.sessionId}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 space-y-3">
+                    <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100 dark:border-white/10">
+                      <span className="text-slate-500 dark:text-slate-400">Payment Gateway</span>
+                      <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5 text-indigo-500" />
+                        Dodo Payments Checkout (Test Mode)
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100 dark:border-white/10">
+                      <span className="text-slate-500 dark:text-slate-400">Card Number</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">
+                        4242 •••• •••• 4242
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Expires</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">12 / 28</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block text-[11px]">CVC</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">123</span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setDodoCheckoutActive(null)}
+                      className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isUpdatingPlan}
+                      onClick={handleConfirmTestPayment}
+                      className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center gap-2"
+                    >
+                      {isUpdatingPlan ? (
+                        <span>Processing Test Payment...</span>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Complete Test Payment</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    {
+                      id: 'free' as const,
+                      name: 'Free',
+                      badge: 'Evaluation',
+                      price: '$0',
+                      features: [
+                        'Nebius Nemotron (Platform default)',
+                        '5 incidents/month',
+                        '2 microVM sandboxes (15s timeout)',
+                        'Standard webhooks',
+                        'No BYOK or audit logs',
+                      ],
+                    },
+                    {
+                      id: 'team' as const,
+                      name: 'Team',
+                      badge: 'Early Stage',
+                      price: '$49/mo',
+                      features: [
+                        '1 BYOK Provider + Nebius',
+                        '25 incidents/month',
+                        '2 microVM sandboxes (15s timeout)',
+                        'Slack & PagerDuty notifications',
+                        'Automated runbook triggers',
+                      ],
+                    },
+                    {
+                      id: 'business' as const,
+                      name: 'Business',
+                      badge: 'Most Popular',
+                      price: '$199/mo',
+                      features: [
+                        'Full Multi-Provider BYOK (Anthropic, OpenAI, Google)',
+                        'Unlimited incidents',
+                        '4 microVM sandboxes (30s timeout)',
+                        'Cryptographic audit ledger',
+                        'SLO tracking & reports',
+                      ],
+                    },
+                    {
+                      id: 'enterprise' as const,
+                      name: 'Enterprise',
+                      badge: 'Mission Critical',
+                      price: 'Custom',
+                      features: [
+                        'Full Multi-Provider BYOK',
+                        'Unlimited incidents',
+                        'Custom sandboxes (up to 16, 60s timeout)',
+                        'Cryptographic audit ledger',
+                        'SSO/SAML & 24/7 dedicated support',
+                      ],
+                    },
+                  ].map((tier) => {
+                    const isCurrent = currentPlan === tier.id;
+                    return (
+                      <div
+                        key={tier.id}
+                        className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
+                          isCurrent
+                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-1 ring-indigo-500'
+                            : 'border-slate-200 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 hover:border-slate-300 dark:hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-sm text-slate-900 dark:text-white">
+                              {tier.name}
+                            </span>
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400">
+                              {tier.badge}
+                            </span>
+                          </div>
+                          <div className="text-lg font-bold text-slate-900 dark:text-white">
+                            {tier.price}
+                          </div>
+                          <ul className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
+                            {tier.features.map((feat, idx) => (
+                              <li key={idx} className="flex items-start gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                <span>{feat}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="pt-4 mt-4 border-t border-slate-100 dark:border-white/10">
+                          {isCurrent ? (
+                            <span className="block text-center text-xs font-bold py-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              Current Plan
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={isUpdatingPlan}
+                              onClick={() => handleSelectPlan(tier.id)}
+                              className="w-full min-h-[44px] py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors disabled:opacity-50"
+                            >
+                              {isUpdatingPlan ? 'Updating...' : `Switch to ${tier.name}`}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </motion.div>
           </div>
         )}

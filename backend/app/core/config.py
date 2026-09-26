@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     GOOGLE_API_KEY: str = ""
+    DODO_API_KEY: str = ""
+    DODO_WEBHOOK_SECRET: str = ""
     SOMAK_INFRA_SENTRY_DSN: str = ""
     REDIS_URL: str = ""
     ALLOWED_ORIGINS: list[str] = [

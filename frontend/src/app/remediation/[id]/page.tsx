@@ -198,11 +198,11 @@ export default function RemediationStudio() {
       <main className="flex-1 max-w-[1720px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col gap-5 pb-28">
         
         {/* Top Header & Breadcrumb Ribbon */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-slate-800/80">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-white/10">
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+              className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
               title="Return to Incident Radar"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -212,7 +212,7 @@ export default function RemediationStudio() {
                 <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                   Remediation Studio
                 </h1>
-                <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-700">
+                <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 font-bold border border-slate-200 dark:border-white/10">
                   {selectedIncident.id}
                 </span>
                 <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 font-bold border border-rose-200 dark:border-rose-900/50">
@@ -228,7 +228,7 @@ export default function RemediationStudio() {
           <div className="flex items-center gap-2.5 flex-wrap">
             {/* Inline Queue Switcher */}
             {allIncidents.length > 1 && (
-              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200/80 dark:border-white/10/60">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2">Active:</span>
                 {allIncidents.map((inc) => (
                   <button
@@ -268,9 +268,9 @@ export default function RemediationStudio() {
                     exit={{ opacity: 0, scale: 0.95, y: 5 }}
                     transition={{ duration: 0.15 }}
                     onMouseLeave={() => setShowConfidenceTooltip(false)}
-                    className="absolute right-0 top-full mt-2 w-72 p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl z-50 text-left space-y-2.5"
+                    className="absolute right-0 top-full mt-2 w-72 p-3.5 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 shadow-xl z-50 text-left space-y-2.5"
                   >
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-white/10">
                       <span className="text-xs font-bold text-slate-900 dark:text-white">
                         Confidence Breakdown
                       </span>
@@ -285,7 +285,7 @@ export default function RemediationStudio() {
                           <span>Jest Sandbox Pass Rate</span>
                           <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">100% (14/14)</span>
                         </div>
-                        <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-0.5">
+                        <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden mt-0.5">
                           <div className="h-full bg-emerald-500 w-full" />
                         </div>
                       </div>
@@ -295,7 +295,7 @@ export default function RemediationStudio() {
                           <span>AST Syntax Validation</span>
                           <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">100%</span>
                         </div>
-                        <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-0.5">
+                        <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden mt-0.5">
                           <div className="h-full bg-emerald-500 w-full" />
                         </div>
                       </div>
@@ -305,7 +305,7 @@ export default function RemediationStudio() {
                           <span>Tavily Grounding Alignment</span>
                           <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">98.2%</span>
                         </div>
-                        <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-0.5">
+                        <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden mt-0.5">
                           <div className="h-full bg-indigo-500 w-[98.2%]" />
                         </div>
                       </div>
@@ -315,13 +315,13 @@ export default function RemediationStudio() {
                           <span>Test Suite Coverage</span>
                           <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">99.4%</span>
                         </div>
-                        <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-0.5">
+                        <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden mt-0.5">
                           <div className="h-full bg-emerald-500 w-[99.4%]" />
                         </div>
                       </div>
                     </div>
 
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800 leading-tight">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 pt-1 border-t border-slate-100 dark:border-white/10 leading-tight">
                       Synthesized by NVIDIA Nemotron-3-Ultra (550B) & verified via Nebius isolated container sandbox.
                     </p>
                   </motion.div>
@@ -441,8 +441,8 @@ export default function RemediationStudio() {
         <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
 
           {/* PANEL 1: 1. What broke and why? */}
-          <section className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 sm:p-6 shadow-xs backdrop-blur-sm flex flex-col gap-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+          <section className="bg-white/80 dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-xs backdrop-blur-sm flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 font-bold text-sm">
                   1
@@ -456,13 +456,13 @@ export default function RemediationStudio() {
                   </p>
                 </div>
               </div>
-              <span className="font-mono text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
+              <span className="font-mono text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 font-bold">
                 {selectedIncident.service} • {selectedIncident.severity}
               </span>
             </div>
 
             {/* Primary Root Cause Block */}
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60">
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5/50 border border-slate-200/70 dark:border-white/10/60">
               <div className="text-[11px] uppercase tracking-wider font-bold text-slate-400 mb-1">
                 Root Cause Analysis
               </div>
@@ -478,7 +478,7 @@ export default function RemediationStudio() {
             </div>
 
             {/* Collapsible Reasoning Trace (Collapsed by default) */}
-            <div className="rounded-xl border border-slate-200/70 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 overflow-hidden">
+            <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/50 dark:bg-[#0A0A0A]/40 overflow-hidden">
               <button
                 onClick={() => setTraceExpanded(!traceExpanded)}
                 className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
@@ -500,7 +500,7 @@ export default function RemediationStudio() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="px-4 pb-4 pt-1 border-t border-slate-100 dark:border-slate-800"
+                    className="px-4 pb-4 pt-1 border-t border-slate-100 dark:border-white/10"
                   >
                     <ReasoningTree currentStep={4} incidentId={selectedIncident.id} incident={selectedIncident} />
                   </motion.div>
@@ -509,7 +509,7 @@ export default function RemediationStudio() {
             </div>
 
             {/* Collapsible Tavily Sources (Collapsed by default) */}
-            <div className="rounded-xl border border-slate-200/70 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 overflow-hidden">
+            <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/50 dark:bg-[#0A0A0A]/40 overflow-hidden">
               <button
                 onClick={() => setSourcesExpanded(!sourcesExpanded)}
                 className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
@@ -526,7 +526,7 @@ export default function RemediationStudio() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="p-4 space-y-2 border-t border-slate-100 dark:border-slate-800"
+                    className="p-4 space-y-2 border-t border-slate-100 dark:border-white/10"
                   >
                     {citations.map((cite, idx) => (
                       <a
@@ -534,7 +534,7 @@ export default function RemediationStudio() {
                         href={cite.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="block p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 transition-colors group"
+                        className="block p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-indigo-500 transition-colors group"
                       >
                         <div className="flex items-center justify-between text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-1">
                           <span className="truncate">{cite.title}</span>
@@ -552,8 +552,8 @@ export default function RemediationStudio() {
           </section>
 
           {/* PANEL 2: 2. What's the fix? */}
-          <section className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 sm:p-6 shadow-xs backdrop-blur-sm flex flex-col gap-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+          <section className="bg-white/80 dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-xs backdrop-blur-sm flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20 font-bold text-sm">
                   2
@@ -578,7 +578,7 @@ export default function RemediationStudio() {
             </div>
 
             {/* Code Diff Front and Center */}
-            <div className="w-full overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-800">
+            <div className="w-full overflow-hidden rounded-xl border border-slate-200/80 dark:border-white/10">
               <DiffViewer
                 diff={patch?.unifiedDiff || 'No diff available'}
                 targetFile={patch?.targetFile || 'src/services/tokenService.ts'}
@@ -586,7 +586,7 @@ export default function RemediationStudio() {
             </div>
 
             {/* Collapsible Reproduction Test */}
-            <div className="rounded-xl border border-slate-200/70 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 overflow-hidden">
+            <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/50 dark:bg-[#0A0A0A]/40 overflow-hidden">
               <button
                 onClick={() => setTestExpanded(!testExpanded)}
                 className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
@@ -603,7 +603,7 @@ export default function RemediationStudio() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="p-4 border-t border-slate-100 dark:border-slate-800"
+                    className="p-4 border-t border-slate-100 dark:border-white/10"
                   >
                     <pre className="p-4 bg-slate-950 text-slate-200 rounded-xl font-mono text-xs overflow-x-auto">
                       <code>{patch?.reproductionTest || `describe('TokenService Memory Leak Reproduction', () => {
@@ -623,8 +623,8 @@ export default function RemediationStudio() {
           </section>
 
           {/* PANEL 3: 3. Is it safe? */}
-          <section className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 sm:p-6 shadow-xs backdrop-blur-sm flex flex-col gap-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+          <section className="bg-white/80 dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-xs backdrop-blur-sm flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 font-bold text-sm">
                   3
@@ -645,26 +645,26 @@ export default function RemediationStudio() {
 
             {/* Pre-Deployment Checklist */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-white/5/50 border border-slate-200/70 dark:border-white/10/60 text-xs font-semibold text-slate-800 dark:text-slate-200">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                 <span>Nebius container sandbox verification (Exit code 0)</span>
               </div>
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-white/5/50 border border-slate-200/70 dark:border-white/10/60 text-xs font-semibold text-slate-800 dark:text-slate-200">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                 <span>14 / 14 Jest reproduction assertions passed (100%)</span>
               </div>
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-white/5/50 border border-slate-200/70 dark:border-white/10/60 text-xs font-semibold text-slate-800 dark:text-slate-200">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                 <span>AST syntax tree validated: zero semantic regressions</span>
               </div>
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-white/5/50 border border-slate-200/70 dark:border-white/10/60 text-xs font-semibold text-slate-800 dark:text-slate-200">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                 <span>Self-correction loop converged (0-byte heap leak)</span>
               </div>
             </div>
 
             {/* Mini Test Pass Rate Bar */}
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60">
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5/50 border border-slate-200/70 dark:border-white/10/60">
               <div className="flex justify-between items-center text-xs font-bold mb-1.5">
                 <span className="text-slate-600 dark:text-slate-300">Reproduction Test Pass Rate</span>
                 <span className="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold">100% (14 / 14)</span>
@@ -675,7 +675,7 @@ export default function RemediationStudio() {
             </div>
 
             {/* Collapsible Sandbox Container Logs */}
-            <div className="rounded-xl border border-slate-200/70 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 overflow-hidden">
+            <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/50 dark:bg-[#0A0A0A]/40 overflow-hidden">
               <button
                 onClick={() => setLogsExpanded(!logsExpanded)}
                 className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
@@ -692,7 +692,7 @@ export default function RemediationStudio() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="p-4 border-t border-slate-100 dark:border-slate-800"
+                    className="p-4 border-t border-slate-100 dark:border-white/10"
                   >
                     <TerminalOutput lines={mockTerminalLines} />
                   </motion.div>
@@ -707,7 +707,7 @@ export default function RemediationStudio() {
       {/* ======================================================== */}
       {/* STICKY BOTTOM VIEWPORT BAR: The Single Primary Deploy CTA */}
       {/* ======================================================== */}
-      <footer className="sticky bottom-0 z-30 w-full bg-white/95 dark:bg-[#090D16]/95 backdrop-blur-xl border-t border-slate-200/90 dark:border-slate-800/90 shadow-2xl py-3 px-4 sm:px-6 lg:px-8 transition-colors">
+      <footer className="sticky bottom-0 z-30 w-full bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-slate-200/90 dark:border-white/10/90 shadow-2xl py-3 px-4 sm:px-6 lg:px-8 transition-colors">
         <div className="max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-4">
           
           {/* Left Summary: Context and Safety Status */}
@@ -749,7 +749,7 @@ export default function RemediationStudio() {
           {/* Right Action: Single Primary Deploy Action with RBAC Gating */}
           <div className="flex items-center gap-3">
             {!canDeploy ? (
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs font-semibold">
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 text-xs font-semibold">
                 <Lock className="w-4 h-4 text-amber-500" />
                 <span>Viewer Mode (Deploy requires Operator role)</span>
               </div>

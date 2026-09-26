@@ -22,9 +22,9 @@ export default function TermsOfServicePage() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0A0A0A] text-slate-900 dark:text-slate-100 transition-colors">
       {/* Top Navigation */}
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#0A0A0A] backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
@@ -34,7 +34,7 @@ export default function TermsOfServicePage() {
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back</span>
             </Link>
-            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+            <div className="h-4 w-px bg-slate-200 dark:bg-white/5" />
             <Link href="/" className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-xs">
                 <Shield className="w-4 h-4" />
@@ -88,7 +88,7 @@ export default function TermsOfServicePage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="mb-10 pb-8 border-b border-slate-200 dark:border-slate-800"
+          className="mb-10 pb-8 border-b border-slate-200 dark:border-white/10"
         >
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-[11px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider mb-4">
             <Scale className="w-3 h-3" />
@@ -101,6 +101,14 @@ export default function TermsOfServicePage() {
             Effective Date: September 1, 2026 • Last updated: September 20, 2026
           </p>
         </motion.div>
+
+        {/* Legal Review Draft Notice */}
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 mb-6 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
+          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold">Operational Draft for Human / Legal Review:</span> This document represents a standard operational draft reflecting SOMAK AI platform architecture, data flow, and third-party processors. It must undergo formal human legal review prior to commercial execution or reliance.
+          </div>
+        </div>
 
         {/* Quick Highlights Callout */}
         <div className="p-5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 mb-10 text-xs sm:text-sm leading-relaxed text-indigo-950 dark:text-indigo-200 space-y-2">
@@ -135,7 +143,7 @@ export default function TermsOfServicePage() {
             <p>
               SOMAK AI ingests telemetry triggers (such as Sentry exception webhooks or Datadog alerts), isolates root causes via language reasoning models, generates Abstract Syntax Tree (AST) patches, tests them in ephemeral sandboxes, and orchestrates canary promotions.
             </p>
-            <div className="p-4 rounded-xl bg-slate-100/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+            <div className="p-4 rounded-xl bg-slate-100/90 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 space-y-2 text-xs">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <Activity className="w-4 h-4 text-indigo-500" />
                 Built-in Circuit Breakers
@@ -199,7 +207,7 @@ export default function TermsOfServicePage() {
           </section>
 
           {/* 6. Limitation of Liability */}
-          <section className="space-y-3 p-5 rounded-2xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+          <section className="space-y-3 p-5 rounded-2xl bg-slate-100/80 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10">
             <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
               6. Limitation of Liability
@@ -228,10 +236,39 @@ export default function TermsOfServicePage() {
             </ul>
           </section>
 
-          {/* 8. Governing Law */}
+          {/* 8. Third-Party Sub-Processors & Payment Services */}
           <section className="space-y-3">
             <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
               <span className="text-indigo-600 dark:text-indigo-400 font-mono text-base">8.</span>
+              Third-Party Processors & Payment Services
+            </h2>
+            <p>
+              To deliver autonomous site reliability and subscription services, SOMAK AI integrates with specialized enterprise infrastructure partners:
+            </p>
+            <div className="grid sm:grid-cols-2 gap-3 mt-2 text-xs">
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 space-y-1">
+                <div className="font-bold text-slate-900 dark:text-white">Dodo Payments Ltd. (Merchant of Record)</div>
+                <p className="text-slate-500 dark:text-slate-400">Processes subscription payments as Merchant of Record with full global sales tax/VAT compliance. Cardholder data never touches SOMAK AI servers.</p>
+              </div>
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 space-y-1">
+                <div className="font-bold text-slate-900 dark:text-white">Nebius AI Studio (Inference & Sandboxes)</div>
+                <p className="text-slate-500 dark:text-slate-400">Executes ephemeral Firecracker microVM test runs and model inference under zero-retention RAM-only contracts.</p>
+              </div>
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 space-y-1">
+                <div className="font-bold text-slate-900 dark:text-white">Tavily Search API (Grounding)</div>
+                <p className="text-slate-500 dark:text-slate-400">Queries public technical documentation and error signatures for context grounding without transmitting customer code.</p>
+              </div>
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 space-y-1">
+                <div className="font-bold text-slate-900 dark:text-white">Functional Software Inc. / Sentry</div>
+                <p className="text-slate-500 dark:text-slate-400">Provides inbound crash alerts and stack trace telemetry secured by cryptographic HMAC-SHA256 signatures.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* 9. Governing Law */}
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              <span className="text-indigo-600 dark:text-indigo-400 font-mono text-base">9.</span>
               Governing Law & Disputes
             </h2>
             <p>
@@ -241,7 +278,7 @@ export default function TermsOfServicePage() {
         </div>
 
         {/* Bottom Cross Navigation */}
-        <div className="mt-14 pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+        <div className="mt-14 pt-8 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div>
             © 2026 SOMAK AI Inc. All rights reserved.
           </div>

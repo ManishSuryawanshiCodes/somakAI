@@ -309,7 +309,7 @@ export default function OnCallPage() {
         </Link>
         
         {/* Header Ribbon */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/10">
           <div>
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
@@ -336,7 +336,7 @@ export default function OnCallPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-mono text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+            <span className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 text-xs font-mono text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10">
               Current Time: {new Date().toISOString().slice(11, 16)} UTC
             </span>
           </div>
@@ -368,7 +368,7 @@ export default function OnCallPage() {
         ) : (
           <>
         {/* Rule 8: Clarify "Lead" Role & Escalation Hierarchy Guide */}
-        <div className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/80 dark:border-slate-800 text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+        <div className="p-3.5 rounded-2xl bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-slate-200/80 dark:border-white/10 text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-2">
             <Info className="w-4 h-4 text-indigo-500 shrink-0" />
             <span className="font-bold text-slate-900 dark:text-white">Escalation Hierarchy Guide:</span>
@@ -382,7 +382,7 @@ export default function OnCallPage() {
             </div>
             <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
             <div className="flex items-center gap-1.5">
-              <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold font-mono text-[9px] border border-slate-300 dark:border-slate-700">
+              <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-white/5 text-slate-700 dark:text-slate-300 font-bold font-mono text-[9px] border border-slate-300 dark:border-white/10">
                 Tier 2 (Secondary)
               </span>
               <span>Automatic fallback if unacknowledged in 5m</span>
@@ -402,15 +402,15 @@ export default function OnCallPage() {
           const pagingShift = shifts.find((s) => s.status === 'paging' && s.activeIncidentId);
           if (!pagingShift) return null;
           return (
-            <div className="sticky top-14 z-20 p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-red-500/40 shadow-lg shadow-red-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="sticky top-14 z-20 p-4 sm:p-5 rounded-2xl bg-rose-500/10 dark:bg-rose-500/10 backdrop-blur-md border border-rose-500/30 shadow-lg shadow-rose-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start sm:items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
                   <PhoneCall className="w-5 h-5 animate-bounce" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                    <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
                       Active Page Triggered
                     </span>
                     <span className="text-xs text-slate-400">• Incident {pagingShift.activeIncidentId}</span>
@@ -438,7 +438,7 @@ export default function OnCallPage() {
         })()}
 
         {/* Rule 7: Search & Status Filter Toolbar + View Switcher */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 rounded-2xl bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10">
           
           {/* Search Input & Status Filters */}
           <div className="flex flex-wrap items-center gap-2 flex-1">
@@ -449,7 +449,7 @@ export default function OnCallPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search services or responders..."
-                className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-white dark:bg-white/5 text-xs text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
               {searchQuery && (
                 <button
@@ -462,7 +462,7 @@ export default function OnCallPage() {
             </div>
 
             {/* Filter Pills */}
-            <div className="flex items-center p-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs">
+            <div className="flex items-center p-1 rounded-xl bg-white dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-xs">
               <button
                 onClick={() => setStatusFilter('all')}
                 className={`px-3 py-1 rounded-lg font-semibold transition-all ${
@@ -499,7 +499,7 @@ export default function OnCallPage() {
           </div>
 
           {/* Rule 1: View Mode Switcher (Grid vs Rotation Timeline) */}
-          <div className="flex items-center p-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 self-end sm:self-center">
+          <div className="flex items-center p-1 rounded-xl bg-white dark:bg-white/5 border border-slate-200/80 dark:border-white/10 self-end sm:self-center">
             <button
               onClick={() => setViewMode('grid')}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
@@ -530,7 +530,7 @@ export default function OnCallPage() {
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {processedShifts.length === 0 ? (
-              <div className="col-span-full p-12 text-center text-slate-400 text-sm bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+              <div className="col-span-full p-12 text-center text-slate-400 text-sm bg-white/50 dark:bg-[#0A0A0A]/50 rounded-2xl border border-slate-200/80 dark:border-white/10">
                 No on-call rotations match your search filter.
               </div>
             ) : (
@@ -545,11 +545,11 @@ export default function OnCallPage() {
                     className={`glass-card p-5 sm:p-6 rounded-2xl border transition-all flex flex-col justify-between gap-4.5 ${
                       isPaging
                         ? 'border-red-500/50 ring-2 ring-red-500/20 shadow-lg shadow-red-500/5 bg-gradient-to-b from-red-500/[0.04] to-transparent'
-                        : 'border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-xs'
+                        : 'border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-slate-700 shadow-xs'
                     }`}
                   >
                     {/* Card Header Row */}
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
                       <div className="flex items-center gap-2.5">
                         <span className="font-mono text-sm font-extrabold text-slate-900 dark:text-white">
                           {shift.service}
@@ -583,7 +583,7 @@ export default function OnCallPage() {
                         className={`flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl transition-colors ${
                           isPaging
                             ? 'bg-red-500/[0.08] dark:bg-red-500/[0.12] border border-red-500/30'
-                            : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60'
+                            : 'bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10/60'
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -658,7 +658,7 @@ export default function OnCallPage() {
                       </div>
 
                       {/* Secondary Responder Row */}
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-200/50 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/60 dark:bg-white/5/30 border border-slate-200/50 dark:border-white/10 text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-[10px] shrink-0">
                             {shift.secondary.avatar}
@@ -668,7 +668,7 @@ export default function OnCallPage() {
                               <span className="font-medium text-slate-800 dark:text-slate-200">
                                 {shift.secondary.name}
                               </span>
-                              <span className="text-[9px] font-mono px-1 rounded bg-slate-200 dark:bg-slate-800 text-slate-500">
+                              <span className="text-[9px] font-mono px-1 rounded bg-slate-200 dark:bg-white/5 text-slate-500">
                                 Secondary Tier 2
                               </span>
                             </div>
@@ -699,7 +699,7 @@ export default function OnCallPage() {
                     </div>
 
                     {/* Rule 1: In-Card 7-Day Rotation Schedule Mini-Strip */}
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800/80">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/70 dark:border-white/10">
                       <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-2">
                         <span className="uppercase tracking-wider">7-Day Rotation Schedule</span>
                         <span className="font-mono text-slate-400">09:00 UTC Shift Handoff</span>
@@ -712,7 +712,7 @@ export default function OnCallPage() {
                             className={`p-1.5 rounded-lg flex flex-col items-center gap-1 transition-all ${
                               slot.isToday
                                 ? 'bg-indigo-500/15 border border-indigo-500/30'
-                                : 'bg-white dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60'
+                                : 'bg-white dark:bg-white/5 border border-slate-200/60 dark:border-white/10/60'
                             }`}
                             title={`${slot.date}: ${slot.responder}`}
                           >
@@ -733,7 +733,7 @@ export default function OnCallPage() {
                     </div>
 
                     {/* Rule 6: Standardized Consistent Card Metadata Footer Row */}
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                    <div className="pt-2 border-t border-slate-100 dark:border-white/10 grid grid-cols-3 gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                       <div className="flex items-center gap-1.5 truncate">
                         <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span className="truncate" title={`Handoff: ${shift.nextHandoff}`}>
@@ -764,8 +764,8 @@ export default function OnCallPage() {
           </div>
         ) : (
           /* VIEW MODE 2: FULL 14-DAY ROTATION TIMELINE CALENDAR */
-          <div className="p-6 rounded-2xl bg-white/90 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="p-6 rounded-2xl bg-white/90 dark:bg-[#0A0A0A] backdrop-blur-sm border border-slate-200/80 dark:border-white/10 shadow-xs space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-white/10">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                   <CalendarDays className="w-4 h-4 text-indigo-500" />
@@ -801,7 +801,7 @@ export default function OnCallPage() {
             <div className="overflow-x-auto no-scrollbar">
               <div className="min-w-[900px] space-y-3">
                 {/* Timeline Header Row (Dates) */}
-                <div className="grid grid-cols-12 gap-2 text-[11px] font-bold text-slate-400 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-12 gap-2 text-[11px] font-bold text-slate-400 pb-2 border-b border-slate-100 dark:border-white/10">
                   <div className="col-span-3 text-slate-600 dark:text-slate-300">Service</div>
                   <div className="col-span-9 grid grid-cols-14 gap-1 text-center font-mono">
                     {SHIFTS[0].schedule.map((slot, i) => (
@@ -826,7 +826,7 @@ export default function OnCallPage() {
                   return (
                     <div
                       key={shift.id}
-                      className="grid grid-cols-12 gap-2 items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800/60"
+                      className="grid grid-cols-12 gap-2 items-center p-3 rounded-xl bg-slate-50 dark:bg-white/5/50 border border-slate-200/60 dark:border-white/10/60"
                     >
                       <div className="col-span-3 flex items-center gap-2">
                         <span className="font-mono text-xs font-bold text-slate-900 dark:text-white truncate">

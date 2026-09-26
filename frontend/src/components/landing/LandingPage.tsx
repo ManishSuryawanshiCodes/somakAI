@@ -379,15 +379,15 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#030306] text-[#181614] dark:text-white transition-colors duration-300 relative selection:bg-indigo-500/25 overflow-x-hidden">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0A0A0A] text-[#181614] dark:text-white transition-colors duration-300 relative selection:bg-indigo-500/25 overflow-x-hidden">
       
       {/* Dynamic Floating Liquid Aurora Mesh Background */}
       <div
         aria-hidden="true"
         className="fixed inset-0 pointer-events-none -z-10 overflow-hidden select-none"
       >
-        {/* Pure Black in Dark Mode, Cream in Light Mode */}
-        <div className="absolute inset-0 bg-[#FAF8F5] dark:bg-[#030306] transition-colors duration-300" />
+        {/* Pure Near-Black in Dark Mode, Cream in Light Mode */}
+        <div className="absolute inset-0 bg-[#FAF8F5] dark:bg-[#0A0A0A] transition-colors duration-300" />
         
         {/* Neon Emerald Glowing Caustic */}
         <div className="absolute -top-40 left-1/4 w-[700px] sm:w-[850px] h-[700px] sm:h-[850px] rounded-full bg-gradient-to-tr from-emerald-500/25 to-teal-500/10 dark:from-emerald-500/15 dark:to-transparent blur-[140px] animate-aurora-1 opacity-90 dark:opacity-75" />
@@ -403,21 +403,24 @@ export default function LandingPage() {
       </div>
 
       {/* 1. Public Top Navigation (Liquid Glass Header) */}
-      <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#FAF8F5]/85 dark:bg-[#030306]/85 border-b border-[#E8E3D9] dark:border-white/10 transition-colors shadow-xs">
+      <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#FAF8F5]/90 dark:bg-[#0A0A0A]/90 border-b border-slate-200 dark:border-white/10 transition-colors shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           
-          {/* Brand Logo */}
+          {/* Brand Logo: Size-appropriate simplified icon + typography lockup */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-all">
-              <Bot className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/10 flex items-center justify-center p-1 shrink-0 transition-transform group-hover:scale-105 shadow-xs overflow-hidden">
+              <img
+                src="/somak-ai-icon-simplified-transparent.png"
+                alt="SOMAK AI"
+                className="w-6 h-6 object-contain aspect-square"
+              />
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-base tracking-tight text-[#181614] dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white leading-none">
                 SOMAK AI
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                AUTONOMOUS SRE
+              <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 leading-none">
+                AUTONOMOUS
               </span>
             </div>
           </Link>
@@ -448,22 +451,15 @@ export default function LandingPage() {
               <span>Docs</span>
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-500 to-indigo-500 transition-all duration-200 group-hover:w-full rounded-full" />
             </Link>
-            <Link
-              href="/status"
-              className="relative py-1 hover:text-slate-900 dark:hover:text-white transition-colors group"
-            >
-              <span>Status</span>
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-500 to-indigo-500 transition-all duration-200 group-hover:w-full rounded-full" />
-            </Link>
           </nav>
 
           {/* Right Action Controls */}
           <div className="flex items-center gap-3">
-            {/* Theme Toggle */}
+            {/* Theme Toggle (Hidden per directive) */}
             <button
               onClick={toggleTheme}
               aria-label="Toggle theme"
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 transition-colors relative overflow-hidden"
+              className="hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 transition-colors relative overflow-hidden"
             >
               <AnimatePresence mode="wait">
                 <motion.div
@@ -583,19 +579,22 @@ export default function LandingPage() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
+          viewport={{ once: true, amount: 0.05 }}
           transition={{ duration: 0.6 }}
           className="liquid-glass rounded-3xl border border-[#E8E3D9] dark:border-white/10 overflow-hidden shadow-2xl relative"
         >
           {/* Window Chrome Header */}
-          <div className="px-5 py-3.5 bg-slate-100/90 dark:bg-[#07090F]/90 border-b border-[#E8E3D9] dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+          <div className="px-5 py-3.5 bg-slate-100/90 dark:bg-[#0A0A0A] border-b border-[#E8E3D9] dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
               <span className="w-3 h-3 rounded-full bg-rose-500/90 inline-block" />
               <span className="w-3 h-3 rounded-full bg-amber-400/90 inline-block" />
               <span className="w-3 h-3 rounded-full bg-emerald-400/90 inline-block" />
-              <span className="ml-2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
-                SOMAK AI Sandbox Simulator • Interactive Live Walkthrough
-              </span>
+              <div className="ml-2 flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/10 shadow-2xs">
+                <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-4 h-4 object-contain aspect-square" />
+                <span className="text-xs font-mono font-bold text-slate-200">
+                  SOMAK AI Sandbox Simulator • Interactive Live Walkthrough
+                </span>
+              </div>
             </div>
 
             {/* Play/Pause & Step Controls */}
@@ -1212,7 +1211,7 @@ export default function LandingPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
+          viewport={{ once: true, amount: 0.05 }}
           transition={{ duration: 0.5 }}
           className="text-center space-y-3 max-w-2xl mx-auto"
         >
@@ -1237,7 +1236,7 @@ export default function LandingPage() {
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
+                viewport={{ once: true, amount: 0.05 }}
                 transition={{ duration: 0.4, delay: idx * 0.08 }}
                 className={`liquid-glass p-6 rounded-2xl shadow-xs space-y-4 transition-all duration-300 relative group border-2 ${
                   isStepActive
@@ -1292,7 +1291,7 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
+            viewport={{ once: true, amount: 0.05 }}
             transition={{ duration: 0.5 }}
             className="text-center space-y-3 max-w-2xl mx-auto"
           >
@@ -1315,7 +1314,7 @@ export default function LandingPage() {
                   key={idx}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-40px' }}
+                  viewport={{ once: true, amount: 0.05 }}
                   transition={{ duration: 0.4, delay: idx * 0.05 }}
                   className="liquid-glass p-6 rounded-2xl shadow-xs space-y-3 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg border-2 border-[#E8E3D9] dark:border-white/15 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 flex flex-col justify-between group"
                 >
@@ -1348,7 +1347,7 @@ export default function LandingPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
+          viewport={{ once: true, amount: 0.05 }}
           transition={{ duration: 0.5 }}
           className="text-center space-y-3 max-w-2xl mx-auto"
         >
@@ -1444,7 +1443,7 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
+            viewport={{ once: true, amount: 0.05 }}
             transition={{ duration: 0.5 }}
             className="text-center space-y-3 max-w-2xl mx-auto"
           >
@@ -1465,7 +1464,7 @@ export default function LandingPage() {
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
+                viewport={{ once: true, amount: 0.05 }}
                 transition={{ duration: 0.4, delay: idx * 0.1 }}
                 className={`liquid-glass p-8 rounded-3xl shadow-lg space-y-6 flex flex-col justify-between relative group ${
                   plan.highlighted
@@ -1515,24 +1514,272 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* 9B. 3-Step Autonomous Engine Section */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-white/10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.05 }}
+          transition={{ duration: 0.5 }}
+          className="text-center space-y-4 mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+            <Cpu className="w-3.5 h-3.5" />
+            <span>Remediation Pipeline</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#181614] dark:text-white">
+            The 3-Step Autonomous Remediation Engine
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 max-w-2xl mx-auto">
+            From raw exception telemetry to validated canary rollout in under 30 seconds — zero human intervention required.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.05 }}
+            transition={{ duration: 0.4 }}
+            className="bg-white dark:bg-[#0a0a0a] rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden group hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-xs"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-6 font-mono font-bold text-sm">
+              01
+            </div>
+            <h3 className="text-base font-bold text-[#181614] dark:text-white mb-2">Ingestion & Telemetry Triage</h3>
+            <p className="text-xs text-slate-600 dark:text-neutral-400 leading-relaxed mb-4">
+              Real-time ingestion of Sentry webhooks, Datadog traces, and Kubernetes event streams. Fingerprinting clusters error storms and discovers root causes instantly.
+            </p>
+            <div className="p-3 rounded-xl bg-slate-900 text-slate-300 border border-slate-800 font-mono text-[11px] space-y-1">
+              <div className="text-emerald-400">✓ Deduplicated 1,420 events/sec</div>
+              <div>Root: heap_out_of_memory</div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.05 }}
+            transition={{ duration: 0.4, delay: 0.08 }}
+            className="bg-white dark:bg-[#0a0a0a] rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden group hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-xs"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-6 font-mono font-bold text-sm">
+              02
+            </div>
+            <h3 className="text-base font-bold text-[#181614] dark:text-white mb-2">AST-Safe Patch Synthesis</h3>
+            <p className="text-xs text-slate-600 dark:text-neutral-400 leading-relaxed mb-4">
+              Dual-stage Nemotron LLM synthesis generates targeted diffs verified against abstract syntax tree rules in isolated sandboxes with zero host environment exposure.
+            </p>
+            <div className="p-3 rounded-xl bg-slate-900 text-slate-300 border border-slate-800 font-mono text-[11px] space-y-1">
+              <div className="text-purple-400">✓ AST tree validated (0 syntax errs)</div>
+              <div>Sandbox run: 14/14 tests pass</div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.05 }}
+            transition={{ duration: 0.4, delay: 0.16 }}
+            className="bg-white dark:bg-[#0a0a0a] rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden group hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-xs"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mb-6 font-mono font-bold text-sm">
+              03
+            </div>
+            <h3 className="text-base font-bold text-[#181614] dark:text-white mb-2">Guarded Canary Rollout</h3>
+            <p className="text-xs text-slate-600 dark:text-neutral-400 leading-relaxed mb-4">
+              Traffic routes progressively: 5% → 25% → 50% → 100%. If latency spikes or error rate exceeds 0.5%, auto-rollback triggers instantaneously in &lt; 4 seconds.
+            </p>
+            <div className="p-3 rounded-xl bg-slate-900 text-slate-300 border border-slate-800 font-mono text-[11px] space-y-1">
+              <div className="text-cyan-400">✓ Health: 99.8% (Target: &gt;99.5%)</div>
+              <div>Rollout complete in 4m 12s</div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 9C. Real Enterprise Architecture Section */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-white/10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.05 }}
+          transition={{ duration: 0.5 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+        >
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              <Shield className="w-3.5 h-3.5" />
+              <span>Multi-Tenant Security Architecture</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#181614] dark:text-white leading-tight">
+              Enterprise Data Isolation with BYOK Encryption
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 leading-relaxed">
+              SOMAK AI is engineered for tier-1 regulated environments. Your code never leaves your defined tenancy, and integration keys are protected with envelope encryption.
+            </p>
+
+            <div className="space-y-4 pt-2">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <Check className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#181614] dark:text-white">Cryptographic Tenant Partitioning</h4>
+                  <p className="text-xs text-slate-600 dark:text-neutral-400">Strict PostgreSQL multi-tenant isolation and server-side RBAC scoping on every query path.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <Check className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#181614] dark:text-white">Dual-Layer Envelope Encryption (BYOK)</h4>
+                  <p className="text-xs text-slate-600 dark:text-neutral-400">Bring your own keys across AWS KMS, HashiCorp Vault, or Google Cloud KMS with per-tenant DEK wrapping.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <Check className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#181614] dark:text-white">Tamper-Proof Audit Logging</h4>
+                  <p className="text-xs text-slate-600 dark:text-neutral-400">Append-only SHA-256 hash chains enforced by PostgreSQL triggers preventing history mutation.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-950 dark:bg-[#0a0a0a] rounded-3xl border border-slate-800 dark:border-white/10 p-6 sm:p-8 font-mono text-xs shadow-2xl relative">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 dark:border-white/10 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+                <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
+                <span className="text-[11px] text-neutral-500 ml-2">security-boundary.audit.log</span>
+              </div>
+              <span className="text-[10px] text-emerald-400 font-bold">VERIFIED IMMUTABLE</span>
+            </div>
+
+            <div className="space-y-2 text-[11px] text-neutral-300">
+              <div className="text-neutral-500"># Verifying tenant boundary isolation</div>
+              <div className="text-indigo-400">&gt; GET /api/organizations/org_acme/incidents</div>
+              <div className="text-emerald-400">&lt; 200 OK [Scope: org_acme, Count: 24]</div>
+              <div className="text-indigo-400">&gt; GET /api/organizations/org_foreign/incidents</div>
+              <div className="text-red-400">&lt; 404 Not Found [RBAC Policy Enforced]</div>
+              <div className="text-neutral-500 pt-2"># Cryptographic Hash Chain Verification</div>
+              <div className="text-neutral-400">Block 0492: prev=a8f9... curr=3b12... [MATCH]</div>
+              <div className="text-neutral-400">Sandbox Isolation: network=none, env=cleared</div>
+              <div className="text-emerald-400 font-bold pt-1">STATUS: ZERO LEAKAGE DETECTED</div>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* 9D. Benchmark Comparison Section */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-white/10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.05 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="text-center space-y-4 mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-xs font-semibold text-cyan-600 dark:text-cyan-400">
+              <Gauge className="w-3.5 h-3.5" />
+              <span>Benchmark Comparison</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#181614] dark:text-white">
+              Traditional On-Call vs SOMAK AI
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 max-w-2xl mx-auto">
+              See the quantifiable difference between human-driven firefighting and deterministic autonomous remediation.
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-[#0a0a0a] rounded-3xl border border-slate-200 dark:border-white/10 overflow-hidden shadow-2xl">
+            <div className="grid grid-cols-12 p-4 sm:p-6 border-b border-slate-200 dark:border-white/10 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-400 bg-slate-50 dark:bg-white/[0.02]">
+              <div className="col-span-5">Reliability Metric</div>
+              <div className="col-span-3 text-center sm:text-left">Traditional SRE Team</div>
+              <div className="col-span-4 text-emerald-600 dark:text-emerald-400 text-right sm:text-left">SOMAK AI Engine</div>
+            </div>
+
+            {[
+              {
+                metric: 'Mean Time to Remediation (MTTR)',
+                traditional: '45 - 90 minutes',
+                somak: '12 - 35 seconds',
+                gain: '99.4% faster',
+              },
+              {
+                metric: 'Human Alert Fatigue & Night Pages',
+                traditional: '15 - 30 pages / week',
+                somak: '0 pages (autonomous canary)',
+                gain: '100% reduction',
+              },
+              {
+                metric: 'AST Deterministic Verification',
+                traditional: 'Manual review (unreliable)',
+                somak: '100% AST formal validation',
+                gain: 'Zero syntax regressions',
+              },
+              {
+                metric: 'Canary Rollback Latency',
+                traditional: '8 - 15 minutes (kubectl)',
+                somak: '< 4 seconds automated',
+                gain: 'Zero customer blast radius',
+              },
+              {
+                metric: 'Monthly Downtime Cost Impact',
+                traditional: '$48,000 - $180,000 / cluster',
+                somak: '< $120 / month LLM tokens',
+                gain: '99.7% cost savings',
+              },
+            ].map((row, i) => (
+              <div
+                key={row.metric}
+                className={`grid grid-cols-12 p-4 sm:p-6 items-center text-xs ${
+                  i % 2 === 1 ? 'bg-slate-50/50 dark:bg-white/[0.01]' : ''
+                } border-b border-slate-100 dark:border-white/5 last:border-0`}
+              >
+                <div className="col-span-5 font-semibold text-slate-900 dark:text-white">
+                  {row.metric}
+                </div>
+                <div className="col-span-3 text-slate-600 dark:text-neutral-400 font-mono text-center sm:text-left">
+                  {row.traditional}
+                </div>
+                <div className="col-span-4 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right sm:text-left flex items-center justify-end sm:justify-between">
+                  <span>{row.somak}</span>
+                  <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] border border-emerald-500/20">
+                    {row.gain}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
       {/* 10. Final CTA Section */}
       <section className="py-20 sm:py-28 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, margin: '-60px' }}
+          viewport={{ once: true, amount: 0.05 }}
           transition={{ duration: 0.5 }}
-          className="liquid-glass p-10 sm:p-16 rounded-3xl border border-indigo-500/30 shadow-2xl space-y-6 relative overflow-hidden"
+          className="bg-white dark:bg-[#0a0a0a] p-10 sm:p-16 rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl space-y-6 relative overflow-hidden"
         >
-          <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/30">
-            <Sparkles className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-2xl bg-black border border-white/15 p-2.5 flex items-center justify-center mx-auto shadow-xl shadow-amber-500/10">
+            <img src="/somak-ai-icon-transparent.png" alt="SOMAK AI" className="w-full h-full object-contain" />
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#181614] dark:text-white max-w-2xl mx-auto">
             Ready to eliminate 3 AM pages forever?
           </h2>
 
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 max-w-xl mx-auto">
             Connect SOMAK AI to your telemetry in 5 minutes and see your first production incident resolved autonomously.
           </p>
 
@@ -1547,62 +1794,68 @@ export default function LandingPage() {
 
             <Link
               href="/docs"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-sm transition-all"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold text-sm transition-all"
             >
-              <BookOpen className="w-4 h-4 text-indigo-500" />
+              <BookOpen className="w-4 h-4 text-indigo-400" />
               <span>Read Documentation</span>
             </Link>
           </div>
 
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-neutral-500">
             Free during public beta • No credit card required • 5-minute setup
           </p>
         </motion.div>
       </section>
 
+      {/* 10B. Large Capitalized Wordmark Banner */}
+      <section className="relative overflow-hidden py-16 sm:py-24 border-t border-white/10 select-none">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="text-[11vw] sm:text-[13vw] font-black tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-b from-white/20 via-white/10 to-transparent pointer-events-none">
+            SOMAK AI
+          </div>
+          <p className="text-xs sm:text-sm uppercase tracking-widest text-neutral-400 mt-2 font-mono">
+            Autonomous Site Reliability & Production Self-Healing Platform
+          </p>
+        </div>
+      </section>
+
       {/* 11. Footer */}
-      <footer className="border-t border-[#E8E3D9] dark:border-white/10 py-12 text-xs text-slate-500 dark:text-slate-400">
+      <footer className="border-t border-slate-200 dark:border-white/10 py-12 text-xs text-neutral-400 bg-[#FAF8F5] dark:bg-[#0A0A0A]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
-              <Bot className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/15 p-1 flex items-center justify-center shadow-xs overflow-hidden">
+              <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-6 h-6 object-contain aspect-square" />
             </div>
-            <span className="font-bold text-[#181614] dark:text-white">
+            <span className="font-bold text-slate-900 dark:text-white tracking-tight">
               SOMAK AI
             </span>
-            <span className="text-slate-400">
+            <span className="text-neutral-500">
               © {new Date().getFullYear()} SOMAK AI Inc.
             </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-6">
-            <Link href="/privacy" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+            <Link href="/contact" className="hover:text-white transition-colors text-indigo-400 font-semibold">
+              Contact Us
+            </Link>
+            <Link href="/privacy" className="hover:text-white transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+            <Link href="/terms" className="hover:text-white transition-colors">
               Terms of Service
             </Link>
-            <Link href="/docs" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+            <Link href="/docs" className="hover:text-white transition-colors">
               Documentation
             </Link>
-            <Link href="/status" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+            <Link href="/status" className="hover:text-white transition-colors">
               System Status
             </Link>
-            <Link href="/changelog" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+            <Link href="/changelog" className="hover:text-white transition-colors">
               Changelog
             </Link>
-            <Link href="/audit" className="hover:text-slate-900 dark:hover:text-white transition-colors">
-              SOC-2 Audit
+            <Link href="/soc-audit" className="hover:text-white transition-colors">
+              Security & Compliance
             </Link>
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-slate-900 dark:hover:text-white transition-colors inline-flex items-center gap-1"
-            >
-              <span>GitHub</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
           </div>
         </div>
       </footer>

@@ -483,7 +483,11 @@ class GoogleProvider(LLMProvider):
             return self._simulated_triage(f"Google {self.model or 'Gemini 1.5 Flash'}")
 
         model_name = self.model or "gemini-1.5-flash"
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+        headers = {
+            "x-goog-api-key": self.api_key,
+            "Content-Type": "application/json"
+        }
 
         tag = _generate_delimiter_tag("trace")
         sanitized_trace = _sanitize_untrusted_input(error_trace, tag)
@@ -500,9 +504,9 @@ class GoogleProvider(LLMProvider):
         }
 
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(url, json=payload)
+            resp = await client.post(url, headers=headers, json=payload)
             if resp.status_code != 200:
-                raise RuntimeError(f"Google Gemini API error HTTP {resp.status_code}: {resp.text}")
+                raise RuntimeError(f"Google Gemini API error HTTP {resp.status_code}")
             data = resp.json()
             raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
             return _extract_json_payload(raw_text)
@@ -518,7 +522,11 @@ class GoogleProvider(LLMProvider):
             return self._simulated_patch(f"Google {self.model or 'Gemini 1.5 Pro'}", feedback_context)
 
         model_name = self.model or "gemini-1.5-pro"
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+        headers = {
+            "x-goog-api-key": self.api_key,
+            "Content-Type": "application/json"
+        }
 
         tag_trace = _generate_delimiter_tag("trace")
         tag_rca = _generate_delimiter_tag("rca")
@@ -548,9 +556,9 @@ class GoogleProvider(LLMProvider):
         }
 
         async with httpx.AsyncClient(timeout=25.0) as client:
-            resp = await client.post(url, json=payload)
+            resp = await client.post(url, headers=headers, json=payload)
             if resp.status_code != 200:
-                raise RuntimeError(f"Google Gemini API error HTTP {resp.status_code}: {resp.text}")
+                raise RuntimeError(f"Google Gemini API error HTTP {resp.status_code}")
             data = resp.json()
             raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
             return _extract_json_payload(raw_text)
