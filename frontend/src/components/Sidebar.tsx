@@ -236,58 +236,75 @@ export default function Sidebar({
       >
         {/* Top: Logo & Workspace Switcher */}
         <div className="p-3.5 border-b border-slate-200 dark:border-white/10 flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <Link
-              href="/"
-              onClick={() => isMobileDrawer && onCloseMobileDrawer?.()}
-              className="flex items-center gap-2.5 group overflow-hidden"
-            >
-              <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/10 flex items-center justify-center p-1 shadow-xs shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
-                <img src="/somak-ai-icon-simplified-transparent.png" alt="Somak AI" className="w-6 h-6 object-contain aspect-square" />
-              </div>
-              {(!collapsed || isMobileDrawer) && (
+          {/* In collapsed mode: stack logo + expand toggle vertically to fit 72px */}
+          {collapsed && !isMobileDrawer ? (
+            <div className="flex flex-col items-center gap-2">
+              <Link
+                href="/"
+                className="flex items-center justify-center group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/10 flex items-center justify-center p-1 shadow-xs group-hover:scale-105 transition-transform overflow-hidden shrink-0">
+                  <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-6 h-6 object-contain aspect-square" />
+                </div>
+              </Link>
+              <button
+                onClick={onToggleCollapse}
+                title="Expand sidebar"
+                aria-label="Expand sidebar"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <Link
+                href="/"
+                onClick={() => isMobileDrawer && onCloseMobileDrawer?.()}
+                className="flex items-center gap-2.5 group overflow-hidden"
+              >
+                <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/10 flex items-center justify-center p-1 shadow-xs shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
+                  <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-6 h-6 object-contain aspect-square" />
+                </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
-                    Somak AI
-                    <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded-full bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                      SRE
-                    </span>
+                  <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white font-mono">
+                    SOMAK AI
                   </span>
                 </div>
-              )}
-            </Link>
+              </Link>
 
-            {/* Header Action Icons: Tour Help + Collapse or Mobile Close */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setTourOpen(true)}
-                title="Start 4-step architecture tour (?)"
-                aria-label="Start product tour"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <HelpCircle className="w-4 h-4" />
-              </button>
+              {/* Header Action Icons: Tour Help + Collapse or Mobile Close */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setTourOpen(true)}
+                  title="Start 5-step product tour"
+                  aria-label="Start product tour"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                </button>
 
-              {isMobileDrawer ? (
-                <button
-                  onClick={onCloseMobileDrawer}
-                  aria-label="Close navigation drawer"
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              ) : (
-                <button
-                  onClick={onToggleCollapse}
-                  title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                  aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                >
-                  {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-                </button>
-              )}
+                {isMobileDrawer ? (
+                  <button
+                    onClick={onCloseMobileDrawer}
+                    aria-label="Close navigation drawer"
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={onToggleCollapse}
+                    title="Collapse sidebar"
+                    aria-label="Collapse sidebar"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Workspace / Org Switcher Dropdown (Expanded Mode or Mobile Drawer) */}
           {(!collapsed || isMobileDrawer) && (
@@ -436,11 +453,16 @@ export default function Sidebar({
         </div>
 
         {/* Navigation Sections */}
-        <div className="flex-1 overflow-y-auto py-3 px-2 space-y-5 scrollbar-none">
-          {navGroups.map((group) => (
-            <div key={group.group} className="space-y-1">
+        <div className="flex-1 overflow-y-auto py-3 px-2 space-y-4 scrollbar-none">
+          {navGroups.map((group, groupIdx) => (
+            <div
+              key={group.group}
+              className={`space-y-1 ${
+                groupIdx > 0 ? 'pt-3 border-t border-slate-100 dark:border-white/5' : ''
+              }`}
+            >
               {(!collapsed || isMobileDrawer) && (
-                <div className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+                <div className="px-2.5 text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 select-none">
                   {group.group}
                 </div>
               )}
@@ -454,16 +476,16 @@ export default function Sidebar({
                     key={item.id}
                     href={item.href}
                     onClick={() => isMobileDrawer && onCloseMobileDrawer?.()}
-                    title={collapsed && !isMobileDrawer ? undefined : undefined}
+                    title={collapsed && !isMobileDrawer ? item.label : undefined}
                     className={`group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 ${
                       active
-                        ? 'bg-indigo-500/15 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold shadow-xs border border-indigo-500/30'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/50 border border-transparent'
+                        ? 'bg-slate-100/90 dark:bg-white/[0.08] text-indigo-600 dark:text-indigo-400 font-semibold shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-white/5'
                     } ${collapsed && !isMobileDrawer ? 'justify-center px-0 w-10 h-10 mx-auto' : ''}`}
                   >
                     {/* Active Accent Border Indicator on the Left */}
                     {active && (
-                      <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-indigo-600 dark:bg-indigo-400 rounded-r-full shadow-xs" />
+                      <span className="absolute left-0 top-2 bottom-2 w-1 bg-indigo-600 dark:bg-indigo-400 rounded-r-full shadow-xs" />
                     )}
 
                     <Icon
@@ -603,8 +625,9 @@ export default function Sidebar({
                       setUserMenuOpen(false);
                       if (isMobileDrawer) onCloseMobileDrawer?.();
                       await logout();
+                      router.push('/login');
                     }}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 font-medium"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-medium transition-colors"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign Out</span>

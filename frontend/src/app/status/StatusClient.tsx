@@ -2,22 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { getPublicStatus } from '@/lib/api';
 import {
-  Shield,
   CheckCircle2,
   AlertTriangle,
-  Clock,
   ArrowLeft,
   ArrowRight,
   Sun,
   Moon,
-  ExternalLink,
   Radio,
-  Activity,
   Bell,
-  Check,
+  Webhook,
+  Mail,
 } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 
@@ -30,9 +28,12 @@ interface ServiceComponent {
 }
 
 export default function PublicStatusPage() {
+  const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const [subscribed, setSubscribed] = useState(false);
-  const [email, setEmail] = useState('');
+  const [subscribeMode, setSubscribeMode] = useState<'email' | 'webhook'>('email');
+  const [inputValue, setInputValue] = useState('');
+  const [hoveredDayInfo, setHoveredDayInfo] = useState<{ serviceName: string; dayIndex: number; isUp: boolean } | null>(null);
 
   // Helper to generate 90 days history
   const generate90Days = (incidentDays: number[] = []) => {
@@ -52,7 +53,7 @@ export default function PublicStatusPage() {
       description: 'NVIDIA Nemotron Ultra 550B & Nano 30B reasoning inference',
       status: 'operational',
       uptimePercent: '99.98%',
-      days: generate90Days([]),
+      days: generate90Days([14]),
     },
     {
       name: 'Autonomous AST Verification Sandboxes',
@@ -73,13 +74,13 @@ export default function PublicStatusPage() {
       description: 'Primary relational database and cryptographic audit ledger',
       status: 'operational',
       uptimePercent: '99.99%',
-      days: generate90Days([]),
+      days: generate90Days([62]),
     },
   ];
 
   const [components, setComponents] = useState<ServiceComponent[]>(defaultComponents);
   const [systemStatus, setSystemStatus] = useState<'operational' | 'degraded'>('operational');
-  const [statusDescription, setStatusDescription] = useState('All Core Services Operational');
+  const [statusDescription, setStatusDescription] = useState('All Systems Operational');
   const [overallUptime, setOverallUptime] = useState('99.99%');
   const [lastUpdated, setLastUpdated] = useState<string>('Live');
 
@@ -106,7 +107,6 @@ export default function PublicStatusPage() {
     };
 
     fetchStatus();
-    // Live real-time polling every 8s
     const timer = setInterval(fetchStatus, 8000);
 
     return () => {
@@ -117,17 +117,17 @@ export default function PublicStatusPage() {
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
+    if (inputValue) {
       setSubscribed(true);
       setTimeout(() => setSubscribed(false), 4000);
-      setEmail('');
+      setInputValue('');
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0A0A0A] text-slate-900 dark:text-slate-100 flex flex-col transition-colors pb-16">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0A0A0A] text-slate-900 dark:text-slate-100 flex flex-col transition-colors pb-16 selection:bg-indigo-500/20">
       {/* Public Header */}
-      <header className="bg-white/80 dark:bg-[#0a0a0a]/90 backdrop-blur-md border-b border-slate-200 dark:border-white/10 px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30">
+      <header className="bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-md border-b border-slate-200/80 dark:border-white/10 px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-4">
           <Link
             href="/"
@@ -137,16 +137,16 @@ export default function PublicStatusPage() {
             <span>Back</span>
           </Link>
           <div className="h-4 w-px bg-slate-200 dark:bg-white/10" />
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/10 p-1 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform overflow-hidden">
-              <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-6 h-6 object-contain aspect-square" />
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/10 flex items-center justify-center p-1 shadow-xs overflow-hidden">
+              <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-5 h-5 object-contain aspect-square" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
-                Somak AI
+              <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-white font-mono">
+                SOMAK AI
               </span>
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                System Status
+              <span className="text-xs text-slate-400">
+                Status
               </span>
             </div>
           </Link>
@@ -156,14 +156,14 @@ export default function PublicStatusPage() {
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300"
+            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
           </button>
 
           <Link
             href="/"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors btn-glow-primary"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-semibold text-xs shadow-2xs transition-colors"
           >
             <span>Launch Console</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -171,123 +171,144 @@ export default function PublicStatusPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 py-10 space-y-8 flex-1">
+      <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 py-10 space-y-6 flex-1">
         {/* Overall Status Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`p-6 sm:p-7 rounded-3xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${
+        <div
+          className={`p-6 sm:p-7 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${
             systemStatus === 'degraded'
-              ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-500/30'
-              : 'bg-white dark:bg-[#0a0a0a] border-slate-200/90 dark:border-white/10 shadow-sm'
+              ? 'bg-amber-500/10 border-amber-500/30'
+              : 'bg-white dark:bg-[#0A0A0A] border-slate-200/80 dark:border-white/10 shadow-xs'
           }`}
         >
-          <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg ${
+          <div className="flex items-center gap-3.5">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
               systemStatus === 'degraded'
-                ? 'bg-amber-500 shadow-amber-500/30 animate-pulse'
-                : 'bg-emerald-500 shadow-emerald-500/30'
+                ? 'bg-amber-500 text-white'
+                : 'bg-emerald-500 text-white'
             }`}>
-              {systemStatus === 'degraded' ? <AlertTriangle className="w-6 h-6" /> : <CheckCircle2 className="w-6 h-6" />}
+              {systemStatus === 'degraded' ? <AlertTriangle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   {statusDescription}
                 </h1>
-                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   Synced {lastUpdated}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Live multi-region cluster telemetry and infrastructure operational status.
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                All production services and autonomous remediation pipelines are nominal.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-center">
-            <div className="text-right">
-              <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                {overallUptime}
-              </div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                Aggregate Uptime (Last 90 Days)
+          <div className="text-left sm:text-right">
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+              {overallUptime}
+            </div>
+            <div className="text-[10px] text-slate-400">
+              Aggregate Uptime (Last 90 Days)
+            </div>
+          </div>
+        </div>
+
+        {/* Subscribe to Updates Strip (Email & Webhook support) */}
+        <div className="bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400">
+            <Bell className="w-4 h-4 text-indigo-500 shrink-0" />
+            <div className="flex items-center gap-2">
+              <span>Subscribe to updates:</span>
+              <div className="inline-flex rounded-lg bg-slate-100 dark:bg-white/5 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setSubscribeMode('email')}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
+                    subscribeMode === 'email'
+                      ? 'bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white shadow-2xs font-semibold'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubscribeMode('webhook')}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
+                    subscribeMode === 'webhook'
+                      ? 'bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white shadow-2xs font-semibold'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Webhook
+                </button>
               </div>
             </div>
           </div>
-        </motion.div>
 
-        {/* Subscribe to Updates Strip */}
-        <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200/90 dark:border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
-            <Bell className="w-4 h-4 text-indigo-500 shrink-0" />
-            <span>Get real-time email incident updates and scheduled maintenance alerts</span>
-          </div>
-
-          <form onSubmit={handleSubscribe} className="flex items-center gap-2 w-full sm:w-auto">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (inputValue) {
+                setSubscribed(true);
+                setTimeout(() => setSubscribed(false), 4000);
+                setInputValue('');
+              }
+            }}
+            className="flex items-center gap-2 w-full sm:w-auto"
+          >
             <input
-              type="email"
+              type={subscribeMode === 'email' ? 'email' : 'url'}
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-              className="bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-white/10 rounded-xl py-1.5 px-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex-1 sm:w-48"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={subscribeMode === 'email' ? 'you@company.com' : 'https://hooks.slack.com/...'}
+              className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-1.5 px-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 flex-1 sm:w-56"
             />
             <button
               type="submit"
-              className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shrink-0 transition-colors shadow-xs"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-semibold text-xs shrink-0 transition-colors shadow-xs"
             >
-              {subscribed ? 'Subscribed!' : 'Subscribe'}
+              {subscribed ? 'Subscribed' : 'Subscribe'}
             </button>
           </form>
         </div>
 
         {/* Active Incident Advisory - ONLY rendered if platform is degraded */}
         {systemStatus === 'degraded' && (
-          <div className="space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-              <Radio className="w-3.5 h-3.5 text-amber-500 animate-pulse glow-warning" />
-              Active Platform Investigation
+          <div className="bg-white dark:bg-[#0A0A0A] border border-amber-500/30 rounded-2xl p-5 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Platform Telemetry Anomaly Detected
+                </h3>
+              </div>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                Investigation Active
+              </span>
             </div>
 
-            <div className="bg-[#0a0a0a] border border-amber-500/30 rounded-2xl p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 glow-warning" />
-                  <h3 className="text-sm font-bold text-white">
-                    Platform Telemetry Anomaly Detected
-                  </h3>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  Investigation Active
-                </span>
-              </div>
-
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Elevated latency or error anomalies detected on ingress edge nodes. Automated AST self-correction loops and canary sandboxes are actively engaged. Core remediation APIs remain operational.
-              </p>
-
-              <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Updated in real-time • Automated SRE Monitor</span>
-              </div>
-            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Elevated latency detected on ingress edge nodes. Automated AST self-correction loops and canary sandboxes are actively engaged. Core remediation APIs remain operational.
+            </p>
           </div>
         )}
 
         {/* Service Components & 90-Day Uptime Strips */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+            <h2 className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">
               System Components Uptime
             </h2>
-            <div className="flex items-center gap-3 text-[11px] text-slate-400">
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500 glow-healthy" />
+            <div className="flex items-center gap-3 text-xs text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-xs bg-emerald-500" />
                 Operational
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-xs bg-amber-500 glow-warning" />
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-xs bg-amber-500" />
                 Degraded
               </span>
             </div>
@@ -297,28 +318,28 @@ export default function PublicStatusPage() {
             {components.map((comp, idx) => (
               <div
                 key={idx}
-                className="bg-white dark:bg-[#0a0a0a] border border-slate-200/90 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3"
+                className="bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                        {comp.name}
-                      </h3>
                       <span
                         className={`w-2 h-2 rounded-full ${
-                          comp.status === 'operational' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
+                          comp.status === 'operational' ? 'bg-emerald-500' : 'bg-amber-500'
                         }`}
                       />
+                      <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">
+                        {comp.name}
+                      </h3>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                       {comp.description}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2 self-start sm:self-center">
                     <span
-                      className={`text-xs font-mono font-bold ${
+                      className={`text-xs font-mono font-semibold ${
                         comp.status === 'operational'
                           ? 'text-emerald-600 dark:text-emerald-400'
                           : 'text-amber-600 dark:text-amber-400'
@@ -327,10 +348,10 @@ export default function PublicStatusPage() {
                       {comp.uptimePercent}
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${
                         comp.status === 'operational'
-                          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                          : 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
                       }`}
                     >
                       {comp.status}
@@ -338,22 +359,38 @@ export default function PublicStatusPage() {
                   </div>
                 </div>
 
-                {/* 90-Day Bar Strip */}
+                {/* 90-Day Bar Strip with interactive hover */}
                 <div className="space-y-1">
-                  <div className="flex items-center gap-0.5 w-full h-7 py-1">
+                  <div className="flex items-center gap-0.5 w-full h-6 py-1">
                     {comp.days.map((isUp, dayIdx) => (
                       <div
                         key={dayIdx}
-                        title={`Day ${90 - dayIdx} ago: ${isUp ? '100% operational' : 'Degraded incident resolved'}`}
-                        className={`flex-1 h-full rounded-xs transition-opacity hover:opacity-75 ${
-                          isUp ? 'bg-emerald-500/80 dark:bg-emerald-500' : 'bg-amber-500'
+                        onClick={() => router.push('/history')}
+                        title={`Day ${89 - dayIdx === 0 ? 'Today' : `${89 - dayIdx}d ago`}: ${isUp ? 'Operational' : 'Incident'} — Click to view incident history`}
+                        onMouseEnter={() =>
+                          setHoveredDayInfo({
+                            serviceName: comp.name,
+                            dayIndex: 89 - dayIdx,
+                            isUp,
+                          })
+                        }
+                        onMouseLeave={() => setHoveredDayInfo(null)}
+                        className={`flex-1 h-full rounded-xs transition-all hover:scale-y-125 cursor-pointer ${
+                          isUp ? 'bg-emerald-500/80 dark:bg-emerald-500/70 hover:bg-emerald-400' : 'bg-amber-500 hover:bg-amber-400'
                         }`}
                       />
                     ))}
                   </div>
+
                   <div className="flex justify-between text-[10px] text-slate-400 font-mono">
                     <span>90 days ago</span>
-                    <span>45 days ago</span>
+                    <span>
+                      {hoveredDayInfo?.serviceName === comp.name
+                        ? `${hoveredDayInfo.dayIndex === 0 ? 'Today' : `${hoveredDayInfo.dayIndex}d ago`}: ${
+                            hoveredDayInfo.isUp ? '100% Uptime' : 'Incident Resolved'
+                          }`
+                        : '45 days ago'}
+                    </span>
                     <span>Today</span>
                   </div>
                 </div>
@@ -364,17 +401,17 @@ export default function PublicStatusPage() {
 
         {/* Past Incidents Archive */}
         <div className="space-y-3 pt-4 border-t border-slate-200/80 dark:border-white/10">
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+          <h2 className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">
             Past Incidents (Last 30 Days)
           </h2>
 
           <div className="space-y-2.5">
-            <div className="glass-card p-4 rounded-xl border border-slate-200/80 dark:border-white/10 text-xs space-y-1">
+            <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 text-xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 dark:text-white">
+                <span className="font-semibold text-slate-900 dark:text-white">
                   INC-1892: payment-gateway Webhook Idempotency Timeout
                 </span>
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                   Resolved in 3m 50s
                 </span>
               </div>
@@ -383,12 +420,12 @@ export default function PublicStatusPage() {
               </p>
             </div>
 
-            <div className="glass-card p-4 rounded-xl border border-slate-200/80 dark:border-white/10 text-xs space-y-1">
+            <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 text-xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 dark:text-white">
+                <span className="font-semibold text-slate-900 dark:text-white">
                   INC-1420: ingress-nginx Upstream Reset Spike
                 </span>
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                   Resolved in 3m 45s
                 </span>
               </div>
@@ -401,22 +438,22 @@ export default function PublicStatusPage() {
       </main>
 
       {/* Footer */}
-      <footer className="max-w-4xl mx-auto px-4 text-center text-xs text-slate-400 space-y-2">
+      <footer className="max-w-4xl mx-auto px-4 text-center text-xs text-slate-400 space-y-2 pt-6">
         <div className="flex items-center justify-center gap-4">
-          <Link href="/" className="hover:underline text-indigo-600 dark:text-indigo-400">
-            Somak AI
+          <Link href="/" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+            SOMAK AI
           </Link>
           <span>•</span>
-          <Link href="/privacy" className="hover:underline">
+          <Link href="/privacy" className="hover:text-slate-900 dark:hover:text-white transition-colors">
             Privacy Policy
           </Link>
           <span>•</span>
-          <Link href="/terms" className="hover:underline">
+          <Link href="/terms" className="hover:text-slate-900 dark:hover:text-white transition-colors">
             Terms of Service
           </Link>
         </div>
-        <p className="text-[11px]">
-          Powered by Somak AI Autonomous Reliability Engine • Continuous 24/7 Verification
+        <p className="text-[11px] text-slate-400">
+          Powered by SOMAK AI Autonomous Reliability Engine · Continuous 24/7 Verification
         </p>
       </footer>
     </div>

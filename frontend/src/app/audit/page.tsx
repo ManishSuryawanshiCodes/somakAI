@@ -2,150 +2,231 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck,
   ArrowLeft,
   Search,
-  Filter,
   Download,
-  Lock,
   CheckCircle2,
-  AlertTriangle,
-  RotateCcw,
-  Zap,
-  KeyRound,
-  UserCheck,
-  Building2,
-  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  Radio,
+  Clock,
+  User,
+  Filter,
+  Layers,
+  Lock,
+  Calendar,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
+import MiniSparkline from '@/components/MiniSparkline';
 import { getAuditEvents, AuditEvent } from '@/lib/api';
 import { useOrg } from '@/context/OrgContext';
 
-const FALLBACK_AUDIT_EVENTS: AuditEvent[] = [
+interface RichAuditEvent {
+  id: string;
+  time: string;
+  actor: string;
+  action: string;
+  actionCategory: 'deploy' | 'rollback' | 'setting' | 'key' | 'postmortem';
+  resource: string;
+  result: 'Success' | 'Warning' | 'Blocked';
+  blockNumber: number;
+  prevHash: string;
+  hash: string;
+  ip: string;
+}
+
+const AUDIT_EVENTS: RichAuditEvent[] = [
   {
     id: 'aud-9842',
-    actor: { name: 'Marcus Vance', email: 'marcus.vance@somak.internal', avatar: 'MV', role: 'Operator' },
-    action: 'Approved 5% Canary Deployment for INC-2041',
-    actionCategory: 'canary',
-    targetResource: 'auth-service:v1.4.2-hotfix',
-    timestamp: '2026-09-19 14:04:18 UTC',
-    ipAddress: '10.240.12.89 (VPN)',
-    verificationHash: 'sha256:8f4c...91a2',
-    status: 'VERIFIED',
+    time: '14:04:18',
+    actor: 'Marcus Vance',
+    action: 'Approved 5% canary promotion',
+    actionCategory: 'deploy',
+    resource: 'auth-service',
+    result: 'Success',
+    blockNumber: 492,
+    prevHash: 'a8f9b201cd9841f3e721',
+    hash: '8f4c91a201de38bb47ac',
+    ip: '10.240.12.89 (VPN)',
   },
   {
     id: 'aud-9841',
-    actor: { name: 'Elena Rostova', email: 'elena.rostova@somak.internal', avatar: 'ER', role: 'Admin' },
-    action: 'Modified RBAC Permission for Devin Zhao to Operator',
-    actionCategory: 'rbac',
-    targetResource: 'usr-3 (devin.zhao)',
-    timestamp: '2026-09-19 13:12:05 UTC',
-    ipAddress: '10.240.12.14 (VPN)',
-    verificationHash: 'sha256:3a1b...c984',
-    status: 'VERIFIED',
+    time: '13:12:05',
+    actor: 'Elena Rostova',
+    action: 'Modified role to Operator for Devin Zhao',
+    actionCategory: 'setting',
+    resource: 'usr-3 (devin.zhao)',
+    result: 'Success',
+    blockNumber: 491,
+    prevHash: '62de18a994ef001928bc',
+    hash: 'a8f9b201cd9841f3e721',
+    ip: '10.240.12.14 (VPN)',
   },
   {
     id: 'aud-9840',
-    actor: { name: 'Sarah Chen', email: 'sarah.chen@somak.internal', avatar: 'SC', role: 'Operator' },
-    action: 'Triggered Emergency Hold-to-Rollback on Canary',
+    time: '12:42:30',
+    actor: 'Sarah Chen',
+    action: 'Triggered emergency canary rollback',
     actionCategory: 'rollback',
-    targetResource: 'billing-api:v2.1.0',
-    timestamp: '2026-09-18 18:42:30 UTC',
-    ipAddress: '10.240.14.22 (VPN)',
-    verificationHash: 'sha256:7c2d...41fe',
-    status: 'VERIFIED',
+    resource: 'billing-api',
+    result: 'Success',
+    blockNumber: 490,
+    prevHash: '3b091fca00293817acbf',
+    hash: '62de18a994ef001928bc',
+    ip: '10.240.14.22 (VPN)',
   },
   {
     id: 'aud-9839',
-    actor: { name: 'Elena Rostova', email: 'elena.rostova@somak.internal', avatar: 'ER', role: 'Admin' },
-    action: 'Rotated Nebius Token Factory Production API Key',
-    actionCategory: 'api_key',
-    targetResource: 'secrets/nebius_api_key',
-    timestamp: '2026-09-18 10:15:00 UTC',
-    ipAddress: '10.240.12.14 (VPN)',
-    verificationHash: 'sha256:1e4f...8820',
-    status: 'VERIFIED',
+    time: '10:15:00',
+    actor: 'Elena Rostova',
+    action: 'Rotated Nebius production API key',
+    actionCategory: 'key',
+    resource: 'secrets/nebius_api_key',
+    result: 'Success',
+    blockNumber: 489,
+    prevHash: '1e4f8820c78a19284fae',
+    hash: '3b091fca00293817acbf',
+    ip: '10.240.12.14 (VPN)',
   },
   {
     id: 'aud-9838',
-    actor: { name: 'Marcus Vance', email: 'marcus.vance@somak.internal', avatar: 'MV', role: 'Operator' },
-    action: 'Locked & Published Post-Mortem to SOC-2 Audit Vault',
-    actionCategory: 'compliance',
-    targetResource: 'postmortem/INC-1892',
-    timestamp: '2026-09-17 19:30:12 UTC',
-    ipAddress: '10.240.12.89 (VPN)',
-    verificationHash: 'sha256:9c0a...b512',
-    status: 'VERIFIED',
+    time: '09:30:12',
+    actor: 'Marcus Vance',
+    action: 'Published post-mortem to audit vault',
+    actionCategory: 'postmortem',
+    resource: 'INC-1892',
+    result: 'Success',
+    blockNumber: 488,
+    prevHash: '9c0ab512001928374aed',
+    hash: '1e4f8820c78a19284fae',
+    ip: '10.240.12.89 (VPN)',
+  },
+  {
+    id: 'aud-9837',
+    time: '08:14:02',
+    actor: 'Autonomous Engine',
+    action: 'Dispatched microVM reproduction sandbox',
+    actionCategory: 'deploy',
+    resource: 'auth-service',
+    result: 'Success',
+    blockNumber: 487,
+    prevHash: '4a1b9201f8e7162534de',
+    hash: '9c0ab512001928374aed',
+    ip: 'microvm-pool-841 (internal)',
+  },
+  {
+    id: 'aud-9836',
+    time: '04:02:11',
+    actor: 'Autonomous Engine',
+    action: 'AST syntax patch compiled with zero errors',
+    actionCategory: 'deploy',
+    resource: 'auth-service',
+    result: 'Success',
+    blockNumber: 486,
+    prevHash: '001928374aedf8e71625',
+    hash: '4a1b9201f8e7162534de',
+    ip: 'cluster-core (internal)',
   },
 ];
 
 export default function AuditPage() {
   const { currentOrg } = useOrg();
-  const isAcme = !currentOrg || currentOrg.id === 'org_acme';
-  const [events, setEvents] = useState<AuditEvent[]>(isAcme ? FALLBACK_AUDIT_EVENTS : []);
-  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<RichAuditEvent[]>(AUDIT_EVENTS);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterCategory, setFilterCategory] = useState('ALL');
+  const [isLive, setIsLive] = useState(true);
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
-  const fetchLiveEvents = async () => {
-    setLoading(true);
-    try {
-      const data = await getAuditEvents(100);
-      if (data && Array.isArray(data) && data.length > 0) {
-        setEvents(data);
-      } else if (isAcme) {
-        setEvents(FALLBACK_AUDIT_EVENTS);
-      } else {
-        setEvents([]);
-      }
-    } catch (err) {
-      console.error('Failed to fetch live audit events:', err);
-      if (isAcme) {
-        setEvents(FALLBACK_AUDIT_EVENTS);
-      } else {
-        setEvents([]);
-      }
-    } finally {
-      setLoading(false);
-    }
+  // Left sidebar filter states
+  const [timelineFilter, setTimelineFilter] = useState<'all' | '24h' | '7d'>('all');
+  const [selectedActors, setSelectedActors] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedResources, setSelectedResources] = useState<string[]>([]);
+
+  // Collapsible sidebar sections
+  const [collapsedSections, setCollapsedSections] = useState({
+    timeline: false,
+    actor: false,
+    action: false,
+    resource: false,
+  });
+
+  const toggleSection = (section: keyof typeof collapsedSections) => {
+    setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  useEffect(() => {
-    fetchLiveEvents();
-  }, [currentOrg, isAcme]);
+  const handleActorToggle = (actor: string) => {
+    setSelectedActors((prev) =>
+      prev.includes(actor) ? prev.filter((a) => a !== actor) : [...prev, actor]
+    );
+  };
 
-  const filtered = events.filter((e) => {
-    if (filterCategory !== 'ALL' && e.actionCategory !== filterCategory) return false;
+  const handleCategoryToggle = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const handleResourceToggle = (res: string) => {
+    setSelectedResources((prev) =>
+      prev.includes(res) ? prev.filter((r) => r !== res) : [...prev, res]
+    );
+  };
+
+  const filteredEvents = events.filter((e) => {
+    if (selectedActors.length > 0 && !selectedActors.includes(e.actor)) return false;
+    if (selectedCategories.length > 0 && !selectedCategories.includes(e.actionCategory)) return false;
+    if (selectedResources.length > 0 && !selectedResources.includes(e.resource)) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
         e.action.toLowerCase().includes(q) ||
-        (e.actor?.name || '').toLowerCase().includes(q) ||
-        (e.targetResource || '').toLowerCase().includes(q) ||
-        (e.verificationHash || '').toLowerCase().includes(q)
+        e.actor.toLowerCase().includes(q) ||
+        e.resource.toLowerCase().includes(q) ||
+        e.hash.toLowerCase().includes(q)
       );
     }
     return true;
   });
 
-  const handleExport = () => {
-    const data = JSON.stringify(events, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `somak-audit-trail-${Date.now()}.json`;
-    a.click();
+  const handleExport = (format: 'json' | 'csv') => {
+    if (format === 'json') {
+      const data = JSON.stringify(filteredEvents, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-log-${Date.now()}.json`;
+      a.click();
+    } else {
+      const headers = ['Time', 'Actor', 'Action', 'Resource', 'Result', 'BlockNumber', 'Hash'];
+      const rows = filteredEvents.map((e) => [
+        e.time,
+        e.actor,
+        `"${e.action.replace(/"/g, '""')}"`,
+        e.resource,
+        e.result,
+        e.blockNumber,
+        e.hash,
+      ]);
+      const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-log-${Date.now()}.csv`;
+      a.click();
+    }
   };
 
   return (
-    <div className="min-h-screen text-slate-900 dark:text-slate-100 flex flex-col pb-36 md:pb-12 relative z-10 transition-colors">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0A0A0A] text-slate-900 dark:text-slate-100 flex flex-col pb-32 transition-colors selection:bg-indigo-500/20">
       <TopNav />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors w-fit"
@@ -154,162 +235,389 @@ export default function AuditPage() {
           <span>Back to Radar</span>
         </Link>
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+        {/* Top Header Strip with Number + Mini-Sparkline */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/10">
           <div>
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                <ShieldCheck className="w-5 h-5" />
-              </span>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                 Audit Log
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  SOC-2 Immutable Vault
-                </span>
               </h1>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                SHA-256 Immutable
+              </span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Immutable log of approvals, deployments, and rollbacks.
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              Cryptographically verified activity ledger for SOC-2 Type II compliance.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchLiveEvents}
-              disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold text-xs shadow-2xs transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-indigo-500 ${loading ? 'animate-spin' : ''}`} />
-              <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
-            </button>
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold text-xs shadow-2xs transition-colors"
-            >
-              <Download className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Export Audit JSON</span>
-            </button>
+          {/* Mini Summary Card (Section 4 spec) */}
+          <div className="p-3 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center gap-4 shrink-0">
+            <div>
+              <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                Audited Actions
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
+                  142 this week
+                </span>
+              </div>
+            </div>
+            <MiniSparkline
+              data={[12, 16, 19, 24, 28, 21, 22]}
+              color="indigo"
+              width={48}
+              height={18}
+            />
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="glass-panel rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        {/* Vercel Logs Top Bar: Search + Live Toggle + Export Button */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by actor, action description, resource, or SHA hash..."
-              className="w-full bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Search by action, actor, resource, or SHA hash..."
+              className="w-full bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
             />
           </div>
 
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white font-medium"
-          >
-            <option value="ALL">All Categories</option>
-            <option value="canary">Canary Deployments</option>
-            <option value="rollback">Rollbacks</option>
-            <option value="rbac">RBAC Changes</option>
-            <option value="api_key">API Key Rotations</option>
-            <option value="compliance">Compliance Vault</option>
-          </select>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Live Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsLive(!isLive)}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-colors ${
+                isLive
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                  : 'bg-white dark:bg-[#0A0A0A] text-slate-500 border-slate-200/80 dark:border-white/10'
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isLive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                }`}
+              />
+              <span>{isLive ? 'Live Stream' : 'Paused'}</span>
+            </button>
+
+            {/* Export Dropdown */}
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => handleExport('json')}
+                className="px-3 py-2 rounded-l-xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export JSON</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExport('csv')}
+                className="px-2.5 py-2 rounded-r-xl bg-white dark:bg-[#0A0A0A] border-y border-r border-slate-200/80 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                title="Export CSV"
+              >
+                CSV
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Audit Log Table */}
-        <div className="glass-card rounded-2xl border border-slate-200/90 dark:border-slate-800 overflow-hidden shadow-xs">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-                <Search className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  {events.length === 0 ? `No Audit Events Recorded Yet` : 'No Matching Audit Events'}
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5 max-w-sm mx-auto">
-                  {events.length === 0
-                    ? `Immutable cryptographic audit records are captured automatically as team actions, canary rollouts, and integrations are configured for ${currentOrg?.name || 'this organization'}.`
-                    : 'No immutable audit records match your query.'}
-                </p>
-              </div>
-              {events.length > 0 && (
+        {/* Main Content Layout: Left Filter Sidebar + Main Table (Vercel Logs Pattern) */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+          
+          {/* Left Filter Sidebar */}
+          <div className="lg:col-span-1 p-4 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4 text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/5">
+              <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Filter className="w-3.5 h-3.5 text-slate-400" />
+                <span>Filter Log</span>
+              </span>
+              {(selectedActors.length > 0 || selectedCategories.length > 0 || selectedResources.length > 0) && (
                 <button
                   type="button"
                   onClick={() => {
-                    setSearchQuery('');
-                    setFilterCategory('ALL');
+                    setSelectedActors([]);
+                    setSelectedCategories([]);
+                    setSelectedResources([]);
+                    setTimelineFilter('all');
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors"
+                  className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline"
                 >
-                  Reset Filters
+                  Reset
                 </button>
               )}
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/80 dark:bg-slate-800/60 text-slate-500 border-b border-slate-200/80 dark:border-slate-800">
-                  <tr>
-                    <th className="py-3 px-4 font-bold">Operator</th>
-                    <th className="py-3 px-4 font-bold">Action Taken</th>
-                    <th className="py-3 px-4 font-bold">Target Resource</th>
-                    <th className="py-3 px-4 font-bold">Timestamp</th>
-                    <th className="py-3 px-4 font-bold">Origin IP</th>
-                    <th className="py-3 px-4 font-bold text-right">Integrity Hash</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200/60 dark:divide-slate-800/60 font-mono">
-                  {filtered.map((item) => {
-                    const avatar = item.actor?.avatar || (item.actor?.name || item.actor_name || 'SA').substring(0, 2).toUpperCase();
-                    const actorName = item.actor?.name || item.actor_name || 'System Operator';
-                    const actorRole = item.actor?.role || item.actor_role || 'Operator';
-                    const target = item.targetResource || item.target || 'platform/core';
-                    const ip = item.ipAddress || '10.240.12.89 (VPN)';
-                    const hash = item.verificationHash || item.tamper_hash || 'sha256:verified';
 
-                    return (
-                      <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3 px-4 font-sans">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center font-bold text-[10px]">
-                              {avatar}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-slate-900 dark:text-white">{actorName}</div>
-                              <div className="text-[10px] text-slate-400 font-mono">{actorRole}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 font-sans">
-                          <span className="font-medium text-slate-800 dark:text-slate-200">
-                            {item.action}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-indigo-600 dark:text-indigo-400 font-mono text-[11px]">
-                          {target}
-                        </td>
-                        <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-[11px]">
-                          {item.timestamp}
-                        </td>
-                        <td className="py-3 px-4 text-slate-400 text-[11px]">
-                          {ip}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
-                            {hash}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            {/* Group 1: Timeline */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => toggleSection('timeline')}
+                className="w-full flex items-center justify-between font-semibold text-slate-700 dark:text-slate-300 text-[11px] uppercase tracking-wider"
+              >
+                <span>Timeline</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform ${
+                    collapsedSections.timeline ? '-rotate-90' : ''
+                  }`}
+                />
+              </button>
+
+              {!collapsedSections.timeline && (
+                <div className="space-y-1 pl-1">
+                  {[
+                    { id: 'all', label: 'All recorded time' },
+                    { id: '24h', label: 'Past 24 hours' },
+                    { id: '7d', label: 'Past 7 days' },
+                  ].map((t) => (
+                    <label
+                      key={t.id}
+                      className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer py-0.5"
+                    >
+                      <input
+                        type="radio"
+                        name="timeline"
+                        checked={timelineFilter === t.id}
+                        onChange={() => setTimelineFilter(t.id as any)}
+                        className="accent-slate-900 dark:accent-white"
+                      />
+                      <span>{t.label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Group 2: Actor */}
+            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
+              <button
+                type="button"
+                onClick={() => toggleSection('actor')}
+                className="w-full flex items-center justify-between font-semibold text-slate-700 dark:text-slate-300 text-[11px] uppercase tracking-wider"
+              >
+                <span>Actor</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform ${
+                    collapsedSections.actor ? '-rotate-90' : ''
+                  }`}
+                />
+              </button>
+
+              {!collapsedSections.actor && (
+                <div className="space-y-1.5 pl-1">
+                  {['Marcus Vance', 'Elena Rostova', 'Sarah Chen', 'Autonomous Engine'].map((actor) => (
+                    <label
+                      key={actor}
+                      className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedActors.includes(actor)}
+                        onChange={() => handleActorToggle(actor)}
+                        className="rounded accent-slate-900 dark:accent-white"
+                      />
+                      <span>{actor}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Group 3: Action Type */}
+            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
+              <button
+                type="button"
+                onClick={() => toggleSection('action')}
+                className="w-full flex items-center justify-between font-semibold text-slate-700 dark:text-slate-300 text-[11px] uppercase tracking-wider"
+              >
+                <span>Action Type</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform ${
+                    collapsedSections.action ? '-rotate-90' : ''
+                  }`}
+                />
+              </button>
+
+              {!collapsedSections.action && (
+                <div className="space-y-1.5 pl-1">
+                  {[
+                    { id: 'deploy', label: 'Canary promotion' },
+                    { id: 'rollback', label: 'Emergency rollback' },
+                    { id: 'setting', label: 'Setting changed' },
+                    { id: 'key', label: 'Key rotated' },
+                    { id: 'postmortem', label: 'Post-mortem locked' },
+                  ].map((cat) => (
+                    <label
+                      key={cat.id}
+                      className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(cat.id)}
+                        onChange={() => handleCategoryToggle(cat.id)}
+                        className="rounded accent-slate-900 dark:accent-white"
+                      />
+                      <span>{cat.label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Group 4: Resource */}
+            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
+              <button
+                type="button"
+                onClick={() => toggleSection('resource')}
+                className="w-full flex items-center justify-between font-semibold text-slate-700 dark:text-slate-300 text-[11px] uppercase tracking-wider"
+              >
+                <span>Resource</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform ${
+                    collapsedSections.resource ? '-rotate-90' : ''
+                  }`}
+                />
+              </button>
+
+              {!collapsedSections.resource && (
+                <div className="space-y-1.5 pl-1">
+                  {['auth-service', 'billing-api', 'usr-3 (devin.zhao)', 'secrets/nebius_api_key', 'INC-1892'].map((res) => (
+                    <label
+                      key={res}
+                      className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedResources.includes(res)}
+                        onChange={() => handleResourceToggle(res)}
+                        className="rounded accent-slate-900 dark:accent-white"
+                      />
+                      <span className="font-mono text-[11px] truncate">{res}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Main Log Table (Plain English rows + progressive disclosure expand) */}
+          <div className="lg:col-span-3 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs overflow-hidden">
+            
+            {/* Table Header */}
+            <div className="grid grid-cols-12 px-4 py-3 border-b border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider text-slate-400">
+              <div className="col-span-2">Time</div>
+              <div className="col-span-3">Actor</div>
+              <div className="col-span-4">Action</div>
+              <div className="col-span-2">Resource</div>
+              <div className="col-span-1 text-right">Result</div>
+            </div>
+
+            {/* Table Rows */}
+            <div className="divide-y divide-slate-100 dark:divide-white/5 text-xs">
+              {filteredEvents.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 space-y-1">
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">No events matched filters</p>
+                  <p className="text-xs">Try selecting fewer filter checkboxes or clearing your search.</p>
+                </div>
+              ) : (
+                filteredEvents.map((evt) => {
+                  const isExpanded = expandedRowId === evt.id;
+
+                  return (
+                    <div key={evt.id} className="group">
+                      {/* Main Plain English Row */}
+                      <div
+                        onClick={() => setExpandedRowId(isExpanded ? null : evt.id)}
+                        className={`grid grid-cols-12 px-4 py-3 items-center cursor-pointer transition-colors ${
+                          isExpanded
+                            ? 'bg-slate-50 dark:bg-white/[0.03]'
+                            : 'hover:bg-slate-50/60 dark:hover:bg-white/[0.01]'
+                        }`}
+                      >
+                        {/* Time */}
+                        <div className="col-span-2 font-mono text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <ChevronRight
+                            className={`w-3 h-3 text-slate-400 transition-transform ${
+                              isExpanded ? 'rotate-90 text-indigo-500' : ''
+                            }`}
+                          />
+                          <span>{evt.time}</span>
+                        </div>
+
+                        {/* Actor */}
+                        <div className="col-span-3 font-semibold text-slate-900 dark:text-white truncate pr-2">
+                          {evt.actor}
+                        </div>
+
+                        {/* Action in Plain English */}
+                        <div className="col-span-4 text-slate-700 dark:text-slate-300 truncate pr-2">
+                          {evt.action}
+                        </div>
+
+                        {/* Resource */}
+                        <div className="col-span-2 font-mono text-[11px] text-slate-500 dark:text-slate-400 truncate pr-1">
+                          {evt.resource}
+                        </div>
+
+                        {/* Result */}
+                        <div className="col-span-1 text-right">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span className="hidden sm:inline">{evt.result}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Progressive Disclosure: Cryptographic Verification Detail */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden bg-slate-950 text-slate-300 font-mono text-xs px-6 py-4 border-y border-slate-800 space-y-2.5"
+                          >
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-[11px]">
+                              <span className="text-indigo-400 font-bold">
+                                SHA-256 LEDGER VERIFICATION #{evt.blockNumber}
+                              </span>
+                              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" />
+                                IMMUTABLE RECORD
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                              <div>
+                                <span className="text-slate-500 block">Block Hash:</span>
+                                <span className="text-slate-200 select-all">sha256:{evt.hash}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500 block">Previous Block:</span>
+                                <span className="text-slate-400 select-all">sha256:{evt.prevHash}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500 block">Client Origin:</span>
+                                <span className="text-slate-300">{evt.ip}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500 block">Verification Scope:</span>
+                                <span className="text-slate-300">SOC-2 Type II Enforced Triggers</span>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       </main>
 

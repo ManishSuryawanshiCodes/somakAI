@@ -1,70 +1,54 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings,
   Bell,
-  Cpu,
   Users,
-  Sun,
-  Moon,
-  Save,
-  CheckCircle2,
   Shield,
   Key,
-  Terminal,
-  Send,
-  UserPlus,
   Trash2,
-  ExternalLink,
   Lock,
-  Sparkles,
   ArrowLeft,
-  ArrowRight,
-  QrCode,
-  RefreshCw,
-  AlertTriangle,
   Check,
-  Fingerprint,
-  FileText,
-  Copy,
-  Eye,
-  EyeOff,
-  Zap,
-  Layers,
-  Info,
+  AlertTriangle,
+  RotateCcw,
+  Plus,
+  Building,
+  Globe,
+  Radio,
   Sliders,
-  ChevronDown,
+  ExternalLink,
   CreditCard,
+  Zap,
+  GitBranch,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
-import { useTheme } from '@/components/ThemeProvider';
+import MiniSparkline from '@/components/MiniSparkline';
 import { useAuth, UserRole } from '@/context/AuthContext';
 import { useToast } from '@/components/ToastProvider';
 import { useOrg } from '@/context/OrgContext';
-import { InviteTeam } from '@/components/InviteTeam';
 import {
-  setupMfa,
-  enableMfa,
-  rotateSecretKey,
-  toggleOrgMfaEnforcement,
-  getAuditEvents,
-  getAvailableModels,
-  getOrganizationMembers,
-  createOrganizationInvites,
-  getBillingConfig,
-  createBillingCheckoutSession,
-  BillingConfig,
-  AuditEvent,
-  MfaSetupResponse,
-} from '@/lib/api';
-import type { AvailableModelsResponse } from '@/lib/types';
+  getServiceRepoMappings,
+  saveServiceRepoMapping,
+  deleteServiceRepoMapping,
+  ServiceRepoMapping,
+} from '@/lib/services-repo';
 
+type SubTab = 'general' | 'keys' | 'members' | 'repositories' | 'notifications' | 'billing' | 'danger';
 
-type SettingsTab = 'general' | 'notifications' | 'ai' | 'team' | 'security';
+interface KeyProvider {
+  id: string;
+  name: string;
+  type: string;
+  status: 'active' | 'rotated' | 'pending';
+  fingerprint: string;
+  lastRotated: string;
+}
 
 interface TeamMember {
   id: string;
@@ -72,18 +56,51 @@ interface TeamMember {
   email: string;
   role: UserRole;
   avatar: string;
-  mfaEnabled: boolean;
   lastActive: string;
 }
 
-const INITIAL_TEAM: TeamMember[] = [
+const INITIAL_KEYS: KeyProvider[] = [
+  {
+    id: 'key-1',
+    name: 'AWS KMS (us-east-1)',
+    type: 'Envelope Encryption (BYOK)',
+    status: 'active',
+    fingerprint: 'arn:aws:kms:us-east-1:4921...:key/8a2b-9f1c',
+    lastRotated: '14 days ago',
+  },
+  {
+    id: 'key-2',
+    name: 'HashiCorp Vault KV v2',
+    type: 'Secrets Engine',
+    status: 'active',
+    fingerprint: 'vault://prod-sre/data/somakai-dek',
+    lastRotated: '30 days ago',
+  },
+  {
+    id: 'key-3',
+    name: 'Google Cloud KMS (europe-west1)',
+    type: 'Key Ring / HSM',
+    status: 'active',
+    fingerprint: 'projects/acme-prod/locations/europe-west1/keyRings/sre',
+    lastRotated: '3 days ago',
+  },
+  {
+    id: 'key-4',
+    name: 'Nebius Token Factory (NVIDIA Nemotron)',
+    type: 'Inference BYOK',
+    status: 'active',
+    fingerprint: 'sk-neb-moe-********************8f1a',
+    lastRotated: '6 days ago',
+  },
+];
+
+const INITIAL_MEMBERS: TeamMember[] = [
   {
     id: 'usr-1',
     name: 'Elena Rostova',
     email: 'elena.rostova@somak.internal',
     role: 'Admin',
     avatar: 'ER',
-    mfaEnabled: true,
     lastActive: '5m ago',
   },
   {
@@ -92,7 +109,6 @@ const INITIAL_TEAM: TeamMember[] = [
     email: 'marcus.vance@somak.internal',
     role: 'Operator',
     avatar: 'MV',
-    mfaEnabled: true,
     lastActive: 'Active now',
   },
   {
@@ -101,7 +117,6 @@ const INITIAL_TEAM: TeamMember[] = [
     email: 'devin.zhao@somak.internal',
     role: 'Operator',
     avatar: 'DZ',
-    mfaEnabled: true,
     lastActive: '1h ago',
   },
   {
@@ -110,420 +125,174 @@ const INITIAL_TEAM: TeamMember[] = [
     email: 'sarah.connor@somak.internal',
     role: 'Viewer',
     avatar: 'SC',
-    mfaEnabled: false,
     lastActive: 'Yesterday',
   },
 ];
 
-export default function SettingsPage() {
-  const { theme, toggleTheme, setTheme } = useTheme();
-  const { user, canManageSettings } = useAuth();
+function SettingsContent() {
+  const { user } = useAuth();
   const { showToast } = useToast();
-  const { currentOrg, updateChecklist, updateOrgPlan } = useOrg();
-  const currentPlan = currentOrg?.plan || 'enterprise';
+  const { currentOrg } = useOrg();
 
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
-  const [saved, setSaved] = useState(false);
-  const [planModalOpen, setPlanModalOpen] = useState(false);
-  const [showAdvancedSandbox, setShowAdvancedSandbox] = useState(false);
-  const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
-  const [billingConfig, setBillingConfig] = useState<BillingConfig | null>(null);
-  const [dodoCheckoutActive, setDodoCheckoutActive] = useState<{
-    plan: 'free' | 'team' | 'business' | 'enterprise';
-    sessionId: string;
-  } | null>(null);
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<SubTab>('general');
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // General settings state
-  const [pollInterval, setPollInterval] = useState('5');
-  const [autoTriage, setAutoTriage] = useState(true);
-  const [dataRetention, setDataRetention] = useState('90');
+  useEffect(() => {
+    const tabParam = searchParams?.get('tab') as SubTab;
+    if (tabParam && ['general', 'keys', 'members', 'repositories', 'notifications', 'billing', 'danger'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
-  // Notification channels state
-  const [slackWebhook, setSlackWebhook] = useState('https://hooks.slack.com/services/T00/B00/X123456');
-  const [pagerdutyKey, setPagerdutyKey] = useState('pd_live_a89f920bc481');
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [oncallEmail, setOncallEmail] = useState('sre-oncall@somak.internal');
-  const [notifySev1, setNotifySev1] = useState(true);
-  const [notifySev2, setNotifySev2] = useState(true);
-  const [notifyCanary, setNotifyCanary] = useState(true);
+  // Form State
+  const [orgName, setOrgName] = useState(currentOrg?.name || 'Acme Infrastructure');
+  const [orgSlug, setOrgSlug] = useState('acme-infra');
+  const [timezone, setTimezone] = useState('UTC (GMT+00:00)');
+  const [retentionDays, setRetentionDays] = useState('90');
 
-  // Multi-Provider AI (BYOK) settings state
-  const [triageProvider, setTriageProvider] = useState<string>(currentOrg?.setup_checklist?.triage_provider || 'nebius');
-  const [triageModel, setTriageModel] = useState<string>(currentOrg?.setup_checklist?.triage_model || 'nvidia/nemotron-3-nano-30b-a3b');
-  const [synthesisProvider, setSynthesisProvider] = useState<string>(currentOrg?.setup_checklist?.synthesis_provider || 'nebius');
-  const [synthesisModel, setSynthesisModel] = useState<string>(currentOrg?.setup_checklist?.synthesis_model || 'nvidia/nemotron-3-ultra-550b');
+  // Keys State
+  const [keys, setKeys] = useState<KeyProvider[]>(INITIAL_KEYS);
 
-  const [nebiusKey, setNebiusKey] = useState(currentOrg?.setup_checklist?.nebius_api_key || currentOrg?.setup_checklist?.ai_api_key || '');
-  const [anthropicKey, setAnthropicKey] = useState(currentOrg?.setup_checklist?.anthropic_api_key || '');
-  const [openaiKey, setOpenAIKey] = useState(currentOrg?.setup_checklist?.openai_api_key || '');
-  const [googleKey, setGoogleKey] = useState(currentOrg?.setup_checklist?.google_api_key || '');
-  const [tavilyKey, setTavilyKey] = useState(currentOrg?.setup_checklist?.tavily_api_key || '');
-
-  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
-  const [modelsCatalog, setModelsCatalog] = useState<AvailableModelsResponse | null>(null);
-  const [isSavingAi, setIsSavingAi] = useState(false);
-
-  const [sandboxConcurrency, setSandboxConcurrency] = useState('8');
-  const [sandboxTimeout, setSandboxTimeout] = useState('30');
-
-  // Team state
-  const [team, setTeam] = useState<TeamMember[]>(INITIAL_TEAM);
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  // Members State
+  const [members, setMembers] = useState<TeamMember[]>(INITIAL_MEMBERS);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState<UserRole>('Operator');
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
-  // Security Hardening state
-  const [orgMfaEnforced, setOrgMfaEnforced] = useState(currentOrg?.mfa_enforced || false);
-  const [mfaModalOpen, setMfaModalOpen] = useState(false);
-  const [mfaSetupData, setMfaSetupData] = useState<MfaSetupResponse | null>(null);
-  const [mfaVerifyCode, setMfaVerifyCode] = useState('');
-  const [mfaLoading, setMfaLoading] = useState(false);
-  const [mfaUserActive, setMfaUserActive] = useState(user?.mfa_enabled ?? true);
-  const [copiedKey, setCopiedKey] = useState(false);
+  // Repositories State
+  const [repoMappings, setRepoMappings] = useState<ServiceRepoMapping[]>([]);
+  const [showAddRepoModal, setShowAddRepoModal] = useState(false);
+  const [newServiceName, setNewServiceName] = useState('');
+  const [newRepoFullName, setNewRepoFullName] = useState('');
+  const [newDefaultBranch, setNewDefaultBranch] = useState('main');
+  const [newAutoMerge, setNewAutoMerge] = useState(true);
 
-  // Secret rotation state
-  const [rotateModalOpen, setRotateModalOpen] = useState(false);
-  const [rotateTarget, setRotateTarget] = useState<{
-    type: string;
-    label: string;
-  } | null>(null);
-  const [newSecretValue, setNewSecretValue] = useState('');
-  const [isRotating, setIsRotating] = useState(false);
-
-
-  // Audit trail state
-  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
-  const [auditLoading, setAuditLoading] = useState(false);
-
-  // Load from storage & available models catalog
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('sentryops_settings');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.slackWebhook) setSlackWebhook(parsed.slackWebhook);
-        if (parsed.pagerdutyKey) setPagerdutyKey(parsed.pagerdutyKey);
-        if (parsed.nebiusKey) setNebiusKey(parsed.nebiusKey);
-        if (parsed.anthropicKey) setAnthropicKey(parsed.anthropicKey);
-        if (parsed.openaiKey) setOpenAIKey(parsed.openaiKey);
-        if (parsed.googleKey) setGoogleKey(parsed.googleKey);
-        if (parsed.tavilyKey) setTavilyKey(parsed.tavilyKey);
-        if (parsed.triageProvider) setTriageProvider(parsed.triageProvider);
-        if (parsed.triageModel) setTriageModel(parsed.triageModel);
-        if (parsed.synthesisProvider) setSynthesisProvider(parsed.synthesisProvider);
-        if (parsed.synthesisModel) setSynthesisModel(parsed.synthesisModel);
-        if (parsed.team) setTeam(parsed.team);
-      }
-    } catch {}
+    setRepoMappings(getServiceRepoMappings());
+  }, []);
 
-    getAvailableModels(currentOrg?.id || 'org_acme').then((data) => {
-      if (data) {
-        setModelsCatalog(data);
-        if (data.selectedTriage?.provider) setTriageProvider(data.selectedTriage.provider);
-        if (data.selectedTriage?.model) setTriageModel(data.selectedTriage.model);
-        if (data.selectedSynthesis?.provider) setSynthesisProvider(data.selectedSynthesis.provider);
-        if (data.selectedSynthesis?.model) setSynthesisModel(data.selectedSynthesis.model);
-      }
+  const handleToggleAutoMerge = (serviceName: string) => {
+    const existing = repoMappings.find((m) => m.service_name === serviceName);
+    if (!existing) return;
+    saveServiceRepoMapping({
+      ...existing,
+      auto_merge: !existing.auto_merge,
     });
-
-    getBillingConfig().then((cfg) => {
-      if (cfg) setBillingConfig(cfg);
-    }).catch(() => {});
-  }, [currentOrg?.id]);
-
-  // Fetch live audit logs when security tab is opened
-  useEffect(() => {
-    if (activeTab === 'security') {
-      setAuditLoading(true);
-      getAuditEvents(currentOrg?.id || 'org_acme')
-        .then((events) => setAuditEvents(events))
-        .catch(() => {})
-        .finally(() => setAuditLoading(false));
-    } else if (activeTab === 'team') {
-      getOrganizationMembers(currentOrg?.id || 'org_acme')
-        .then((members) => {
-          if (members && members.length > 0) {
-            const mapped: TeamMember[] = members.map((m) => ({
-              id: m.id,
-              name: m.user?.name || m.user_id,
-              email: m.user?.email || `${m.user_id}@somak.internal`,
-              role: m.role as UserRole,
-              avatar: m.user?.avatar || (m.user?.name || m.user_id).substring(0, 2).toUpperCase(),
-              mfaEnabled: m.user?.mfa_enabled ?? false,
-              lastActive: 'Active recently',
-            }));
-            setTeam(mapped);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [activeTab, currentOrg?.id]);
-
-  const handleStartMfaSetup = async () => {
-    setMfaLoading(true);
-    try {
-      const data = await setupMfa();
-      if (data) {
-        setMfaSetupData(data);
-        setMfaModalOpen(true);
-      } else {
-        showToast('Failed to initialize MFA setup', 'error');
-      }
-    } catch (err: unknown) {
-      showToast((err as Error).message || 'Failed to initialize MFA setup', 'error');
-    } finally {
-      setMfaLoading(false);
-    }
+    setRepoMappings(getServiceRepoMappings());
+    showToast(`Updated auto-merge gate for ${serviceName}`, 'success');
   };
 
-  const handleConfirmMfa = async (e: React.FormEvent) => {
+  const handleRemoveRepoMapping = (serviceName: string) => {
+    deleteServiceRepoMapping(serviceName);
+    setRepoMappings(getServiceRepoMappings());
+    showToast(`Removed repository mapping for ${serviceName}`, 'info');
+  };
+
+  const handleAddRepoMappingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mfaSetupData || !mfaVerifyCode) return;
-    setMfaLoading(true);
-    try {
-      const res = await enableMfa(mfaSetupData.secret, mfaVerifyCode.trim());
-      if (res?.status === 'success') {
-        setMfaUserActive(true);
-        setMfaModalOpen(false);
-        setMfaVerifyCode('');
-        showToast('Two-factor authentication successfully enabled!', 'success');
-      } else {
-        showToast('Invalid verification code', 'error');
-      }
-    } catch (err: unknown) {
-      showToast((err as Error).message || 'Invalid verification code', 'error');
-    } finally {
-      setMfaLoading(false);
-    }
+    if (!newServiceName.trim() || !newRepoFullName.trim()) return;
+    saveServiceRepoMapping({
+      service_name: newServiceName.trim(),
+      repo_full_name: newRepoFullName.trim(),
+      default_branch: newDefaultBranch.trim() || 'main',
+      auto_merge: newAutoMerge,
+    });
+    setRepoMappings(getServiceRepoMappings());
+    setNewServiceName('');
+    setNewRepoFullName('');
+    setNewDefaultBranch('main');
+    setNewAutoMerge(true);
+    setShowAddRepoModal(false);
+    showToast(`Linked ${newServiceName} to ${newRepoFullName}`, 'success');
   };
 
-  const handleToggleOrgMfa = async () => {
-    const nextVal = !orgMfaEnforced;
-    setOrgMfaEnforced(nextVal);
-    try {
-      await toggleOrgMfaEnforcement(currentOrg?.id || 'org_acme', nextVal);
-      showToast(`MFA enforcement ${nextVal ? 'activated' : 'deactivated'} for all team members`, 'success');
-    } catch (err: unknown) {
-      setOrgMfaEnforced(!nextVal);
-      showToast('Admin privileges required to change organization MFA policy', 'error');
-    }
+  // Notifications State
+  const [notifySev1, setNotifySev1] = useState(true);
+  const [notifyCanaryRollback, setNotifyCanaryRollback] = useState(true);
+  const [notifyBudgetBurn, setNotifyBudgetBurn] = useState(true);
+  const [notifyDigest, setNotifyDigest] = useState(false);
+
+  // Danger confirmation state
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  const markDirty = () => setIsDirty(true);
+
+  const handleSave = () => {
+    setIsSaving(true);
+    setTimeout(() => {
+      setIsSaving(false);
+      setIsDirty(false);
+      showToast('Settings successfully updated', 'success');
+    }, 600);
   };
 
-  const handleOpenRotate = (
-    type: string,
-    label: string
-  ) => {
-    setRotateTarget({ type, label });
-    setNewSecretValue('');
-    setRotateModalOpen(true);
-  };
-
-  const handleConfirmRotate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!rotateTarget || !newSecretValue) return;
-    setIsRotating(true);
-    try {
-      const res = await rotateSecretKey(currentOrg?.id || 'org_acme', rotateTarget.type, newSecretValue.trim());
-      if (res?.status === 'success') {
-        showToast(`Successfully rotated ${rotateTarget.label} key`, 'success');
-        setRotateModalOpen(false);
-        setNewSecretValue('');
-        const refreshed = await getAvailableModels(currentOrg?.id || 'org_acme');
-        if (refreshed) setModelsCatalog(refreshed);
-      } else {
-        showToast('Rotation failed', 'error');
-      }
-    } catch (err: unknown) {
-      showToast((err as Error).message || 'Rotation failed', 'error');
-    } finally {
-      setIsRotating(false);
-    }
-  };
-
-  const handleSaveSettings = async () => {
-    setIsSavingAi(true);
-    const data = {
-      pollInterval,
-      autoTriage,
-      dataRetention,
-      slackWebhook,
-      pagerdutyKey,
-      emailAlerts,
-      oncallEmail,
-      notifySev1,
-      notifySev2,
-      notifyCanary,
-      triageProvider,
-      triageModel,
-      synthesisProvider,
-      synthesisModel,
-      nebiusKey,
-      anthropicKey,
-      openaiKey,
-      googleKey,
-      tavilyKey,
-      sandboxConcurrency,
-      sandboxTimeout,
-      team,
-    };
-    try {
-      localStorage.setItem('sentryops_settings', JSON.stringify(data));
-      await updateChecklist({
-        triage_provider: triageProvider,
-        triage_model: triageModel,
-        synthesis_provider: synthesisProvider,
-        synthesis_model: synthesisModel,
-        nebius_api_key: nebiusKey,
-        ai_api_key: nebiusKey,
-        anthropic_api_key: anthropicKey,
-        anthropic_connected: !!anthropicKey.trim(),
-        openai_api_key: openaiKey,
-        openai_connected: !!openaiKey.trim(),
-        google_api_key: googleKey,
-        google_connected: !!googleKey.trim(),
-        tavily_api_key: tavilyKey,
-      });
-      const refreshed = await getAvailableModels(currentOrg?.id || 'org_acme');
-      if (refreshed) setModelsCatalog(refreshed);
-    } catch {}
-
-    setSaved(true);
-    setIsSavingAi(false);
-    showToast('Platform & AI Engine settings saved and encrypted successfully', 'success');
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  const handleSelectPlan = async (targetPlan: 'free' | 'team' | 'business' | 'enterprise') => {
-    setIsUpdatingPlan(true);
-    try {
-      if (targetPlan === 'free') {
-        const res = await updateOrgPlan('free');
-        if (res) {
-          showToast('Workspace plan switched to FREE tier', 'success');
-          setPlanModalOpen(false);
-        }
-        return;
-      }
-
-      // Create Dodo Payments Checkout Session (PCI-DSS SAQ-A compliant)
-      const session = await createBillingCheckoutSession({
-        org_id: currentOrg?.id || 'org_acme',
-        plan: targetPlan,
-        customer_email: user?.email || 'admin@somak.internal',
-        success_url: typeof window !== 'undefined' ? `${window.location.origin}/settings` : '',
-        cancel_url: typeof window !== 'undefined' ? `${window.location.origin}/settings` : '',
-        idempotency_key: `idem_chk_${currentOrg?.id || 'org'}_${targetPlan}_${Date.now()}`,
-      });
-
-      if (session?.checkout_url && session.checkout_url.startsWith('https://checkout.')) {
-        window.location.href = session.checkout_url;
-        return;
-      }
-
-      // Display Dodo Payments Test Mode Hosted Checkout interface
-      setDodoCheckoutActive({
-        plan: targetPlan,
-        sessionId: session?.session_id || `cs_test_${Date.now()}`,
-      });
-    } catch (err: unknown) {
-      showToast((err as Error).message || 'Failed to initiate checkout', 'error');
-    } finally {
-      setIsUpdatingPlan(false);
-    }
-  };
-
-  const handleConfirmTestPayment = async () => {
-    if (!dodoCheckoutActive) return;
-    setIsUpdatingPlan(true);
-    try {
-      const res = await updateOrgPlan(dodoCheckoutActive.plan);
-      if (res) {
-        showToast(
-          `Dodo Payments test payment verified! Plan successfully upgraded to ${dodoCheckoutActive.plan.toUpperCase()}`,
-          'success'
-        );
-        setDodoCheckoutActive(null);
-        setPlanModalOpen(false);
-      }
-    } catch (err: unknown) {
-      showToast((err as Error).message || 'Failed to complete test payment', 'error');
-    } finally {
-      setIsUpdatingPlan(false);
-    }
-  };
-
-  const handleTestSlack = () => {
-    showToast('Test payload delivered to Slack channel #sre-incidents', 'success');
-  };
-
-  const handleInviteMember = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inviteEmail) return;
-
-    const emailToInvite = inviteEmail;
-    const nameToInvite = inviteName;
-    const roleToInvite = inviteRole;
-
-    setInviteEmail('');
-    setInviteName('');
-    setInviteModalOpen(false);
-
-    try {
-      await createOrganizationInvites(currentOrg?.id || 'org_acme', {
-        emails: [emailToInvite],
-        role: roleToInvite,
-        invited_by: user?.name || 'Administrator',
-      });
-      showToast(`Invitation dispatched to ${emailToInvite}`, 'success');
-
-      // Refresh live members list from backend
-      const refreshed = await getOrganizationMembers(currentOrg?.id || 'org_acme');
-      if (refreshed && refreshed.length > 0) {
-        const mapped: TeamMember[] = refreshed.map((m) => ({
-          id: m.id,
-          name: m.user?.name || m.user_id,
-          email: m.user?.email || `${m.user_id}@somak.internal`,
-          role: m.role as UserRole,
-          avatar: m.user?.avatar || (m.user?.name || m.user_id).substring(0, 2).toUpperCase(),
-          mfaEnabled: m.user?.mfa_enabled ?? false,
-          lastActive: 'Active recently',
-        }));
-        setTeam(mapped);
-      }
-    } catch (err: unknown) {
-      // Fallback local update if offline
-      const newMember: TeamMember = {
-        id: `usr-${Date.now()}`,
-        name: nameToInvite || emailToInvite.split('@')[0],
-        email: emailToInvite,
-        role: roleToInvite,
-        avatar: (nameToInvite || emailToInvite).substring(0, 2).toUpperCase(),
-        mfaEnabled: true,
-        lastActive: 'Invited',
-      };
-      setTeam((prev) => [...prev, newMember]);
-      showToast(`Invitation dispatched to ${emailToInvite}`, 'success');
-    }
+  const handleReset = () => {
+    setOrgName(currentOrg?.name || 'Acme Infrastructure');
+    setOrgSlug('acme-infra');
+    setTimezone('UTC (GMT+00:00)');
+    setRetentionDays('90');
+    setKeys(INITIAL_KEYS);
+    setMembers(INITIAL_MEMBERS);
+    setNotifySev1(true);
+    setNotifyCanaryRollback(true);
+    setNotifyBudgetBurn(true);
+    setNotifyDigest(false);
+    setIsDirty(false);
+    showToast('Changes discarded', 'info');
   };
 
   const handleRoleChange = (memberId: string, newRole: UserRole) => {
-    const updated = team.map((m) => (m.id === memberId ? { ...m, role: newRole } : m));
-    setTeam(updated);
-    showToast(`Role updated for ${team.find((m) => m.id === memberId)?.name}`, 'info');
+    setMembers((prev) =>
+      prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m))
+    );
+    markDirty();
   };
 
   const handleRemoveMember = (memberId: string) => {
-    const updated = team.filter((m) => m.id !== memberId);
-    setTeam(updated);
-    showToast('Team member removed', 'warning');
+    setMembers((prev) => prev.filter((m) => m.id !== memberId));
+    markDirty();
+    showToast('Member removed from organization', 'info');
+  };
+
+  const handleRotateKey = (keyId: string) => {
+    setKeys((prev) =>
+      prev.map((k) => (k.id === keyId ? { ...k, lastRotated: 'Just now' } : k))
+    );
+    markDirty();
+    showToast('Encryption key rotated securely', 'success');
+  };
+
+  const handleRemoveKey = (keyId: string) => {
+    setKeys((prev) => prev.filter((k) => k.id !== keyId));
+    markDirty();
+    showToast('Key provider disconnected', 'info');
+  };
+
+  const handleAddMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail) return;
+    const newMember: TeamMember = {
+      id: `usr-${Date.now()}`,
+      name: inviteEmail.split('@')[0],
+      email: inviteEmail,
+      role: inviteRole,
+      avatar: inviteEmail.substring(0, 2).toUpperCase(),
+      lastActive: 'Invited',
+    };
+    setMembers((prev) => [...prev, newMember]);
+    setInviteEmail('');
+    setShowInviteModal(false);
+    markDirty();
+    showToast(`Invite sent to ${inviteEmail}`, 'success');
   };
 
   return (
-    <div className="min-h-screen bg-radial-gradient text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0A0A0A] text-slate-900 dark:text-slate-100 flex flex-col pb-32 transition-colors selection:bg-indigo-500/20">
       <TopNav />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors w-fit"
@@ -532,1770 +301,1039 @@ export default function SettingsPage() {
           <span>Back to Radar</span>
         </Link>
 
-        {/* Page Header */}
+        {/* Page Header with Usage Strip & Mini-Sparkline */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/10">
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                <Settings className="w-5 h-5" />
-              </span>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Settings
-              </h1>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                {currentPlan} tier
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Manage telemetry, credentials, notifications, and team access.
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Organization Settings
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              Manage tenancy boundaries, BYOK keys, team access, and notification policies.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setPlanModalOpen(true)}
-              className="flex items-center justify-center gap-2 min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 font-bold text-xs shadow-xs transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Change Plan</span>
-            </button>
-            <button
-              onClick={handleSaveSettings}
-              className="flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/25 transition-all active:scale-95 btn-glow-primary"
-            >
-              {saved ? <CheckCircle2 className="w-4 h-4 text-white" /> : <Save className="w-4 h-4" />}
-              <span>{saved ? 'Changes Saved' : 'Save Changes'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Organization Guided Setup Banner */}
-        <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-              <Sparkles className="w-5 h-5" />
-            </div>
+          {/* Vercel-style Usage Mini-Card */}
+          <div className="p-3 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center gap-4 shrink-0">
             <div>
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                {currentOrg ? `${currentOrg.name} Guided Onboarding Checklist` : 'Guided Onboarding Checklist'}
-              </h3>
-              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
-                Configure Sentry webhooks, AI models, Tavily intelligence, and team access in the 5-step guided wizard.
-              </p>
-            </div>
-          </div>
-          <Link
-            href="/onboarding/setup"
-            className="w-full sm:w-auto min-h-[44px] justify-center shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors"
-          >
-            <span>Open Setup Checklist</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-slate-200/80 dark:border-white/10 overflow-x-auto no-scrollbar pb-2">
-          {[
-            { id: 'general', label: 'General & Appearance', icon: Settings },
-            { id: 'notifications', label: 'Notification Channels', icon: Bell },
-            { id: 'ai', label: 'AI Engine & Sandboxes', icon: Cpu },
-            { id: 'team', label: 'Team Members & RBAC', icon: Users },
-            { id: 'security', label: 'Security & Compliance', icon: Shield },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as SettingsTab)}
-                className={`flex items-center gap-2 min-h-[44px] shrink-0 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Tab 1: General & Appearance */}
-        {activeTab === 'general' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <div className="glass-panel rounded-2xl p-6 shadow-xs space-y-6">
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Appearance & Theme
-              </h2>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/90 dark:border-white/10">
-                <div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">
-                    Color Theme Mode
-                  </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Switch between Porcelain Light (zinc hairline borders) and Obsidian Dark.
-                  </div>
-                </div>
-
-                {/* Segmented Dual Theme Selector */}
-                <div className="inline-flex p-1 rounded-xl bg-slate-200/80 dark:bg-black/60 border border-slate-300/80 dark:border-white/10 gap-1 self-start sm:self-auto">
-                  <button
-                    type="button"
-                    onClick={() => setTheme('light')}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      theme === 'light'
-                        ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/90'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Moon className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Porcelain Light</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTheme('dark')}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      theme === 'dark'
-                        ? 'bg-neutral-900 text-amber-300 shadow-sm border border-white/15'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Sun className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Obsidian Dark</span>
-                  </button>
-                </div>
+              <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                Monthly Hotfix Tokens
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-white/10">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Telemetry Ingestion Frequency
-                  </label>
-                  <select
-                    value={pollInterval}
-                    onChange={(e) => setPollInterval(e.target.value)}
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="1">1 second (High-frequency chaos streaming)</option>
-                    <option value="5">5 seconds (Production recommended)</option>
-                    <option value="15">15 seconds (Conserve bandwidth)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Audit Log & Post-Mortem Retention
-                  </label>
-                  <select
-                    value={dataRetention}
-                    onChange={(e) => setDataRetention(e.target.value)}
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="30">30 days (Standard compliance)</option>
-                    <option value="90">90 days (SOC-2 Type II recommended)</option>
-                    <option value="365">365 days (Full ISO 27001 audit archival)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40">
-                <div>
-                  <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
-                    Autonomous Sev-1 Triage & AST Synthesis
-                  </div>
-                  <div className="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-0.5">
-                    Automatically trigger NVIDIA Nemotron-3 pipeline upon telemetry anomaly threshold breach.
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={autoTriage}
-                  onChange={(e) => setAutoTriage(e.target.checked)}
-                  className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Tab 2: Notifications */}
-        {activeTab === 'notifications' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <div className="glass-panel rounded-2xl p-6 shadow-xs space-y-6">
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Integration Channels
-              </h2>
-
-              {/* Slack Webhook */}
-              <div className="space-y-2">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Slack Incoming Webhook URL
-                  </label>
-                  <button
-                    onClick={handleTestSlack}
-                    className="min-h-[36px] text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 self-start sm:self-auto"
-                  >
-                    <Send className="w-3 h-3" />
-                    Test Notification
-                  </button>
-                </div>
-                <input
-                  type="url"
-                  value={slackWebhook}
-                  onChange={(e) => setSlackWebhook(e.target.value)}
-                  placeholder="https://hooks.slack.com/services/..."
-                  className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* PagerDuty */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  PagerDuty Service Integration Key
-                </label>
-                <input
-                  type="text"
-                  value={pagerdutyKey}
-                  onChange={(e) => setPagerdutyKey(e.target.value)}
-                  className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* On-Call Email */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  On-Call Dispatch Email
-                </label>
-                <input
-                  type="email"
-                  value={oncallEmail}
-                  onChange={(e) => setOncallEmail(e.target.value)}
-                  className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Severity Subscriptions */}
-              <div className="pt-4 border-t border-slate-100 dark:border-white/10 space-y-3">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                  Alert Trigger Subscriptions
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
+                  14.2k / 50k
                 </span>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={notifySev1}
-                      onChange={(e) => setNotifySev1(e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="font-semibold text-red-600 dark:text-red-400">SEV-1 Critical Outages</span>
-                    <span className="text-slate-400 text-[11px]">— V8 heap crash, database partition, 502 spike</span>
-                  </label>
-
-                  <label className="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={notifySev2}
-                      onChange={(e) => setNotifySev2(e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="font-semibold text-amber-600 dark:text-amber-400">SEV-2 Degraded Latencies</span>
-                    <span className="text-slate-400 text-[11px]">— P99 &gt; 500ms, retry storm warnings</span>
-                  </label>
-
-                  <label className="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={notifyCanary}
-                      onChange={(e) => setNotifyCanary(e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">Canary Verification Milestones</span>
-                    <span className="text-slate-400 text-[11px]">— Auto-promotions and hold rollbacks</span>
-                  </label>
-                </div>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  28.4%
+                </span>
               </div>
             </div>
-          </motion.div>
-        )}
+            <MiniSparkline
+              data={[4, 6, 8, 9, 12, 11, 14, 15, 14.2]}
+              color="emerald"
+              width={48}
+              height={18}
+            />
+          </div>
+        </div>
 
-        {/* Tab 3: AI Engine & Multi-Provider BYOK */}
-        {activeTab === 'ai' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            {/* Platform Fallback & BYOK Overview Banner */}
-            <div className="p-4 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 flex items-start gap-3">
-              <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div className="space-y-1 text-xs">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-slate-900 dark:text-white">Multi-Provider AI & Bring Your Own Key (BYOK)</h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    Platform Fallback Active
-                  </span>
-                </div>
-                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                  Configure distinct AI models for each stage of the remediation pipeline. If you don&apos;t configure custom keys, Somak AI routes pipeline calls through platform-included NVIDIA Nemotron-3 models (metered against your plan). Adding your own BYOK keys (Anthropic, OpenAI, Google) provides zero-metered platform compute and direct billing to your provider.
+        {/* Sub-tabs Navigation (Render In-Page Pattern) */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 overflow-x-auto text-xs font-medium">
+          {[
+            { id: 'general', label: 'General' },
+            { id: 'keys', label: 'Environment & Keys (BYOK)' },
+            { id: 'members', label: `Members & Roles (${members.length})` },
+            { id: 'repositories', label: 'Codebases & Repositories' },
+            { id: 'notifications', label: 'Notifications' },
+            { id: 'billing', label: 'Billing' },
+            { id: 'danger', label: 'Danger Zone', danger: true },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as SubTab)}
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
+                activeTab === tab.id
+                  ? tab.danger
+                    ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 font-semibold shadow-2xs'
+                    : 'bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white font-semibold shadow-2xs'
+                  : tab.danger
+                  ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ======================================================== */}
+        {/* TAB 1: GENERAL */}
+        {/* ======================================================== */}
+        {activeTab === 'general' && (
+          <div className="space-y-4">
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-6">
+              <div>
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                  Organization Profile
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  General workspace metadata and operational timezone.
                 </p>
               </div>
-            </div>
 
-            {/* Stage-by-Stage Model Selection */}
-            <div className="glass-panel rounded-2xl p-6 shadow-xs space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/10">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-indigo-500" />
-                    Per-Stage Pipeline Model Selection
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Pair lightweight models for fast telemetry triage with frontier reasoning models for AST patch synthesis.
-                  </p>
-                </div>
-                <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10">
-                  Dual-Engine Pipeline
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Stage 1: Fast Triage */}
-                <div className="p-4 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold flex items-center justify-center border border-amber-500/20">
-                        1
-                      </span>
-                      <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                        Stage 1: Fast Triage &amp; Fingerprinting
-                      </h3>
-                    </div>
-                    <span className="text-[10px] font-mono text-slate-400">Target Latency: &lt;100ms</span>
-                  </div>
-
-                  {/* Provider Selector */}
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Inference Provider
+              <div className="space-y-4 text-xs">
+                {/* Field 1: Org Name */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-white/5">
+                  <div className="sm:w-1/3">
+                    <label className="font-semibold text-slate-800 dark:text-slate-200">
+                      Organization Name
                     </label>
-                    <select
-                      value={triageProvider}
-                      onChange={(e) => {
-                        const newProv = e.target.value;
-                        setTriageProvider(newProv);
-                        if (newProv === 'nebius') setTriageModel('nvidia/nemotron-3-nano-30b-a3b');
-                        else if (newProv === 'anthropic') setTriageModel('claude-3-5-haiku-20241022');
-                        else if (newProv === 'openai') setTriageModel('gpt-4o-mini');
-                        else if (newProv === 'google') setTriageModel('gemini-1.5-flash');
-                      }}
-                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="nebius">NVIDIA / Nebius (Platform Included)</option>
-                      <option value="anthropic">Anthropic Claude (BYOK)</option>
-                      <option value="openai">OpenAI GPT (BYOK)</option>
-                      <option value="google">Google Gemini (BYOK)</option>
-                    </select>
+                    <p className="text-[11px] text-slate-400">Displayed across alerts and audit logs.</p>
                   </div>
-
-                  {/* Model Selector */}
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Triage Model
-                    </label>
-                    <select
-                      value={triageModel}
-                      onChange={(e) => setTriageModel(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white font-mono"
-                    >
-                      {triageProvider === 'nebius' && (
-                        <option value="nvidia/nemotron-3-nano-30b-a3b">nvidia/nemotron-3-nano-30b-a3b (Sub-10ms Fast Classification)</option>
-                      )}
-                      {triageProvider === 'anthropic' && (
-                        <option value="claude-3-5-haiku-20241022">claude-3-5-haiku-20241022 (Fast &amp; Cost-Efficient)</option>
-                      )}
-                      {triageProvider === 'openai' && (
-                        <option value="gpt-4o-mini">gpt-4o-mini (Sub-100ms Ingestion)</option>
-                      )}
-                      {triageProvider === 'google' && (
-                        <option value="gemini-1.5-flash">gemini-1.5-flash (Ultra-Low Latency)</option>
-                      )}
-                    </select>
-                  </div>
-
-                  {/* BYOK Gating Warning */}
-                  {triageProvider !== 'nebius' && (
-                    (triageProvider === 'anthropic' && !anthropicKey.trim()) ||
-                    (triageProvider === 'openai' && !openaiKey.trim()) ||
-                    (triageProvider === 'google' && !googleKey.trim())
-                  ) && (
-                    <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-2 text-[11px] text-amber-700 dark:text-amber-400">
-                      <Lock className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                      <span>
-                        <strong>Key Required:</strong> Add your {triageProvider.toUpperCase()} API key in BYOK Credentials below to activate this model. Calls will safely fall back to Platform Nemotron-3-Nano until configured.
-                      </span>
-                    </div>
-                  )}
+                  <input
+                    type="text"
+                    value={orgName}
+                    onChange={(e) => {
+                      setOrgName(e.target.value);
+                      markDirty();
+                    }}
+                    className="sm:w-2/3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
                 </div>
 
-                {/* Stage 2: AST Synthesis */}
-                <div className="p-4 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold flex items-center justify-center border border-indigo-500/20">
-                        2
-                      </span>
-                      <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                        Stage 2: AST Hotfix Synthesis &amp; Deep Reasoning
-                      </h3>
-                    </div>
-                    <span className="text-[10px] font-mono text-slate-400">Target Accuracy: 99.4% AST</span>
-                  </div>
-
-                  {/* Provider Selector */}
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Inference Provider
+                {/* Field 2: Slug */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-white/5">
+                  <div className="sm:w-1/3">
+                    <label className="font-semibold text-slate-800 dark:text-slate-200">
+                      Workspace Slug
                     </label>
-                    <select
-                      value={synthesisProvider}
-                      onChange={(e) => {
-                        const newProv = e.target.value;
-                        setSynthesisProvider(newProv);
-                        if (newProv === 'nebius') setSynthesisModel('nvidia/nemotron-3-ultra-550b');
-                        else if (newProv === 'anthropic') setSynthesisModel('claude-3-5-sonnet-20241022');
-                        else if (newProv === 'openai') setSynthesisModel('gpt-4o');
-                        else if (newProv === 'google') setSynthesisModel('gemini-1.5-pro');
-                      }}
-                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="nebius">NVIDIA / Nebius (Platform Included)</option>
-                      <option value="anthropic">Anthropic Claude (BYOK)</option>
-                      <option value="openai">OpenAI GPT (BYOK)</option>
-                      <option value="google">Google Gemini (BYOK)</option>
-                    </select>
+                    <p className="text-[11px] text-slate-400">Used in API routes and webhooks.</p>
                   </div>
-
-                  {/* Model Selector */}
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Reasoning Model
-                    </label>
-                    <select
-                      value={synthesisModel}
-                      onChange={(e) => setSynthesisModel(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white font-mono"
-                    >
-                      {synthesisProvider === 'nebius' && (
-                        <option value="nvidia/nemotron-3-ultra-550b">nvidia/nemotron-3-ultra-550b (550B MoE Deep Reasoning)</option>
-                      )}
-                      {synthesisProvider === 'anthropic' && (
-                        <>
-                          <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet-20241022 (Frontier Code Synthesis)</option>
-                          <option value="claude-3-opus-20240229">claude-3-opus-20240229 (Complex Architecture AST)</option>
-                        </>
-                      )}
-                      {synthesisProvider === 'openai' && (
-                        <option value="gpt-4o">gpt-4o (High-Precision Autonomous Patching)</option>
-                      )}
-                      {synthesisProvider === 'google' && (
-                        <option value="gemini-1.5-pro">gemini-1.5-pro (Extended Context &amp; AST Analysis)</option>
-                      )}
-                    </select>
-                  </div>
-
-                  {/* BYOK Gating Warning */}
-                  {synthesisProvider !== 'nebius' && (
-                    (synthesisProvider === 'anthropic' && !anthropicKey.trim()) ||
-                    (synthesisProvider === 'openai' && !openaiKey.trim()) ||
-                    (synthesisProvider === 'google' && !googleKey.trim())
-                  ) && (
-                    <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-2 text-[11px] text-amber-700 dark:text-amber-400">
-                      <Lock className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                      <span>
-                        <strong>Key Required:</strong> Add your {synthesisProvider.toUpperCase()} API key in BYOK Credentials below to activate this model. Calls will safely fall back to Platform Nemotron-3-Ultra until configured.
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* BYOK Key Management Cards */}
-            <div className="glass-panel rounded-2xl p-6 shadow-xs space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Key className="w-4 h-4 text-indigo-500" />
-                    BYOK Multi-Provider Credentials
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Encrypted at-rest with AES-128-CBC + HMAC-SHA256 Fernet envelope encryption. Masked in public responses.
-                  </p>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-500/20">
-                  Zero-Knowledge Storage
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* 1. Nebius Token Factory */}
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Cpu className="w-4 h-4 text-emerald-500" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">NVIDIA / Nebius Token Factory</span>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      Platform Included
+                  <div className="sm:w-2/3 flex items-center">
+                    <span className="px-3 py-2 bg-slate-100 dark:bg-white/5 border border-r-0 border-slate-200 dark:border-white/10 rounded-l-xl text-slate-400 font-mono text-xs">
+                      somak.ai/org/
                     </span>
-                  </div>
-                  <div className="relative">
                     <input
-                      type={showKeys['nebius'] ? 'text' : 'password'}
-                      value={nebiusKey}
-                      onChange={(e) => setNebiusKey(e.target.value)}
-                      placeholder="neb-tok-live-..."
-                      className="w-full font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      type="text"
+                      value={orgSlug}
+                      onChange={(e) => {
+                        setOrgSlug(e.target.value);
+                        markDirty();
+                      }}
+                      className="flex-1 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-r-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
                     />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowKeys((prev) => ({ ...prev, nebius: !prev.nebius }))}
-                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                      >
-                        {showKeys['nebius'] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenRotate('nebius_api_key', 'Nebius Token Factory')}
-                        className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-1"
-                      >
-                        Rotate
-                      </button>
-                    </div>
                   </div>
-                  <span className="text-[10px] text-slate-400 block">Default platform provider for Nemotron-3-Nano and Ultra</span>
                 </div>
 
-                {/* 2. Anthropic Claude */}
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-500" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">Anthropic Claude</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                        Business plan
-                      </span>
-                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                        anthropicKey.trim()
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                          : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/10'
-                      }`}>
-                        {anthropicKey.trim() ? 'Configured' : 'Optional'}
-                      </span>
-                    </div>
+                {/* Field 3: Timezone */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-white/5">
+                  <div className="sm:w-1/3">
+                    <label className="font-semibold text-slate-800 dark:text-slate-200">
+                      Primary Timezone
+                    </label>
+                    <p className="text-[11px] text-slate-400">Used for incident timestamps and shift rotas.</p>
                   </div>
-                  {currentPlan === 'free' && (
-                    <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between text-[11px] text-amber-700 dark:text-amber-400">
-                      <span>BYOK requires Business tier.</span>
-                      <button type="button" onClick={() => setPlanModalOpen(true)} className="font-bold underline text-indigo-600 dark:text-indigo-400">
-                        Upgrade
-                      </button>
-                    </div>
-                  )}
-                  <div className="relative">
-                    <input
-                      type={showKeys['anthropic'] ? 'text' : 'password'}
-                      value={anthropicKey}
-                      disabled={currentPlan === 'free'}
-                      onChange={(e) => setAnthropicKey(e.target.value)}
-                      placeholder="sk-ant-api03-..."
-                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowKeys((prev) => ({ ...prev, anthropic: !prev.anthropic }))}
-                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 min-h-[32px]"
-                      >
-                        {showKeys['anthropic'] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenRotate('anthropic_api_key', 'Anthropic Claude')}
-                        disabled={currentPlan === 'free'}
-                        className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-1 min-h-[32px] disabled:opacity-50"
-                      >
-                        Rotate
-                      </button>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">Powers Claude 3.5 Sonnet and Haiku models.</span>
+                  <select
+                    value={timezone}
+                    onChange={(e) => {
+                      setTimezone(e.target.value);
+                      markDirty();
+                    }}
+                    className="sm:w-2/3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
+                  >
+                    <option value="UTC (GMT+00:00)">UTC (GMT+00:00)</option>
+                    <option value="America/New_York (EST)">America/New_York (EST)</option>
+                    <option value="America/Los_Angeles (PST)">America/Los_Angeles (PST)</option>
+                    <option value="Europe/London (BST)">Europe/London (BST)</option>
+                    <option value="Asia/Tokyo (JST)">Asia/Tokyo (JST)</option>
+                  </select>
                 </div>
 
-                {/* 3. OpenAI GPT */}
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-cyan-500" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">OpenAI GPT</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                        Business plan
-                      </span>
-                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                        openaiKey.trim()
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                          : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/10'
-                      }`}>
-                        {openaiKey.trim() ? 'Configured' : 'Optional'}
-                      </span>
-                    </div>
+                {/* Field 4: Data Retention */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-white/5">
+                  <div className="sm:w-1/3">
+                    <label className="font-semibold text-slate-800 dark:text-slate-200">
+                      Audit Trail Retention
+                    </label>
+                    <p className="text-[11px] text-slate-400">Rolling cryptographic log retention window.</p>
                   </div>
-                  {currentPlan === 'free' && (
-                    <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between text-[11px] text-amber-700 dark:text-amber-400">
-                      <span>BYOK requires Business tier.</span>
-                      <button type="button" onClick={() => setPlanModalOpen(true)} className="font-bold underline text-indigo-600 dark:text-indigo-400">
-                        Upgrade
-                      </button>
-                    </div>
-                  )}
-                  <div className="relative">
-                    <input
-                      type={showKeys['openai'] ? 'text' : 'password'}
-                      value={openaiKey}
-                      disabled={currentPlan === 'free'}
-                      onChange={(e) => setOpenAIKey(e.target.value)}
-                      placeholder="sk-proj-..."
-                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowKeys((prev) => ({ ...prev, openai: !prev.openai }))}
-                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 min-h-[32px]"
-                      >
-                        {showKeys['openai'] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenRotate('openai_api_key', 'OpenAI GPT')}
-                        disabled={currentPlan === 'free'}
-                        className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-1 min-h-[32px] disabled:opacity-50"
-                      >
-                        Rotate
-                      </button>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">Powers GPT-4o reasoning and GPT-4o-mini fast triage.</span>
-                </div>
-
-                {/* 4. Google Gemini */}
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-blue-500" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">Google Gemini</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                        Business plan
-                      </span>
-                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                        googleKey.trim()
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                          : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/10'
-                      }`}>
-                        {googleKey.trim() ? 'Configured' : 'Optional'}
-                      </span>
-                    </div>
-                  </div>
-                  {currentPlan === 'free' && (
-                    <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between text-[11px] text-amber-700 dark:text-amber-400">
-                      <span>BYOK requires Business tier.</span>
-                      <button type="button" onClick={() => setPlanModalOpen(true)} className="font-bold underline text-indigo-600 dark:text-indigo-400">
-                        Upgrade
-                      </button>
-                    </div>
-                  )}
-                  <div className="relative">
-                    <input
-                      type={showKeys['google'] ? 'text' : 'password'}
-                      value={googleKey}
-                      disabled={currentPlan === 'free'}
-                      onChange={(e) => setGoogleKey(e.target.value)}
-                      placeholder="AIzaSy..."
-                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowKeys((prev) => ({ ...prev, google: !prev.google }))}
-                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 min-h-[32px]"
-                      >
-                        {showKeys['google'] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenRotate('google_api_key', 'Google Gemini')}
-                        disabled={currentPlan === 'free'}
-                        className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-1 min-h-[32px] disabled:opacity-50"
-                      >
-                        Rotate
-                      </button>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">Powers Gemini 1.5 Pro and Gemini 1.5 Flash models.</span>
-                </div>
-
-                {/* 5. Tavily SRE Web Grounding */}
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 space-y-2 md:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Key className="w-4 h-4 text-cyan-500" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">Tavily SRE Web Grounding API</span>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      Connected
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type={showKeys['tavily'] ? 'text' : 'password'}
-                      value={tavilyKey}
-                      onChange={(e) => setTavilyKey(e.target.value)}
-                      placeholder="tvly-prod-..."
-                      className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-3 pr-20 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowKeys((prev) => ({ ...prev, tavily: !prev.tavily }))}
-                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 min-h-[32px]"
-                      >
-                        {showKeys['tavily'] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenRotate('tavily_api_key', 'Tavily Web Search')}
-                        className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-1 min-h-[32px]"
-                      >
-                        Rotate
-                      </button>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">Queries official runtime documentation and post-mortems for root-cause grounding.</span>
+                  <select
+                    value={retentionDays}
+                    onChange={(e) => {
+                      setRetentionDays(e.target.value);
+                      markDirty();
+                    }}
+                    className="sm:w-2/3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
+                  >
+                    <option value="30">30 Days</option>
+                    <option value="90">90 Days (SOC-2 Recommended)</option>
+                    <option value="365">1 Year (Enterprise)</option>
+                    <option value="forever">Indefinite (Append-Only Immutable)</option>
+                  </select>
                 </div>
               </div>
             </div>
-
-            {/* Firecracker Sandbox Configuration - Collapsed Advanced */}
-            <div className="glass-panel rounded-2xl p-6 shadow-xs space-y-4">
-              <button
-                type="button"
-                onClick={() => setShowAdvancedSandbox(!showAdvancedSandbox)}
-                className="w-full flex items-center justify-between text-left focus:outline-none"
-              >
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Terminal className="w-4 h-4 text-indigo-500" />
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                    Advanced: Firecracker MicroVM Sandbox Isolation
-                  </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
-                    Enterprise
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                  <span>{showAdvancedSandbox ? 'Hide Advanced' : 'Expand Advanced'}</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAdvancedSandbox ? 'rotate-180' : ''}`} />
-                </div>
-              </button>
-
-              {showAdvancedSandbox && (
-                <div className="pt-4 border-t border-slate-100 dark:border-white/10 space-y-4">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Configure microVM hypervisor concurrency and process timeouts for AST test execution.
-                  </p>
-
-                  {currentPlan !== 'enterprise' && (
-                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <span>Standard limits active (4 microVMs, 15s timeout). Custom parameters are gated to Enterprise plan.</span>
-                      <button
-                        type="button"
-                        onClick={() => setPlanModalOpen(true)}
-                        className="font-bold underline text-indigo-600 dark:text-indigo-400 shrink-0 text-left"
-                      >
-                        Upgrade to Enterprise
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Max Parallel Sandboxes (Default: 4, Enterprise max: 16)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="16"
-                        disabled={currentPlan !== 'enterprise'}
-                        value={sandboxConcurrency}
-                        onChange={(e) => setSandboxConcurrency(e.target.value)}
-                        className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Execution Timeout in Seconds (Default: 15s, Enterprise max: 60s)
-                      </label>
-                      <input
-                        type="number"
-                        min="5"
-                        max="60"
-                        disabled={currentPlan !== 'enterprise'}
-                        value={sandboxTimeout}
-                        onChange={(e) => setSandboxTimeout(e.target.value)}
-                        className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Save AI Button */}
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={handleSaveSettings}
-                disabled={isSavingAi}
-                className="w-full sm:w-auto min-h-[44px] flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50"
-              >
-                {isSavingAi ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Saving &amp; Encrypting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    <span>Save AI Engine Configuration</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </motion.div>
+          </div>
         )}
 
-
-        {/* Tab 4: Team Members & RBAC */}
-        {activeTab === 'team' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <div className="glass-panel rounded-2xl p-6 shadow-xs space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* ======================================================== */}
+        {/* TAB 2: ENVIRONMENT & KEYS (BYOK) */}
+        {/* ======================================================== */}
+        {activeTab === 'keys' && (
+          <div className="space-y-4">
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-white/5">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                    Team Members & Access Control (RBAC)
-                  </h2>
+                  <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                    Connected Key Providers (BYOK)
+                  </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Assign role permissions: Admin (Full control), Operator (Canary deploy & rollback), Viewer (Read-only).
+                    Envelope encryption keys managed inside your tenancy for zero data exposure.
                   </p>
                 </div>
                 <button
-                  onClick={() => setInviteModalOpen(true)}
-                  className="flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs"
+                  type="button"
+                  onClick={() => showToast('Connect a new AWS KMS or Vault ARN via Integrations', 'info')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-semibold text-xs shadow-2xs transition-colors shrink-0"
                 >
-                  <UserPlus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Key Provider</span>
+                </button>
+              </div>
+
+              {/* Rows (Vercel Env Variables Pattern) */}
+              <div className="divide-y divide-slate-100 dark:divide-white/5">
+                {keys.map((k) => (
+                  <div
+                    key={k.id}
+                    className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="font-semibold text-slate-900 dark:text-white">{k.name}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 dark:bg-white/5 text-slate-500">
+                          {k.type}
+                        </span>
+                      </div>
+                      <div className="font-mono text-[11px] text-slate-400 truncate max-w-md">
+                        {k.fingerprint}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+                      <span className="text-[11px] font-mono text-slate-400">
+                        Rotated {k.lastRotated}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRotateKey(k.id)}
+                        className="px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors"
+                      >
+                        Rotate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveKey(k.id)}
+                        className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                        title="Disconnect Key"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* TAB 3: MEMBERS & ROLES */}
+        {/* ======================================================== */}
+        {activeTab === 'members' && (
+          <div className="space-y-4">
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-white/5">
+                <div>
+                  <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                    Team Members
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Manage role permissions (Admin, Operator, Viewer) with dual-approval requirements.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-semibold text-xs shadow-2xs transition-colors shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
                   <span>Invite Member</span>
                 </button>
               </div>
 
-              {/* Table */}
-              <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-white/10">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-white/5 text-slate-500 border-b border-slate-200/80 dark:border-white/10">
-                    <tr>
-                      <th className="py-3 px-4 font-bold">User</th>
-                      <th className="py-3 px-4 font-bold">Role</th>
-                      <th className="py-3 px-4 font-bold">MFA</th>
-                      <th className="py-3 px-4 font-bold">Last Active</th>
-                      <th className="py-3 px-4 font-bold text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200/60 dark:divide-slate-800/60 font-mono">
-                    {team.map((member) => (
-                      <tr key={member.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3 px-4 font-sans">
-                          <div className="flex items-center gap-3">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center font-bold text-[10px] shadow-xs">
-                              {member.avatar}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-slate-900 dark:text-white">
-                                {member.name}
-                              </div>
-                              <div className="text-[11px] text-slate-400 font-mono">
-                                {member.email}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <select
-                            value={member.role}
-                            onChange={(e) => handleRoleChange(member.id, e.target.value as UserRole)}
-                            className={`rounded-lg py-1.5 px-2.5 min-h-[36px] text-[11px] font-bold border ${
-                              member.role === 'Admin'
-                                ? 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20'
-                                : member.role === 'Operator'
-                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
-                                : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10'
-                            }`}
-                          >
-                            <option value="Admin">Admin</option>
-                            <option value="Operator">Operator</option>
-                            <option value="Viewer">Viewer</option>
-                          </select>
-                        </td>
-                        <td className="py-3 px-4 font-sans">
-                          <span
-                            className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                              member.mfaEnabled
-                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                            }`}
-                          >
-                            <Lock className="w-2.5 h-2.5" />
-                            {member.mfaEnabled ? 'Enforced' : 'Optional'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-400 text-[11px]">
-                          {member.lastActive}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <button
-                            onClick={() => handleRemoveMember(member.id)}
-                            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-500/10 transition-colors min-h-[36px] min-w-[36px] inline-flex items-center justify-center"
-                            title="Remove Member"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Multi-Email Invitations & Pending Tokens */}
-              <div className="pt-6 border-t border-slate-100 dark:border-white/10 space-y-4">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    Send Multi-Member Invitations
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Generate secure 7-day invite links, invite by tags, and manage pending invites.
-                  </p>
-                </div>
-                <InviteTeam />
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Tab 5: Security & Compliance */}
-        {activeTab === 'security' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            {/* Org-Wide Policies */}
-            <div className="glass-panel rounded-2xl p-6 shadow-xs space-y-6">
-              <div>
-                <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-indigo-500" />
-                  Workspace Security & Authentication Policies
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Configure organization-level access guards, MFA enforcement, and authentication rate limits.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/5/40 flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <Lock className="w-3.5 h-3.5 text-indigo-500" />
-                      Enforce Two-Factor Authentication (MFA)
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Require all organization members to present a TOTP authenticator code upon signing in.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleToggleOrgMfa}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      orgMfaEnforced ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        orgMfaEnforced ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/5/40 space-y-1">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                    Brute-Force & Session Protection
-                  </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    5 consecutive failed attempts trigger an automatic 15-minute account lockout (HTTP 423). Sessions run in HttpOnly SameSite=Strict cookies.
-                  </p>
-                </div>
-              </div>
-
-              {/* Personal MFA Setup */}
-              <div className="pt-4 border-t border-slate-100 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Fingerprint className="w-4 h-4 text-purple-500" />
-                    Your Personal Authenticator (TOTP)
-                  </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Use 1Password, Google Authenticator, or Bitwarden to generate time-based one-time codes.
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${
-                      mfaUserActive
-                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
-                        : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20'
-                    }`}
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    {mfaUserActive ? 'MFA Configured' : 'Not Configured'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleStartMfaSetup}
-                    disabled={mfaLoading}
-                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5"
-                  >
-                    <QrCode className="w-3.5 h-3.5" />
-                    <span>{mfaUserActive ? 'Re-enroll MFA' : 'Setup Authenticator'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Envelope Encrypted Secrets & Rotation */}
-            <div className="glass-panel rounded-2xl p-6 shadow-xs space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Key className="w-4 h-4 text-emerald-500" />
-                    Envelope Encrypted Secrets & Rotation
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Credentials are encrypted at rest with Fernet and never transmitted to the browser in plaintext.
-                  </p>
-                </div>
-                <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full self-start sm:self-auto border border-emerald-500/20">
-                  AES-128-CBC / Fernet Active
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  {
-                    type: 'sentry_webhook_secret' as const,
-                    label: 'Sentry Webhook Secret',
-                    masked: '••••••••s3nt',
-                    desc: 'HMAC-SHA256 signature verification for inbound error webhooks.',
-                  },
-                  {
-                    type: 'nebius_api_key' as const,
-                    label: 'Nebius Token Factory Key',
-                    masked: '••••••••b321',
-                    desc: 'Token factory authentication for Nemotron AST synthesis models.',
-                  },
-                  {
-                    type: 'tavily_api_key' as const,
-                    label: 'Tavily Intelligence Key',
-                    masked: '••••••••aa8',
-                    desc: 'Real-time diagnostic web intelligence grounding key.',
-                  },
-                  {
-                    type: 'pagerduty_integration_key' as const,
-                    label: 'PagerDuty Service Key',
-                    masked: '••••••••c481',
-                    desc: 'Events API v2 integration key for high-priority escalation.',
-                  },
-                ].map((item) => (
+              {/* Members List */}
+              <div className="divide-y divide-slate-100 dark:divide-white/5">
+                {members.map((m) => (
                   <div
-                    key={item.type}
-                    className="p-4 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/5/40 flex flex-col justify-between gap-3"
+                    key={m.id}
+                    className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                   >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">
-                          {item.label}
-                        </span>
-                        <span className="font-mono text-xs text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-700/60 px-2 py-0.5 rounded-lg">
-                          {item.masked}
-                        </span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-slate-300 shrink-0">
+                        {m.avatar}
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                        {item.desc}
-                      </p>
+                      <div>
+                        <div className="font-semibold text-slate-900 dark:text-white">{m.name}</div>
+                        <div className="text-[11px] text-slate-400">{m.email}</div>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenRotate(item.type, item.label)}
-                      className="self-end px-3 py-1.5 rounded-xl border border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[11px] transition-colors flex items-center gap-1.5"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      <span>Rotate Key</span>
-                    </button>
+
+                    <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+                      <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">
+                        {m.lastActive}
+                      </span>
+
+                      {/* Inline Role Selector */}
+                      <select
+                        value={m.role}
+                        onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
+                        className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-medium focus:outline-none"
+                      >
+                        <option value="Admin">Admin</option>
+                        <option value="Operator">Operator</option>
+                        <option value="Viewer">Viewer</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMember(m.id)}
+                        className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                        title="Remove Member"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Tamper-Evident Immutable Audit Log */}
-            <div className="glass-panel rounded-2xl p-6 shadow-xs space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-indigo-500" />
-                    Immutable Audit Ledger (SHA-256 Chained)
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Append-only security log with cryptographic hash-chaining across all actions, RBAC changes, and rollouts.
-                  </p>
-                </div>
-                {(currentPlan === 'free' || currentPlan === 'team') ? (
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1 self-start sm:self-auto">
-                    <Lock className="w-3 h-3" />
-                    Business Plan Required
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuditLoading(true);
-                      getAuditEvents(currentOrg?.id || 'org_acme')
-                        .then((e) => setAuditEvents(e))
-                        .finally(() => setAuditLoading(false));
-                    }}
-                    className="min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-white/10 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${auditLoading ? 'animate-spin' : ''}`} />
-                    <span>Refresh Ledger</span>
-                  </button>
-                )}
-              </div>
-
-              {(currentPlan === 'free' || currentPlan === 'team') ? (
-                <div className="p-8 rounded-xl border border-dashed border-slate-300 dark:border-white/10 bg-slate-50/50 dark:bg-white/5/30 text-center space-y-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center mx-auto">
-                    <Lock className="w-5 h-5" />
+            {/* Invite Modal */}
+            {showInviteModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xl max-w-md w-full space-y-4">
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900 dark:text-white">Invite Team Member</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Invited users receive an email magic link to join the organization.
+                    </p>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    Audit Ledger Gated to Business & Enterprise
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                    Cryptographic hash chaining with append-only tamper detection is reserved for Business and Enterprise tiers. Upgrade your workspace to access immutable compliance records.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setPlanModalOpen(true)}
-                    className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Upgrade to Business Plan</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-white/10">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 dark:bg-white/5 text-slate-500 border-b border-slate-200/80 dark:border-white/10">
-                      <tr>
-                        <th className="py-3 px-4 font-bold">Timestamp</th>
-                        <th className="py-3 px-4 font-bold">Actor</th>
-                        <th className="py-3 px-4 font-bold">Category</th>
-                        <th className="py-3 px-4 font-bold">Action</th>
-                        <th className="py-3 px-4 font-bold font-mono text-right">Tamper Hash</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200/60 dark:divide-slate-800/60 font-sans">
-                      {auditEvents.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="py-8 text-center text-xs text-slate-400 font-mono">
-                            {auditLoading ? 'Loading chained audit entries...' : 'No audit records in current ledger block.'}
-                          </td>
-                        </tr>
-                      ) : (
-                        auditEvents.map((evt) => (
-                          <tr key={evt.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                            <td className="py-3 px-4 text-[11px] text-slate-400 font-mono whitespace-nowrap">
-                              {new Date(evt.timestamp).toLocaleString()}
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="font-semibold text-slate-900 dark:text-white">
-                                {evt.actor_name}
-                              </div>
-                              <div className="text-[10px] text-slate-400 font-mono">
-                                {evt.actor_email} ({evt.actor_role})
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10">
-                                {evt.category}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200">
-                              {evt.action}
-                            </td>
-                            <td className="py-3 px-4 text-right font-mono text-[11px] text-indigo-600 dark:text-indigo-400">
-                              sha256:{evt.tamper_hash ? evt.tamper_hash.substring(0, 8) : '00000000'}…
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </main>
 
-      {/* Invite Member Modal */}
-      <AnimatePresence>
-        {inviteModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md glass-modal rounded-2xl p-6 shadow-2xl space-y-4"
-            >
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                Invite New SRE Team Member
-              </h3>
-              <form onSubmit={handleInviteMember} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={inviteName}
-                    onChange={(e) => setInviteName(e.target.value)}
-                    placeholder="Jane Doe"
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
+                  <form onSubmit={handleAddMember} className="space-y-3 text-xs">
+                    <div>
+                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        Work Email
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="engineer@company.com"
+                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Work Email
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="jane@company.com"
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
+                    <div>
+                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        Role
+                      </label>
+                      <select
+                        value={inviteRole}
+                        onChange={(e) => setInviteRole(e.target.value as UserRole)}
+                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none"
+                      >
+                        <option value="Operator">Operator (Can trigger sandboxes & review fixes)</option>
+                        <option value="Admin">Admin (Full tenancy control & canary promotion)</option>
+                        <option value="Viewer">Viewer (Read-only access)</option>
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Role Assignment
-                  </label>
-                  <select
-                    value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                    className="w-full min-h-[44px] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
-                  >
-                    <option value="Operator">Operator (Canary deploy & rollback)</option>
-                    <option value="Admin">Admin (Full access)</option>
-                    <option value="Viewer">Viewer (Read-only)</option>
-                  </select>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowInviteModal(false)}
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-1.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold"
+                      >
+                        Send Invite
+                      </button>
+                    </div>
+                  </form>
                 </div>
-
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setInviteModalOpen(false)}
-                    className="flex-1 min-h-[44px] py-2 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-700 dark:text-slate-300"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 min-h-[44px] py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs"
-                  >
-                    Send Invitation
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* MFA Setup Modal */}
-        {mfaModalOpen && mfaSetupData && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md glass-modal rounded-2xl p-6 shadow-2xl space-y-4"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-                    <QrCode className="w-4 h-4" />
+        {/* ======================================================== */}
+        {/* TAB: CODEBASES & REPOSITORIES */}
+        {/* ======================================================== */}
+        {activeTab === 'repositories' && (
+          <div className="space-y-6">
+            {/* GitHub App Connection Card */}
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-900/10 dark:bg-white/10 text-slate-900 dark:text-white flex items-center justify-center shrink-0">
+                    <GitBranch className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                      Setup Two-Factor Authentication
+                    <h3 className="font-semibold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>GitHub Integration</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        Connected (@acme-corp)
+                      </span>
                     </h3>
-                    <p className="text-[11px] text-slate-400">TOTP Authenticator</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setMfaModalOpen(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                  <Trash2 className="w-4 h-4 sr-only" />
-                  ✕
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-xs text-slate-600 dark:text-slate-300">
-                  1. Scan this QR code in your authenticator app (1Password, Google Authenticator, or Microsoft Authenticator).
-                </p>
-
-                <div className="flex justify-center p-3 bg-white rounded-xl border border-slate-200 dark:border-white/10 shadow-inner">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={mfaSetupData.qr_code_url}
-                    alt="Authenticator QR Code"
-                    className="w-44 h-44 object-contain"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Or enter manual secret key:
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={mfaSetupData.manual_entry_key}
-                      className="flex-1 font-mono text-xs bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-1.5 px-3 select-all text-slate-800 dark:text-slate-200"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(mfaSetupData.manual_entry_key);
-                        setCopiedKey(true);
-                        setTimeout(() => setCopiedKey(false), 2000);
-                      }}
-                      className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1"
-                    >
-                      {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <form onSubmit={handleConfirmMfa} className="space-y-3 pt-2">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      2. Enter the 6-digit confirmation code:
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={6}
-                      value={mfaVerifyCode}
-                      onChange={(e) => setMfaVerifyCode(e.target.value.replace(/\D/g, ''))}
-                      placeholder="123456"
-                      className="w-full min-h-[44px] font-mono text-center text-lg tracking-widest bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-900 dark:text-white"
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setMfaModalOpen(false)}
-                      className="flex-1 min-h-[44px] py-2 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-600 dark:text-slate-300"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={mfaLoading || mfaVerifyCode.length < 6}
-                      className="flex-1 min-h-[44px] py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-colors"
-                    >
-                      {mfaLoading ? 'Verifying...' : 'Verify & Enable'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-        {/* Secret Key Rotation Modal */}
-        {rotateModalOpen && rotateTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md glass-modal rounded-2xl p-6 shadow-2xl space-y-4"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                    <Key className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                      Rotate {rotateTarget.label}
-                    </h3>
-                    <p className="text-[11px] text-slate-400">Zero-Downtime Envelope Re-encryption</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setRotateModalOpen(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>
-                  Rotating this credential immediately invalidates the previous key. Any external services sending traffic must be updated promptly.
-                </span>
-              </div>
-
-              <form onSubmit={handleConfirmRotate} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    New Secret Key Value
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={newSecretValue}
-                    onChange={(e) => setNewSecretValue(e.target.value)}
-                    placeholder="Enter new token or secret..."
-                    className="w-full min-h-[44px] font-mono bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setRotateModalOpen(false)}
-                    className="flex-1 min-h-[44px] py-2 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-600 dark:text-slate-300"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isRotating || !newSecretValue}
-                    className="flex-1 min-h-[44px] py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-colors"
-                  >
-                    {isRotating ? 'Re-encrypting...' : 'Confirm Rotation'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-
-        {/* Workspace Plan Tier Upgrade / Selection Modal */}
-        {planModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-3xl glass-modal rounded-2xl p-6 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                      Workspace Plan &amp; Tier Selection
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Switch or upgrade your organization plan to unlock multi-provider BYOK, higher concurrency, and audit logs.
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Somak AI GitHub App installed with scopes: <span className="font-mono">repo:status</span>, <span className="font-mono">pull_requests:write</span>, <span className="font-mono">checks:read</span>.
                     </p>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                  <a
+                    href="https://github.com/apps/somak-ai/installations"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
+                  >
+                    <span>Manage on GitHub</span>
+                    <ExternalLink className="w-3 h-3 text-slate-400" />
+                  </a>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
+                  <div className="text-[10px] font-mono text-slate-400 uppercase">Target Repositories</div>
+                  <div className="font-semibold text-sm text-slate-900 dark:text-white mt-0.5">
+                    {repoMappings.length} Repos Scoped
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
+                  <div className="text-[10px] font-mono text-slate-400 uppercase">PR Generation</div>
+                  <div className="font-semibold text-sm text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    Automated AST Diffs
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
+                  <div className="text-[10px] font-mono text-slate-400 uppercase">Verification Gate</div>
+                  <div className="font-semibold text-sm text-slate-900 dark:text-white mt-0.5">
+                    18/18 MicroVM Tests
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Service-to-Repository Mappings List */}
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/5">
+                <div>
+                  <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                    Service &rarr; Repository Mappings
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Map each monitored microservice to its GitHub repository, default target branch, and auto-merge policy.
+                  </p>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => setPlanModalOpen(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  onClick={() => setShowAddRepoModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-semibold text-xs shadow-2xs transition-colors shrink-0"
                 >
-                  ✕
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Map Service Repository</span>
                 </button>
               </div>
 
-              {/* Dodo Payments Test Mode & SAQ-A Security Banner */}
-              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                    <Shield className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-amber-700 dark:text-amber-300 block">
-                      TEST MODE — No real charges will be made
-                    </span>
-                    <span className="text-[11px] text-amber-600/80 dark:text-amber-400/80">
-                      PCI-DSS SAQ-A compliant hosted checkout. Card data never touches SOMAK AI servers. Dodo Payments as Merchant of Record.
-                    </span>
-                  </div>
+              {repoMappings.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  No service-to-repository mappings configured. Click "Map Service Repository" to link your codebases.
                 </div>
-                <div className="flex items-center gap-2 font-mono text-[11px] bg-white/60 dark:bg-black/40 px-2.5 py-1.5 rounded-lg border border-amber-500/20 text-slate-700 dark:text-slate-300 self-start sm:self-auto shrink-0">
-                  <CreditCard className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Test Card: 4242 4242 4242 4242</span>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-white/5">
+                  {repoMappings.map((mapping) => (
+                    <div
+                      key={mapping.service_name}
+                      className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                          <GitBranch className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 dark:text-white font-mono">
+                              {mapping.service_name}
+                            </span>
+                            <span className="text-slate-300 dark:text-slate-700">&rarr;</span>
+                            <span className="font-mono text-slate-700 dark:text-slate-300">
+                              {mapping.repo_full_name}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                            Target Branch: <span className="font-semibold text-slate-600 dark:text-slate-300">{mapping.default_branch}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 shrink-0 self-start sm:self-center">
+                        {/* Auto-merge toggle */}
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleAutoMerge(mapping.service_name)}
+                            className={`w-9 h-5 rounded-full transition-colors relative flex items-center ${
+                              mapping.auto_merge ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-white/10'
+                            }`}
+                            title="Auto-merge PR once 100% canary verification passes"
+                          >
+                            <span
+                              className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+                                mapping.auto_merge ? 'translate-x-4.5' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                          <span className="text-[11px] text-slate-600 dark:text-slate-300">
+                            {mapping.auto_merge ? 'Auto-merge ON' : 'Auto-merge OFF'}
+                          </span>
+                        </div>
+
+                        {/* Remove button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRepoMapping(mapping.service_name)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                          title="Remove repository mapping"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal: Add Service-to-Repository Mapping */}
+            {showAddRepoModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+                <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xl max-w-md w-full space-y-4">
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                      Map Service to GitHub Repository
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Configure where AST hotfixes will be committed and which branch will be targeted.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleAddRepoMappingSubmit} className="space-y-3.5 text-xs">
+                    <div>
+                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        Service Identifier
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newServiceName}
+                        onChange={(e) => setNewServiceName(e.target.value)}
+                        placeholder="e.g. auth-service, order-service, api-gateway"
+                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        GitHub Repository (Org/Repo)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newRepoFullName}
+                        onChange={(e) => setNewRepoFullName(e.target.value)}
+                        placeholder="e.g. acme-corp/auth-service"
+                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        Default Deployment Branch
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newDefaultBranch}
+                        onChange={(e) => setNewDefaultBranch(e.target.value)}
+                        placeholder="main"
+                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="autoMergeCheckbox"
+                        checked={newAutoMerge}
+                        onChange={(e) => setNewAutoMerge(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <label htmlFor="autoMergeCheckbox" className="text-slate-700 dark:text-slate-300 select-none cursor-pointer">
+                        Enable automatic pull request merge upon 100% canary verification
+                      </label>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddRepoModal(false)}
+                        className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-1.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold"
+                      >
+                        Save Mapping
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* TAB 4: NOTIFICATIONS */}
+        {/* ======================================================== */}
+        {activeTab === 'notifications' && (
+          <div className="space-y-4">
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+              <div>
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                  Notification Channels & Policies
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Configure real-time alerts without noisy alert fatigue.
+                </p>
+              </div>
+
+              <div className="divide-y divide-slate-100 dark:divide-white/5 text-xs">
+                {/* Toggle 1 */}
+                <div className="py-3 flex items-center justify-between gap-4">
+                  <div>
+                    <span className="font-semibold text-slate-900 dark:text-white block">
+                      Page On-Call for SEV-1 Outages
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Triggers PagerDuty and SMS escalation when an unhandled outage occurs.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotifySev1(!notifySev1);
+                      markDirty();
+                    }}
+                    className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${
+                      notifySev1 ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-white/10'
+                    }`}
+                  >
+                    <span
+                      className={`block w-4 h-4 rounded-full bg-white shadow-xs transition-transform absolute top-1 ${
+                        notifySev1 ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Toggle 2 */}
+                <div className="py-3 flex items-center justify-between gap-4">
+                  <div>
+                    <span className="font-semibold text-slate-900 dark:text-white block">
+                      Slack Alerts for Canary Rollbacks
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Notifies the #sre-alerts channel if an automated canary rollback triggers.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotifyCanaryRollback(!notifyCanaryRollback);
+                      markDirty();
+                    }}
+                    className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${
+                      notifyCanaryRollback ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-white/10'
+                    }`}
+                  >
+                    <span
+                      className={`block w-4 h-4 rounded-full bg-white shadow-xs transition-transform absolute top-1 ${
+                        notifyCanaryRollback ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Toggle 3 */}
+                <div className="py-3 flex items-center justify-between gap-4">
+                  <div>
+                    <span className="font-semibold text-slate-900 dark:text-white block">
+                      SLO Budget Freeze Warnings
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Dispatches an alert when error budget burns below 10% threshold.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotifyBudgetBurn(!notifyBudgetBurn);
+                      markDirty();
+                    }}
+                    className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${
+                      notifyBudgetBurn ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-white/10'
+                    }`}
+                  >
+                    <span
+                      className={`block w-4 h-4 rounded-full bg-white shadow-xs transition-transform absolute top-1 ${
+                        notifyBudgetBurn ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Toggle 4 */}
+                <div className="py-3 flex items-center justify-between gap-4">
+                  <div>
+                    <span className="font-semibold text-slate-900 dark:text-white block">
+                      Weekly MTTR & Reliability Digest
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Delivers an executive summary of prevented outages and SLA uptime every Monday.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotifyDigest(!notifyDigest);
+                      markDirty();
+                    }}
+                    className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${
+                      notifyDigest ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-white/10'
+                    }`}
+                  >
+                    <span
+                      className={`block w-4 h-4 rounded-full bg-white shadow-xs transition-transform absolute top-1 ${
+                        notifyDigest ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* TAB 5: BILLING & DODO PAYMENTS CUSTOMER PORTAL */}
+        {/* ======================================================== */}
+        {activeTab === 'billing' && (
+          <div className="space-y-6">
+            {/* Current Plan Overview Card */}
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-base text-slate-900 dark:text-white">
+                      {currentOrg?.plan ? currentOrg.plan.toUpperCase() : 'TEAM'} Plan
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                      Active
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Managed securely via Dodo Payments • PCI-DSS Level 1 Compliant.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <a
+                    href="/customer-portal"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 transition-colors shadow-2xs"
+                  >
+                    <span>Manage in Customer Portal</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                 </div>
               </div>
 
-              {dodoCheckoutActive ? (
-                <div className="p-6 rounded-2xl border border-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 space-y-5">
-                  <div className="flex items-center justify-between">
+              {/* Subscription details strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+                    Price & Cadence
+                  </span>
+                  <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block font-mono">
+                    $79 / seat / mo
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+                    Active Seats
+                  </span>
+                  <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block font-mono">
+                    {members.length} / 25 seats
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+                    Next Renewal Date
+                  </span>
+                  <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block font-mono">
+                    October 27, 2026
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+                    Default Payment
+                  </span>
+                  <span className="font-semibold text-slate-900 dark:text-white mt-0.5 block font-mono flex items-center gap-1">
+                    <CreditCard className="w-3 h-3 text-slate-400" />
+                    •••• 4242
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-indigo-500 shrink-0" />
+                  <span>
+                    Self-serve cancel, change payment methods, update seat counts, or download PDF receipts directly in the Dodo Customer Portal.
+                  </span>
+                </div>
+                <a
+                  href="/customer-portal"
+                  className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline shrink-0 ml-2"
+                >
+                  Open Portal &rarr;
+                </a>
+              </div>
+            </div>
+
+            {/* Plan Upgrades & Options */}
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+              <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                Available Plans
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl border-2 border-indigo-500/80 bg-indigo-500/5 space-y-3">
+                  <div className="flex justify-between items-start">
                     <div>
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-600 dark:text-indigo-400 font-mono">
-                        Dodo Payments Test Mode Checkout
-                      </span>
-                      <h4 className="text-base font-bold text-slate-900 dark:text-white capitalize">
-                        Upgrade to {dodoCheckoutActive.plan} Tier
-                      </h4>
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white">Team Plan</h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Autonomous canary gates, 25 seats, Slack & PagerDuty</p>
                     </div>
-                    <span className="font-mono text-xs text-slate-500 dark:text-slate-400 bg-white/60 dark:bg-black/40 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/10">
-                      {dodoCheckoutActive.sessionId}
-                    </span>
+                    <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">$79/mo</span>
                   </div>
-
-                  <div className="p-4 rounded-xl bg-white dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 space-y-3">
-                    <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100 dark:border-white/10">
-                      <span className="text-slate-500 dark:text-slate-400">Payment Gateway</span>
-                      <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
-                        <CreditCard className="w-3.5 h-3.5 text-indigo-500" />
-                        Dodo Payments Checkout (Test Mode)
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100 dark:border-white/10">
-                      <span className="text-slate-500 dark:text-slate-400">Card Number</span>
-                      <span className="font-mono font-bold text-slate-900 dark:text-white">
-                        4242 •••• •••• 4242
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-xs">
-                      <div>
-                        <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Expires</span>
-                        <span className="font-mono font-bold text-slate-900 dark:text-white">12 / 28</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 dark:text-slate-400 block text-[11px]">CVC</span>
-                        <span className="font-mono font-bold text-slate-900 dark:text-white">123</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setDodoCheckoutActive(null)}
-                      className="flex-1 min-h-[44px] py-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isUpdatingPlan}
-                      onClick={handleConfirmTestPayment}
-                      className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center gap-2"
-                    >
-                      {isUpdatingPlan ? (
-                        <span>Processing Test Payment...</span>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Complete Test Payment</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <Link
+                    href="/checkout?plan=team&redirect=true"
+                    className="inline-flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow-2xs"
+                  >
+                    <span>Checkout with Dodo</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    {
-                      id: 'free' as const,
-                      name: 'Free',
-                      badge: 'Evaluation',
-                      price: '$0',
-                      features: [
-                        'Nebius Nemotron (Platform default)',
-                        '5 incidents/month',
-                        '2 microVM sandboxes (15s timeout)',
-                        'Standard webhooks',
-                        'No BYOK or audit logs',
-                      ],
-                    },
-                    {
-                      id: 'team' as const,
-                      name: 'Team',
-                      badge: 'Early Stage',
-                      price: '$49/mo',
-                      features: [
-                        '1 BYOK Provider + Nebius',
-                        '25 incidents/month',
-                        '2 microVM sandboxes (15s timeout)',
-                        'Slack & PagerDuty notifications',
-                        'Automated runbook triggers',
-                      ],
-                    },
-                    {
-                      id: 'business' as const,
-                      name: 'Business',
-                      badge: 'Most Popular',
-                      price: '$199/mo',
-                      features: [
-                        'Full Multi-Provider BYOK (Anthropic, OpenAI, Google)',
-                        'Unlimited incidents',
-                        '4 microVM sandboxes (30s timeout)',
-                        'Cryptographic audit ledger',
-                        'SLO tracking & reports',
-                      ],
-                    },
-                    {
-                      id: 'enterprise' as const,
-                      name: 'Enterprise',
-                      badge: 'Mission Critical',
-                      price: 'Custom',
-                      features: [
-                        'Full Multi-Provider BYOK',
-                        'Unlimited incidents',
-                        'Custom sandboxes (up to 16, 60s timeout)',
-                        'Cryptographic audit ledger',
-                        'SSO/SAML & 24/7 dedicated support',
-                      ],
-                    },
-                  ].map((tier) => {
-                    const isCurrent = currentPlan === tier.id;
-                    return (
-                      <div
-                        key={tier.id}
-                        className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
-                          isCurrent
-                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-1 ring-indigo-500'
-                            : 'border-slate-200 dark:border-white/10 bg-white/40 dark:bg-[#0A0A0A]/40 hover:border-slate-300 dark:hover:border-slate-700'
-                        }`}
-                      >
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-sm text-slate-900 dark:text-white">
-                              {tier.name}
-                            </span>
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400">
-                              {tier.badge}
-                            </span>
-                          </div>
-                          <div className="text-lg font-bold text-slate-900 dark:text-white">
-                            {tier.price}
-                          </div>
-                          <ul className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
-                            {tier.features.map((feat, idx) => (
-                              <li key={idx} className="flex items-start gap-1.5">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                                <span>{feat}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
 
-                        <div className="pt-4 mt-4 border-t border-slate-100 dark:border-white/10">
-                          {isCurrent ? (
-                            <span className="block text-center text-xs font-bold py-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                              Current Plan
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={isUpdatingPlan}
-                              onClick={() => handleSelectPlan(tier.id)}
-                              className="w-full min-h-[44px] py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors disabled:opacity-50"
-                            >
-                              {isUpdatingPlan ? 'Updating...' : `Switch to ${tier.name}`}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white">Enterprise Plan</h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Dedicated microVM clusters, custom SLA, SAML 2.0</p>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">Custom</span>
+                  </div>
+                  <Link
+                    href="/contact"
+                    className="inline-flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 transition-colors"
+                  >
+                    <span>Contact Enterprise Sales</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
                 </div>
-              )}
-            </motion.div>
+              </div>
+            </div>
+
+            {/* Invoices & Receipts */}
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                    Invoices & Payment Receipts
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Download past billing invoices and tax receipts.
+                  </p>
+                </div>
+                <a
+                  href="/customer-portal"
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium inline-flex items-center gap-1"
+                >
+                  <span>All Invoices in Dodo</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+
+              <div className="divide-y divide-slate-100 dark:divide-white/5 text-xs">
+                {[
+                  { id: 'INV-2026-09-01', date: 'Sep 1, 2026', amount: '$1,975.00', status: 'Paid' },
+                  { id: 'INV-2026-08-01', date: 'Aug 1, 2026', amount: '$1,975.00', status: 'Paid' },
+                  { id: 'INV-2026-07-01', date: 'Jul 1, 2026', amount: '$1,975.00', status: 'Paid' },
+                ].map((inv) => (
+                  <div key={inv.id} className="py-2.5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-slate-900 dark:text-white font-medium">{inv.id}</span>
+                      <span className="text-slate-400 font-mono text-[11px]">{inv.date}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono font-semibold text-slate-900 dark:text-white">{inv.amount}</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+                        {inv.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
-      </AnimatePresence>
 
-      <FloatingDock incidentId="INC-2041" />
+        {/* ======================================================== */}
+        {/* TAB 6: DANGER ZONE */}
+        {/* ======================================================== */}
+        {activeTab === 'danger' && (
+          <div className="space-y-4">
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-rose-500/30 ring-1 ring-rose-500/20 shadow-xs space-y-4">
+              <div>
+                <h3 className="font-bold text-sm text-rose-600 dark:text-rose-400">
+                  Danger Zone
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Destructive operations that cannot be undone. All actions are cryptographically logged.
+                </p>
+              </div>
+
+              <div className="divide-y divide-slate-100 dark:divide-white/5 text-xs">
+                {/* Action 1 */}
+                <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="font-semibold text-slate-900 dark:text-white block">
+                      Revoke All BYOK DEKs & API Keys
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Immediately invalidates all active encryption keys and suspends autonomous sandboxes.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => showToast('Key revocation request acknowledged. Confirmation sent to admins.', 'error')}
+                    className="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 font-semibold text-xs transition-colors shrink-0"
+                  >
+                    Revoke All Keys
+                  </button>
+                </div>
+
+                {/* Action 2 */}
+                <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="font-semibold text-slate-900 dark:text-white block">
+                      Delete Organization & Wipe Audit Logs
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Permanently wipes all telemetry history, runbook patterns, and organization settings.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => showToast('To delete, contact enterprise support to satisfy SOC-2 retention.', 'error')}
+                    className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors shrink-0"
+                  >
+                    Delete Organization
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Floating Dirty-State Save Bar (Vercel Pattern) */}
+        <AnimatePresence>
+          {isDirty && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 30 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-xl w-[90%] p-3.5 rounded-2xl bg-slate-950 text-white border border-slate-800 shadow-2xl flex items-center justify-between gap-4 text-xs"
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="font-medium text-slate-200">You have unsaved changes.</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 rounded-xl text-slate-400 hover:text-white transition-colors"
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-4 py-1.5 rounded-xl bg-white text-slate-950 font-semibold hover:bg-slate-100 transition-colors shadow-xs"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      <FloatingDock />
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-[#FAF8F5] dark:bg-[#070709]" />}>
+      <SettingsContent />
+    </React.Suspense>
   );
 }

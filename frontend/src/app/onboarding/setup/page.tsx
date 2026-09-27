@@ -167,10 +167,15 @@ export default function SetupChecklistPage() {
         transition={{ duration: 0.35 }}
         className="text-center mb-8 max-w-xl mx-auto"
       >
-        <div className="inline-flex items-center gap-2 mb-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-xl shadow-indigo-500/30">
-            <Sparkles className="w-5 h-5" />
+        <Link href="/" className="inline-flex items-center gap-2.5 group mb-3">
+          <div className="w-9 h-9 rounded-xl bg-[#0A0A0A] border border-black/10 dark:border-white/10 p-1 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform overflow-hidden">
+            <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-7 h-7 object-contain aspect-square" />
           </div>
+          <span className="font-mono font-bold text-sm tracking-tight text-slate-900 dark:text-white">
+            SOMAK AI
+          </span>
+        </Link>
+        <div className="flex justify-center mb-3">
           <span className="font-mono text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-900">
             Step 2 of 2 • Guided Activation
           </span>
@@ -219,16 +224,16 @@ export default function SetupChecklistPage() {
           >
             <div className="flex items-center gap-3 min-w-0">
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs shrink-0 shadow-xs ${
                   checklist.sentry_connected
-                    ? 'bg-emerald-500 shadow-emerald-500/20'
-                    : 'bg-indigo-600 shadow-indigo-600/20'
+                    ? 'bg-emerald-500 shadow-emerald-500/20 text-white'
+                    : 'bg-indigo-600 shadow-indigo-600/20 text-white'
                 }`}
               >
                 {checklist.sentry_connected ? (
-                  <CheckCircle2 className="w-4 h-4" />
+                  <Check className="w-4 h-4" />
                 ) : (
-                  <Layers className="w-4 h-4" />
+                  <span>1</span>
                 )}
               </div>
               <div>
@@ -326,16 +331,16 @@ export default function SetupChecklistPage() {
           >
             <div className="flex items-center gap-3 min-w-0">
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs shrink-0 shadow-xs ${
                   checklist.ai_connected
-                    ? 'bg-emerald-500 shadow-emerald-500/20'
-                    : 'bg-indigo-600 shadow-indigo-600/20'
+                    ? 'bg-emerald-500 shadow-emerald-500/20 text-white'
+                    : 'bg-indigo-600 shadow-indigo-600/20 text-white'
                 }`}
               >
                 {checklist.ai_connected ? (
-                  <CheckCircle2 className="w-4 h-4" />
+                  <Check className="w-4 h-4" />
                 ) : (
-                  <Cpu className="w-4 h-4" />
+                  <span>2</span>
                 )}
               </div>
               <div>
@@ -432,16 +437,16 @@ export default function SetupChecklistPage() {
           >
             <div className="flex items-center gap-3 min-w-0">
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs shrink-0 shadow-xs ${
                   checklist.tavily_connected
-                    ? 'bg-emerald-500 shadow-emerald-500/20'
-                    : 'bg-indigo-600 shadow-indigo-600/20'
+                    ? 'bg-emerald-500 shadow-emerald-500/20 text-white'
+                    : 'bg-indigo-600 shadow-indigo-600/20 text-white'
                 }`}
               >
                 {checklist.tavily_connected ? (
-                  <CheckCircle2 className="w-4 h-4" />
+                  <Check className="w-4 h-4" />
                 ) : (
-                  <Search className="w-4 h-4" />
+                  <span>3</span>
                 )}
               </div>
               <div>
@@ -523,16 +528,16 @@ export default function SetupChecklistPage() {
           >
             <div className="flex items-center gap-3 min-w-0">
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs shrink-0 shadow-xs ${
                   checklist.notifications_connected
-                    ? 'bg-emerald-500 shadow-emerald-500/20'
-                    : 'bg-indigo-600 shadow-indigo-600/20'
+                    ? 'bg-emerald-500 shadow-emerald-500/20 text-white'
+                    : 'bg-indigo-600 shadow-indigo-600/20 text-white'
                 }`}
               >
                 {checklist.notifications_connected ? (
-                  <CheckCircle2 className="w-4 h-4" />
+                  <Check className="w-4 h-4" />
                 ) : (
-                  <Bell className="w-4 h-4" />
+                  <span>4</span>
                 )}
               </div>
               <div>
@@ -632,16 +637,16 @@ export default function SetupChecklistPage() {
           >
             <div className="flex items-center gap-3 min-w-0">
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs shrink-0 shadow-xs ${
                   checklist.team_invited
-                    ? 'bg-emerald-500 shadow-emerald-500/20'
-                    : 'bg-indigo-600 shadow-indigo-600/20'
+                    ? 'bg-emerald-500 shadow-emerald-500/20 text-white'
+                    : 'bg-indigo-600 shadow-indigo-600/20 text-white'
                 }`}
               >
                 {checklist.team_invited ? (
-                  <CheckCircle2 className="w-4 h-4" />
+                  <Check className="w-4 h-4" />
                 ) : (
-                  <Users className="w-4 h-4" />
+                  <span>5</span>
                 )}
               </div>
               <div>

@@ -14,6 +14,7 @@ import {
   CheckCircle,
   Sparkles,
   ArrowUpRight,
+  GitBranch,
 } from 'lucide-react';
 
 interface OnboardingTourProps {
@@ -129,6 +130,21 @@ export default function OnboardingTour({
       badge: 'Screen 4',
       badgeColor: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
     },
+    {
+      title: 'Automated GitHub PR & Progressive Deploy',
+      subtitle: 'One-click Commit → PR → Merge → Deployed to Production',
+      description:
+        'After canary verification passes at 100%, Somak AI commits the verified AST patch to a branch, opens a GitHub PR with diff and test results, and optionally auto-merges — all visible in real-time from the Canary Gate.',
+      features: [
+        'Branch commit: somak-ai/fix-<id> with full unified diff',
+        'GitHub PR auto-opened with 18/18 MicroVM test evidence',
+        'Live deploy status: PR Opened → Merged → Deployed with commit SHA',
+      ],
+      icon: GitBranch,
+      route: `/canary/${incidentId}`,
+      badge: 'Screen 5',
+      badgeColor: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20',
+    },
   ];
 
   const step = steps[currentStep];
@@ -156,7 +172,7 @@ export default function OnboardingTour({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs">
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

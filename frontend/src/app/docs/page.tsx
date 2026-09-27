@@ -31,11 +31,14 @@ import {
   Cpu,
   X,
   Menu,
+  ShieldCheck,
 } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 
 type DocSectionId =
   | 'getting-started'
+  | 'pipeline-architecture'
+  | 'page-guides'
   | 'core-concepts'
   | 'integrations'
   | 'roles-permissions'
@@ -61,6 +64,36 @@ const DOCS_NAV: DocItem[] = [
       { id: 'gs-ai', title: '3. Connect AI Reasoning' },
       { id: 'gs-notifications', title: '4. Configure Notifications' },
       { id: 'gs-team', title: '5. Invite Your SRE Team' },
+    ],
+  },
+  {
+    id: 'pipeline-architecture',
+    title: 'Architecture & Pipeline',
+    icon: Cpu,
+    badge: 'Core',
+    subsections: [
+      { id: 'arch-overview', title: 'End-to-End Pipeline Overview' },
+      { id: 'arch-sentry', title: 'Stage 1: Production Crash & Webhook' },
+      { id: 'arch-ast', title: 'Stage 2: AST Patch Synthesis (BYOK)' },
+      { id: 'arch-microvm', title: 'Stage 3: Firecracker MicroVM Sandbox' },
+      { id: 'arch-canary', title: 'Stage 4: Progressive Canary (5% → 100%)' },
+      { id: 'arch-guarantees', title: 'Zero-Hallucination Guarantees' },
+    ],
+  },
+  {
+    id: 'page-guides',
+    title: 'Page Guides & Workflows',
+    icon: Layers,
+    subsections: [
+      { id: 'pg-radar', title: 'Radar (Live Incident Feed)' },
+      { id: 'pg-studio', title: 'Remediation Studio (AST Patches)' },
+      { id: 'pg-canary', title: 'Canary Gate (Progressive Rollout)' },
+      { id: 'pg-slo', title: 'SLO & Error Budget Tracker' },
+      { id: 'pg-oncall', title: 'On-Call Rotations & Paging' },
+      { id: 'pg-runbooks', title: 'Runbook Pattern Library' },
+      { id: 'pg-audit', title: 'Cryptographic Audit Log' },
+      { id: 'pg-usage', title: 'Usage, Quotas & Dodo Billing' },
+      { id: 'pg-settings', title: 'Settings & BYOK Keys' },
     ],
   },
   {
@@ -182,13 +215,13 @@ export default function DocsPage() {
             </button>
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-xs">
-                <Shield className="w-4 h-4" />
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/10 p-1 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform overflow-hidden">
+                <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-6 h-6 object-contain aspect-square" />
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-base tracking-tight text-slate-900 dark:text-white">
-                  Somak AI
+                <span className="font-mono font-bold text-sm tracking-tight text-slate-900 dark:text-white">
+                  SOMAK AI
                 </span>
                 <span className="text-slate-400 font-normal">/</span>
                 <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
@@ -370,13 +403,34 @@ export default function DocsPage() {
         </AnimatePresence>
 
         {/* 3. Main Article Content Column (~720px max-width) */}
-        <main className="flex-1 py-10 px-0 sm:px-6 lg:px-12 max-w-4xl mx-auto space-y-12">
+        <main className="flex-1 py-6 sm:py-10 px-0 sm:px-6 lg:px-12 max-w-4xl mx-auto space-y-8 w-full overflow-hidden">
           
           {/* Breadcrumb Strip */}
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Link href="/" className="hover:text-slate-900 dark:hover:text-white">Docs</Link>
             <ChevronRight className="w-3 h-3 text-slate-400" />
             <span className="font-semibold text-slate-900 dark:text-white">{activeDocItem.title}</span>
+          </div>
+
+          {/* Mobile / Tablet Collapsible Top Section Selector (< lg) */}
+          <div className="lg:hidden p-3 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+            <label className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block mb-1">
+              Table of Contents
+            </label>
+            <select
+              value={activeSection}
+              onChange={(e) => {
+                setActiveSection(e.target.value as DocSectionId);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="w-full bg-white dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              {DOCS_NAV.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Section 1: Getting Started */}
@@ -497,6 +551,294 @@ export default function DocsPage() {
                   Use the multi-email tag input to send team invitations with pre-configured roles (<strong>Admin</strong>, <strong>Operator</strong>, <strong>Viewer</strong>). Each invite generates a cryptographically secure 7-day token link.
                 </p>
               </section>
+            </article>
+          )}
+
+          {/* Section: Architecture & Pipeline */}
+          {activeSection === 'pipeline-architecture' && (
+            <article className="space-y-10 leading-relaxed text-sm">
+              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-white/10">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-semibold">
+                  <Cpu className="w-3.5 h-3.5" />
+                  <span>Autonomous Pipeline Engine</span>
+                </div>
+                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                  Architecture & End-to-End Pipeline
+                </h1>
+                <p className="text-base text-slate-600 dark:text-slate-300">
+                  SOMAK AI is built to answer one question at 3 AM under high stress: <em>&ldquo;What&rsquo;s broken, is the fix safe, do I approve it?&rdquo;</em>
+                </p>
+              </header>
+
+              {/* Visual Pipeline Flow */}
+              <div className="p-6 rounded-2xl bg-slate-900 text-white border border-slate-800 space-y-4">
+                <div className="text-[11px] font-mono uppercase tracking-widest text-indigo-400 font-bold">
+                  Core Remediation Lifecycle
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-2">
+                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-mono text-rose-400 font-bold">01. INGEST</span>
+                      <h4 className="text-xs font-bold text-white mt-1">Production Crash</h4>
+                      <p className="text-[11px] text-slate-400 mt-1">Sentry webhook fires on unhandled exception spike</p>
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-mono text-amber-400 font-bold">02. TRIAGE</span>
+                      <h4 className="text-xs font-bold text-white mt-1">Stack Fingerprint</h4>
+                      <p className="text-[11px] text-slate-400 mt-1">AST call graph parsed & root cause clustered</p>
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-mono text-indigo-400 font-bold">03. SYNTHESIS</span>
+                      <h4 className="text-xs font-bold text-white mt-1">BYOK AST Patch</h4>
+                      <p className="text-[11px] text-slate-400 mt-1">LLM generates validated syntax patch tree</p>
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-mono text-cyan-400 font-bold">04. ISOLATE</span>
+                      <h4 className="text-xs font-bold text-white mt-1">MicroVM Sandbox</h4>
+                      <p className="text-[11px] text-slate-400 mt-1">Firecracker compiles & executes test harness</p>
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-mono text-emerald-400 font-bold">05. DEPLOY</span>
+                      <h4 className="text-xs font-bold text-white mt-1">Canary Gate</h4>
+                      <p className="text-[11px] text-slate-400 mt-1">Progressive rollout 5% &rarr; 100% with auto-rollback</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed Breakdown */}
+              <div className="space-y-8 divide-y divide-slate-200/80 dark:divide-slate-800">
+                <section id="arch-overview" className="space-y-3 pt-6">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-indigo-500" />
+                    <span>Every Page is a Lens on the Pipeline</span>
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Traditional monitoring dumps thousands of unstructured log rows into dashboards. SOMAK AI organizes the entire platform around a unified sequential pipeline. When an on-call engineer opens the system, they instantly see which stage an incident is in, how much error budget is endangered, and the exact sandbox validation results.
+                  </p>
+                </section>
+
+                <section id="arch-sentry" className="space-y-3 pt-6">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Radio className="w-5 h-5 text-rose-500" />
+                    <span>Stage 1: Production Crash & Webhook Ingestion</span>
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    When an application crashes or exceeds error thresholds, Sentry emits a webhook payload containing the raw stack trace, event metadata, commit SHA, and runtime parameters. SOMAK AI extracts the stack trace and calls git blame to isolate the exact commit and code line where the failure originated.
+                  </p>
+                </section>
+
+                <section id="arch-ast" className="space-y-3 pt-6">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Code2 className="w-5 h-5 text-amber-500" />
+                    <span>Stage 2: AST Patch Synthesis (BYOK Multi-Model)</span>
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Rather than relying on generic prompt completion, SOMAK AI parses the source code into an <strong>Abstract Syntax Tree (AST)</strong>. The AI reasoning engine (configured via your own API keys: Nebius Nemotron, Anthropic Claude 3.5 Sonnet, OpenAI GPT-4o, or Google Gemini) synthesizes a surgical AST transformation that fixes the error without altering unrelated logic.
+                  </p>
+                </section>
+
+                <section id="arch-microvm" className="space-y-3 pt-6">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-cyan-500" />
+                    <span>Stage 3: Firecracker MicroVM Sandbox Verification</span>
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Zero AI code is ever shipped to production unverified. SOMAK AI spins up an ephemeral, hardware-isolated Firecracker microVM in approximately 50 milliseconds. The patched code is compiled, dependencies are installed, and unit and regression tests are executed in complete isolation with no network egress.
+                  </p>
+                </section>
+
+                <section id="arch-canary" className="space-y-3 pt-6">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Gauge className="w-5 h-5 text-emerald-500" />
+                    <span>Stage 4: Progressive Canary Gate (5% &rarr; 100%)</span>
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Once the sandbox passes, the fix advances to the Canary Gate. Traffic is routed progressively (5% &rarr; 25% &rarr; 50% &rarr; 100%) while live telemetry compares error rates against the baseline release. If any anomalous metric is detected, SOMAK AI triggers an automated circuit breaker rollback in under 800ms.
+                  </p>
+                </section>
+
+                <section id="arch-guarantees" className="space-y-3 pt-6">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Lock className="w-5 h-5 text-indigo-500" />
+                    <span>Zero-Hallucination Guarantees</span>
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    AI models can hallucinate imports or invent functions. SOMAK AI eliminates this through deterministic compiler gates: if an AST patch fails syntax validation, TypeScript compilation, or sandbox test execution, the patch is discarded immediately before any human or deployment system can approve it.
+                  </p>
+                </section>
+              </div>
+            </article>
+          )}
+
+          {/* Section: Page Guides & Workflows */}
+          {activeSection === 'page-guides' && (
+            <article className="space-y-10 leading-relaxed text-sm">
+              <header className="space-y-3 pb-6 border-b border-slate-200/80 dark:border-white/10">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-semibold">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Platform Surface Walkthrough</span>
+                </div>
+                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                  Page Guides & Workflows
+                </h1>
+                <p className="text-base text-slate-600 dark:text-slate-300">
+                  Comprehensive reference for every screen in the SOMAK AI platform, its purpose, and operational actions.
+                </p>
+              </header>
+
+              <div className="space-y-8 divide-y divide-slate-200/80 dark:divide-slate-800">
+                {/* Radar */}
+                <section id="pg-radar" className="space-y-3 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Radio className="w-5 h-5 text-indigo-500" />
+                      <span>Radar &mdash; Live Incident Feed (/)</span>
+                    </h3>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/20">
+                      Primary Dashboard
+                    </span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    The Radar is the command center for your site reliability operations. It streams unhandled production exceptions in real time, clusters repeated errors by root cause fingerprint, displays live severity badges (P0 Critical, P1 High, P2 Medium), and shows current mitigation status.
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1 text-slate-600 dark:text-slate-300 text-xs">
+                    <li><strong>1-Click Remediation:</strong> Click &ldquo;Triage Incident&rdquo; to launch AST patch generation directly from the feed.</li>
+                    <li><strong>Service Filters:</strong> Filter by microservice (Auth, Payments, API Gateway, Search) and environment (Production, Staging).</li>
+                    <li><strong>Live Pulse:</strong> Shows global uptime, MTTR trend, and system health status.</li>
+                  </ul>
+                </section>
+
+                {/* Remediation Studio */}
+                <section id="pg-studio" className="space-y-3 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Terminal className="w-5 h-5 text-indigo-500" />
+                      <span>Remediation Studio (/remediation/[id])</span>
+                    </h3>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                      Synthesis & Review
+                    </span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Where AI-generated fixes are inspected. Features an interactive code diff viewer (unified or split side-by-side), Firecracker microVM test output logs, and human approval controls.
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1 text-slate-600 dark:text-slate-300 text-xs">
+                    <li><strong>Diff Inspection:</strong> Highlighting added and removed lines with syntax highlighting.</li>
+                    <li><strong>Sandbox Test Harness:</strong> View real-time output of test runs (e.g. Jest, PyTest, Go Test) executed inside the microVM.</li>
+                    <li><strong>Approve & Promote:</strong> Authorized Operators or Admins can promote the verified fix to the Canary Gate.</li>
+                  </ul>
+                </section>
+
+                {/* Canary Gate */}
+                <section id="pg-canary" className="space-y-3 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Gauge className="w-5 h-5 text-indigo-500" />
+                      <span>Canary Gate (/canary/[id])</span>
+                    </h3>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">
+                      Progressive Delivery
+                    </span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Monitors live progressive traffic distribution to patched containers. Tracks the 5% &rarr; 25% &rarr; 50% &rarr; 100% rollout ladder while graphing live error rates side-by-side with baseline production metrics.
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1 text-slate-600 dark:text-slate-300 text-xs">
+                    <li><strong>Hold-to-Confirm Rollback:</strong> SREs can hold the rollback button for 2 seconds to instantly divert 100% traffic back to the prior stable release.</li>
+                    <li><strong>Automated Circuit Breaker:</strong> If error rates spike above baseline thresholds, the system aborts automatically.</li>
+                  </ul>
+                </section>
+
+                {/* SLO & Error Budgets */}
+                <section id="pg-slo" className="space-y-3 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-indigo-500" />
+                      <span>Error Budget & SLO Tracker (/slo)</span>
+                    </h3>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Calculates real-time 30-day rolling Service Level Objectives (99.9% uptime, latency p99 &lt; 200ms). Graphs multi-window burn rate telemetry (1-hour, 6-hour, 24-hour) and highlights services at risk of exhausting their error budget.
+                  </p>
+                </section>
+
+                {/* On-Call */}
+                <section id="pg-oncall" className="space-y-3 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Radio className="w-5 h-5 text-indigo-500" />
+                      <span>On-Call Rotations & Escalations (/oncall)</span>
+                    </h3>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Manages SRE on-call rotations, active paging shifts, and multi-tier escalation policies (L1 Triage &rarr; L2 Platform SRE &rarr; L3 Engineering Lead). Syncs with PagerDuty and OpsGenie schedules.
+                  </p>
+                </section>
+
+                {/* Runbooks */}
+                <section id="pg-runbooks" className="space-y-3 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-indigo-500" />
+                      <span>Runbook Pattern Library (/runbooks)</span>
+                    </h3>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    A knowledge repository of verified AST patterns and automated recovery procedures. When a new incident matches an existing pattern, SOMAK AI applies the pre-verified remedy with zero synthesis delay.
+                  </p>
+                </section>
+
+                {/* Audit Log */}
+                <section id="pg-audit" className="space-y-3 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Lock className="w-5 h-5 text-indigo-500" />
+                      <span>Cryptographic Audit Log (/audit)</span>
+                    </h3>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold border border-purple-500/20">
+                      SOC-2 / ISO 27001
+                    </span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Immutable append-only audit stream tracking every user authentication, deployment promotion, rollback trigger, and API key modification with cryptographic verification hashes.
+                  </p>
+                </section>
+
+                {/* Usage & Quotas */}
+                <section id="pg-usage" className="space-y-3 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-indigo-500" />
+                      <span>Usage & Quota Management (/usage)</span>
+                    </h3>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Tracks LLM token consumption across providers, Firecracker microVM compute minutes, avoided downtime dollar savings, and integrated Dodo Payments billing subscriptions.
+                  </p>
+                </section>
+
+                {/* Settings */}
+                <section id="pg-settings" className="space-y-3 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Server className="w-5 h-5 text-indigo-500" />
+                      <span>Settings & BYOK Keys (/settings)</span>
+                    </h3>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Configure your Bring-Your-Own-Key (BYOK) credentials for Nebius, OpenAI, Anthropic, or Google, manage webhook secrets, set RBAC roles, and manage organization preferences.
+                  </p>
+                </section>
+              </div>
             </article>
           )}
 

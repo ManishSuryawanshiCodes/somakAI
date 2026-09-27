@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu,
@@ -30,12 +30,13 @@ import {
   BookOpen,
   PanelLeftClose,
   PanelLeft,
+  LogOut,
+  ChevronRight,
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { useAppShell } from './AppShell';
-import OnboardingTour from './OnboardingTour';
 
 interface TopNavProps {
   onSimulate?: () => void;
@@ -44,8 +45,9 @@ interface TopNavProps {
 
 export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps) {
   const router = useRouter();
+  const pathname = usePathname() || '';
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
   const { sidebarCollapsed, toggleSidebar, setMobileDrawerOpen } = useAppShell();
 
@@ -54,11 +56,12 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [tourOpen, setTourOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [connectionModalOpen, setConnectionModalOpen] = useState(false);
   const [connectionState, setConnectionState] = useState<'connected' | 'reconnecting' | 'offline'>('connected');
 
   const notifRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Close dropdown on outside click
@@ -66,6 +69,9 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
     const handleClickOutside = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotifOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -232,9 +238,9 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
       id: 'nav-tour',
       category: 'Actions',
       title: 'Start Architecture Tour',
-      subtitle: 'Guided walkthrough of Somak AI architecture',
+      subtitle: 'Guided walkthrough of Somak AI architecture — click ? in the sidebar',
       icon: Sparkles,
-      action: () => setTourOpen(true),
+      action: () => router.push('/'),
     },
     {
       id: 'act-simulate',
@@ -291,7 +297,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
     <>
       <header className="sticky top-0 z-30 h-16 backdrop-blur-xl bg-[#FAF8F5]/85 dark:bg-[#0A0A0A]/85 border-b border-[#E8E3D9] dark:border-white/10 px-3 sm:px-6 flex items-center justify-between transition-colors shadow-xs">
         {/* Element 1: Global Search / ⌘K (+ Mobile Drawer Hamburger) */}
-        <div className="flex items-center gap-2 sm:gap-2.5 flex-1 max-w-md">
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 max-w-xl pr-2">
           {/* Mobile Hamburger Drawer Trigger (< md) */}
           <button
             onClick={() => setMobileDrawerOpen(true)}
@@ -311,19 +317,94 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
             {sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </button>
 
-          {/* Desktop Search Trigger (⌘K) */}
+          {/* Breadcrumbs when inside nested view */}
+          {(() => {
+            const getBreadcrumbs = () => {
+              if (pathname.startsWith('/remediation/')) {
+                const id = pathname.split('/')[2] || 'INC-2041';
+                return [
+                  { label: 'Radar', href: '/' },
+                  { label: id, href: `/remediation/${id}` },
+                  { label: 'Fix Review', active: true },
+                ];
+              }
+              if (pathname.startsWith('/canary/')) {
+                const id = pathname.split('/')[2] || 'INC-2041';
+                return [
+                  { label: 'Radar', href: '/' },
+                  { label: id, href: `/remediation/${id}` },
+                  { label: 'Canary Gate', active: true },
+                ];
+              }
+              if (pathname.startsWith('/postmortem/')) {
+                const id = pathname.split('/')[2] || 'INC-2041';
+                return [
+                  { label: 'Radar', href: '/' },
+                  { label: id, href: `/remediation/${id}` },
+                  { label: 'Post-Mortem', active: true },
+                ];
+              }
+              if (pathname === '/slo') {
+                return [{ label: 'Radar', href: '/' }, { label: 'SLO Budgets', active: true }];
+              }
+              if (pathname === '/history') {
+                return [{ label: 'Radar', href: '/' }, { label: 'History', active: true }];
+              }
+              if (pathname === '/status') {
+                return [{ label: 'Radar', href: '/' }, { label: 'Status', active: true }];
+              }
+              if (pathname === '/settings') {
+                return [{ label: 'Radar', href: '/' }, { label: 'Settings', active: true }];
+              }
+              if (pathname === '/integrations') {
+                return [{ label: 'Radar', href: '/' }, { label: 'Integrations', active: true }];
+              }
+              if (pathname === '/audit') {
+                return [{ label: 'Radar', href: '/' }, { label: 'Audit Log', active: true }];
+              }
+              if (pathname === '/runbooks') {
+                return [{ label: 'Radar', href: '/' }, { label: 'Runbooks', active: true }];
+              }
+              return null;
+            };
+
+            const crumbs = getBreadcrumbs();
+            if (!crumbs) return null;
+
+            return (
+              <div className="hidden lg:flex items-center gap-1.5 text-xs font-mono shrink min-w-0 max-w-[200px] xl:max-w-[260px] truncate">
+                {crumbs.map((crumb, idx) => (
+                  <React.Fragment key={idx}>
+                    {idx > 0 && <span className="text-slate-300 dark:text-slate-700 shrink-0">/</span>}
+                    {crumb.active ? (
+                      <span className="font-semibold text-slate-900 dark:text-white truncate">{crumb.label}</span>
+                    ) : (
+                      <Link
+                        href={crumb.href || '/'}
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors truncate"
+                      >
+                        {crumb.label}
+                      </Link>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* Desktop Search Trigger (min-width guaranteed) */}
           <button
             onClick={() => {
               setSearchOpen(true);
               setSearchQuery('');
             }}
-            className="hidden md:flex w-full items-center justify-between bg-slate-100/80 dark:bg-white/[0.08] border border-slate-200/80 dark:border-white/[0.15] rounded-xl py-2 px-3 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/25 transition-all focus:outline-none shadow-2xs"
+            className="hidden md:flex flex-1 min-w-[160px] max-w-xs xl:max-w-sm items-center justify-between bg-slate-100/80 dark:bg-white/[0.08] border border-slate-200/80 dark:border-white/[0.15] rounded-xl py-2 px-3 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/25 transition-all focus:outline-none shadow-2xs"
           >
-            <span className="flex items-center gap-2">
-              <Search className="w-3.5 h-3.5 text-slate-400" />
-              <span>Search incidents, telemetry, actions...</span>
+            <span className="flex items-center gap-2 truncate pr-1">
+              <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="truncate">Search incidents, actions...</span>
             </span>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-white/[0.12] font-mono text-[10px] text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-white/20">
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-white/[0.12] font-mono text-[10px] text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-white/20 shrink-0">
               ⌘K
             </kbd>
           </button>
@@ -335,7 +416,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
               setSearchQuery('');
             }}
             aria-label="Open command search"
-            className="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl bg-slate-100/80 dark:bg-white/5/80 border border-slate-200/80 dark:border-white/10 transition-all"
+            className="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl bg-slate-100/80 dark:bg-white/5/80 border border-slate-200/80 dark:border-white/10 transition-all shrink-0"
           >
             <Search className="w-4 h-4" />
           </button>
@@ -343,28 +424,33 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
 
         {/* Elements 2-5: Live Status Dot, Notification Bell, Docs Link, User Profile */}
         <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* Element 2: Live Connection Status Dot */}
+          {/* Element 2: Live Connection Status Dot with subtle pulse */}
           <button
             onClick={() => setConnectionModalOpen(true)}
             title="Click to view live connection telemetry"
-            className="h-9 px-3 flex items-center gap-2 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-xs text-xs font-medium text-slate-700 dark:text-slate-200 transition-all duration-150 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 shadow-2xs"
+            className="hidden md:flex h-9 px-3 items-center gap-2 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-xs text-xs font-medium text-slate-700 dark:text-slate-200 transition-all duration-150 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 shadow-2xs"
           >
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                connectionState === 'connected'
-                  ? 'bg-emerald-500 animate-pulse glow-healthy'
-                  : connectionState === 'reconnecting'
-                  ? 'bg-amber-500 animate-ping glow-warning'
-                  : 'bg-red-500 glow-critical'
-              }`}
-            />
+            <span className="relative flex h-2 w-2 shrink-0">
+              {connectionState === 'connected' && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+              )}
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${
+                  connectionState === 'connected'
+                    ? 'bg-emerald-500'
+                    : connectionState === 'reconnecting'
+                    ? 'bg-amber-500'
+                    : 'bg-rose-500'
+                }`}
+              />
+            </span>
             <span className="font-mono text-[11px] tracking-tight">
               {connectionState === 'connected' ? 'Live SSE' : connectionState}
             </span>
           </button>
 
-          {/* Notifications Dropdown Bell */}
-          <div className="relative" ref={notifRef}>
+          {/* Notifications Dropdown Bell (Hidden on small mobile) */}
+          <div className="relative hidden sm:block" ref={notifRef}>
             <button
               onClick={() => setNotifOpen((prev) => !prev)}
               aria-label="Notifications"
@@ -481,52 +567,132 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
             </AnimatePresence>
           </div>
 
-          {/* Docs Hub Link */}
-          <Link
-            href="/docs"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:flex h-9 px-3 items-center gap-1.5 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-xs text-xs font-semibold text-slate-700 dark:text-slate-200 transition-all duration-150 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 shadow-2xs"
-            title="Open Somak AI Documentation"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-            <span>Docs</span>
-          </Link>
-
-          {/* Theme Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            title={theme === 'dark' ? 'Switch to Porcelain Light' : 'Switch to Obsidian Dark'}
-            className="flex h-9 w-9 items-center justify-center text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl bg-white/80 dark:bg-white/5 border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-colors shadow-2xs"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
-          </button>
-
-          {/* User Profile Pill */}
-          <Link
-            href="/settings"
-            title={`Signed in as ${user?.name || 'Marcus Vance'} (${user?.role || 'Operator'})`}
-            className="h-9 flex items-center gap-2 pl-1.5 pr-2.5 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-xs text-xs font-medium transition-all duration-150 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:border-indigo-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 shadow-2xs select-none group"
-          >
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center font-bold text-[10px] shadow-xs shrink-0">
-              {user?.avatar || (user?.name ? user.name.slice(0, 2).toUpperCase() : 'MV')}
-            </div>
-            <div className="hidden sm:flex flex-col text-left leading-none">
-              <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[90px]">
-                {user?.name?.split(' ')[0] || 'Marcus'}
+          {/* User Profile Pill & Dropdown */}
+          <div className="relative" ref={userMenuRef}>
+            <button
+              onClick={() => setUserMenuOpen((prev) => !prev)}
+              aria-label="User account menu"
+              aria-expanded={userMenuOpen}
+              className="h-9 flex items-center gap-2 pl-1.5 pr-2.5 rounded-xl border border-slate-200/90 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-xs text-xs font-medium transition-all duration-150 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:border-indigo-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 shadow-2xs select-none group active:scale-95"
+            >
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center font-bold text-[10px] shadow-xs shrink-0">
+                {user?.avatar || (user?.name ? user.name.slice(0, 2).toUpperCase() : 'MV')}
+              </div>
+              <div className="hidden sm:flex flex-col text-left leading-none">
+                <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[90px]">
+                  {user?.name?.split(' ')[0] || 'Marcus'}
+                </span>
+              </div>
+              <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
+                user?.role === 'Admin'
+                  ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                  : user?.role === 'Operator'
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                  : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+              }`}>
+                {user?.role || 'Operator'}
               </span>
-            </div>
-            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
-              user?.role === 'Admin'
-                ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20'
-                : user?.role === 'Operator'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            }`}>
-              {user?.role || 'Operator'}
-            </span>
-          </Link>
+            </button>
+
+            {/* User Dropdown Popover */}
+            <AnimatePresence>
+              {userMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-64 glass-modal rounded-2xl overflow-hidden z-50 flex flex-col shadow-2xl border border-slate-200/90 dark:border-white/10"
+                >
+                  <div className="p-3.5 border-b border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+                        {user?.avatar || (user?.name ? user.name.slice(0, 2).toUpperCase() : 'MV')}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs text-slate-900 dark:text-white truncate">
+                          {user?.name || 'Marcus Vance'}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
+                          {user?.email || 'marcus@somak.ai'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-2.5 flex items-center justify-between text-[10px]">
+                      <span className="text-slate-400">Current Role</span>
+                      <span className={`font-mono font-bold px-1.5 py-0.5 rounded ${
+                        user?.role === 'Admin'
+                          ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
+                          : user?.role === 'Operator'
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                      }`}>
+                        {user?.role || 'Operator'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-1.5 space-y-0.5 text-xs">
+                    <Link
+                      href="/settings"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <Settings className="w-4 h-4 text-slate-400" />
+                      <span>Settings & Team</span>
+                    </Link>
+                    <Link
+                      href="/audit"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-slate-400" />
+                      <span>SOC-2 Audit Log</span>
+                    </Link>
+                    <Link
+                      href="/docs"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <BookOpen className="w-4 h-4 text-slate-400" />
+                        <span>Documentation</span>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                    </Link>
+                    <button
+                      onClick={toggleTheme}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        {theme === 'dark' ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+                        <span>Appearance</span>
+                      </div>
+                      <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                        {theme === 'dark' ? 'Dark' : 'Light'}
+                      </span>
+                    </button>
+                  </div>
+
+                  <div className="p-1.5 border-t border-slate-100 dark:border-white/10 bg-slate-50/30 dark:bg-white/[0.01]">
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        logout();
+                        router.push('/login');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-xs font-medium"
+                    >
+                      <LogOut className="w-4 h-4 text-rose-500" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </header>
 
@@ -635,12 +801,12 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
       {/* Connection State Info Modal */}
       <AnimatePresence>
         {connectionModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-sm glass-modal rounded-2xl p-5 shadow-2xl space-y-4"
+              className="w-full max-w-sm bg-white dark:bg-[#111111] border border-slate-200/90 dark:border-white/10 rounded-2xl p-5 shadow-2xl space-y-4 text-slate-900 dark:text-slate-100"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -651,52 +817,61 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                 </div>
                 <button
                   onClick={() => setConnectionModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-white/10">
-                  <span className="text-slate-400">Transport:</span>
-                  <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">Server-Sent Events (SSE)</span>
+                <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-white/5">
+                  <span className="text-slate-500 dark:text-slate-400">Transport:</span>
+                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">Server-Sent Events (SSE)</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-white/10">
-                  <span className="text-slate-400">Ingress Region:</span>
-                  <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">us-east-1 (N. Virginia)</span>
+                <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-white/5">
+                  <span className="text-slate-500 dark:text-slate-400">Ingress Region:</span>
+                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">us-east-1 (N. Virginia)</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-white/10">
-                  <span className="text-slate-400">Stream RTT:</span>
+                <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-white/5">
+                  <span className="text-slate-500 dark:text-slate-400">Stream RTT:</span>
                   <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">12ms</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-100 dark:border-white/10">
-                  <span className="text-slate-400">Packet Loss:</span>
+                <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-white/5">
+                  <span className="text-slate-500 dark:text-slate-400">Packet Loss:</span>
                   <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">0.00%</span>
                 </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-slate-400">Simulate State:</span>
-                  <div className="flex gap-1.5">
+                <div className="flex justify-between items-center py-1.5">
+                  <span className="text-slate-500 dark:text-slate-400">Simulate State:</span>
+                  <div className="flex p-0.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 w-44">
                     <button
+                      type="button"
                       onClick={() => setConnectionState('connected')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        connectionState === 'connected' ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-600'
+                      className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${
+                        connectionState === 'connected'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       Live
                     </button>
                     <button
+                      type="button"
                       onClick={() => setConnectionState('reconnecting')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        connectionState === 'reconnecting' ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-600'
+                      className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${
+                        connectionState === 'reconnecting'
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       Reconn
                     </button>
                     <button
+                      type="button"
                       onClick={() => setConnectionState('offline')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        connectionState === 'offline' ? 'bg-red-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-600'
+                      className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${
+                        connectionState === 'offline'
+                          ? 'bg-rose-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       Offline
@@ -707,7 +882,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
 
               <button
                 onClick={() => setConnectionModalOpen(false)}
-                className="w-full py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors btn-glow-primary"
+                className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 rounded-xl text-xs font-bold transition-colors shadow-2xs"
               >
                 Done
               </button>
@@ -715,9 +890,6 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
           </div>
         )}
       </AnimatePresence>
-
-      {/* Onboarding Product Tour Modal */}
-      <OnboardingTour isOpen={tourOpen} onClose={() => setTourOpen(false)} />
     </>
   );
 }

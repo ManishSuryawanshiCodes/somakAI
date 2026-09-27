@@ -25,10 +25,23 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: 'v2.1.0',
+    date: 'September 27, 2026',
+    title: 'Supabase SSR Auth, Dodo Payments Billing & Vercel/Render Minimalist System',
+    badge: 'Latest Release',
+    highlights: [
+      'Supabase SSR Authentication: Full server-side session exchange with OAuth providers (Google & GitHub SSO), encrypted cookie management, and protected route middleware.',
+      'Hardened Demo Accounts: Zero visible credential exposure using dedicated server-side demo roles (Admin, Operator, Viewer) with instant 1-click sandbox access.',
+      'Dodo Payments Integration: Hosted customer checkout sessions, self-service subscription management portal, and cryptographically verified webhook event listeners.',
+      'Vercel & Render Marketing Polish: Dot-grid canvas textures, high-density inline sparkline cards, refined typography hierarchy, and subtle border highlights.',
+      'Security Sanitization: Purged all legacy fallback API tokens, enforced strict environment variable boundaries, and verified secret leakage across git commits.',
+    ],
+  },
+  {
     version: 'v2.0.0',
     date: 'September 24, 2026',
     title: 'Multi-Provider BYOK, Live PostgreSQL Persistence & Sandbox Self-Correction',
-    badge: 'Latest Release',
+    badge: 'Major',
     highlights: [
       'Multi-Provider BYOK Architecture: Integrated Nebius (Nemotron-3), Anthropic (Claude 3.5 Sonnet), OpenAI (GPT-4o), and Google (Gemini 1.5 Pro) with independent triage and synthesis model selection.',
       'Live Supabase PostgreSQL Persistence: Real production relational schema backing users (Argon2id hashing), organizations, incidents, audit logs, and provider usage quotas.',

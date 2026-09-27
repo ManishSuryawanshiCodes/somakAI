@@ -9,6 +9,7 @@ import httpx
 
 from app.core.config import settings
 from app.services.org_store import org_store
+from app.services.audit_store import audit_store
 
 logger = logging.getLogger("somak.dodo")
 
@@ -173,30 +174,95 @@ class DodoPaymentService:
             return "ignored"
 
         if event_type == "payment.succeeded":
-            plan_id = metadata.get("plan_id")
+            plan_id = metadata.get("plan_id", "team")
             if org_id and plan_id:
                 org_store.update_org_plan(org_id, plan_id)
+                audit_store.record_event(
+                    actor_name="Dodo Payments",
+                    actor_email="billing@dodopayments.com",
+                    actor_role="System",
+                    org_id=org_id,
+                    action=f"Payment succeeded for {plan_id.capitalize()} tier. Subscription active.",
+                    category="billing",
+                    target=f"billing/plan:{plan_id}",
+                    ip="dodopayments.com"
+                )
             return "handled_payment_succeeded"
 
         elif event_type == "subscription.active":
-            plan_id = metadata.get("plan_id")
+            plan_id = metadata.get("plan_id", "team")
             if org_id and plan_id:
                 org_store.update_org_plan(org_id, plan_id)
+                audit_store.record_event(
+                    actor_name="Dodo Payments",
+                    actor_email="billing@dodopayments.com",
+                    actor_role="System",
+                    org_id=org_id,
+                    action=f"Subscription activated for {plan_id.capitalize()} tier.",
+                    category="billing",
+                    target=f"billing/subscription:{plan_id}",
+                    ip="dodopayments.com"
+                )
             return "handled_subscription_active"
-            
+
+        elif event_type == "subscription.renewed":
+            if org_id:
+                audit_store.record_event(
+                    actor_name="Dodo Payments",
+                    actor_email="billing@dodopayments.com",
+                    actor_role="System",
+                    org_id=org_id,
+                    action="Subscription renewed successfully.",
+                    category="billing",
+                    target="billing/subscription:renew",
+                    ip="dodopayments.com"
+                )
+            return "handled_subscription_renewed"
+
         elif event_type == "subscription.updated":
-            plan_id = metadata.get("plan_id")
+            plan_id = metadata.get("plan_id", "team")
             if org_id and plan_id:
                 org_store.update_org_plan(org_id, plan_id)
+                audit_store.record_event(
+                    actor_name="Dodo Payments",
+                    actor_email="billing@dodopayments.com",
+                    actor_role="System",
+                    org_id=org_id,
+                    action=f"Subscription updated to {plan_id.capitalize()} tier.",
+                    category="billing",
+                    target=f"billing/subscription:{plan_id}",
+                    ip="dodopayments.com"
+                )
             return "handled_subscription_updated"
 
         elif event_type in ["subscription.cancelled", "payment.failed", "subscription.on_hold"]:
             if org_id:
                 org_store.update_org_plan(org_id, "free")
+                audit_store.record_event(
+                    actor_name="Dodo Payments",
+                    actor_email="billing@dodopayments.com",
+                    actor_role="System",
+                    org_id=org_id,
+                    action=f"Billing event '{event_type}'. Subscription downgraded to Free tier.",
+                    category="billing",
+                    target="billing/subscription",
+                    ip="dodopayments.com"
+                )
             return "handled_subscription_downgrade"
-            
+
         elif event_type == "dispute.opened":
-            logger.warning(f"Chargeback dispute opened for payment")
+            logger.warning("Chargeback dispute opened for payment")
+            if org_id:
+                audit_store.record_event(
+                    actor_name="Dodo Payments",
+                    actor_email="billing@dodopayments.com",
+                    actor_role="System",
+                    org_id=org_id,
+                    action="Dispute/chargeback opened for payment.",
+                    category="billing",
+                    target="billing/dispute",
+                    ip="dodopayments.com"
+                )
             return "handled_dispute"
 
         return "ignored"

@@ -4,85 +4,131 @@ import React from 'react';
 
 interface StatusBadgeProps {
   status: string;
+  severity?: string;
+  confidence?: number | string;
   size?: 'sm' | 'md';
+  className?: string;
 }
 
-export default function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
-  let bgColor = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+export default function StatusBadge({
+  status,
+  severity,
+  confidence,
+  size = 'sm',
+  className = '',
+}: StatusBadgeProps) {
+  let dotColor = 'bg-slate-400';
+  let badgeStyle = 'bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-slate-300 border-slate-200 dark:border-white/10';
   let pulse = false;
   let label = status;
 
-  switch (status.toUpperCase()) {
+  const normalized = status.toUpperCase().replace(/\s+/g, '_');
+
+  switch (normalized) {
     case 'SEV-1':
-      bgColor = 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/25';
+    case 'SEV_1':
+    case 'CRITICAL':
+      dotColor = 'bg-rose-500';
+      badgeStyle = 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/25';
       pulse = true;
       label = 'SEV-1 Critical';
       break;
     case 'SEV-2':
-      bgColor = 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25';
+    case 'SEV_2':
+    case 'WARNING':
+      dotColor = 'bg-amber-500';
+      badgeStyle = 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25';
       label = 'SEV-2 Warning';
       break;
     case 'TRIAGING':
-      bgColor = 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/25';
+      dotColor = 'bg-slate-400';
+      badgeStyle = 'bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-slate-300 border-slate-200 dark:border-white/10';
       pulse = true;
-      label = 'Triaging (Nano 30B)';
+      label = 'Triaging';
       break;
     case 'INVESTIGATING':
-      bgColor = 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/25';
+      dotColor = 'bg-slate-400';
+      badgeStyle = 'bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-slate-300 border-slate-200 dark:border-white/10';
       pulse = true;
-      label = 'Investigating (Tavily)';
+      label = 'Investigating';
       break;
     case 'SANDBOX_VERIFYING':
-      bgColor = 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/25';
+      dotColor = 'bg-slate-400';
+      badgeStyle = 'bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-slate-300 border-slate-200 dark:border-white/10';
       pulse = true;
-      label = 'Sandbox Verifying';
+      label = 'Verifying in Sandbox';
       break;
     case 'READY_FOR_DEPLOY':
-      bgColor = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25';
-      label = 'Ready for Deploy';
+      dotColor = 'bg-emerald-500';
+      badgeStyle = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25';
+      label = 'Ready to deploy';
       break;
     case 'DEPLOYED':
-      bgColor = 'bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 border-emerald-600/30';
-      label = 'Canary Deployed';
+      dotColor = 'bg-emerald-500';
+      badgeStyle = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25';
+      label = 'Deployed';
       break;
     case 'CONFIDENCE':
-      bgColor = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25';
-      label = '99.4% Fix Verified';
+      dotColor = 'bg-emerald-500';
+      badgeStyle = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25';
+      label = 'Verified';
       break;
     case 'AST_VALIDATED':
-      bgColor = 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/25';
+      dotColor = 'bg-emerald-500';
+      badgeStyle = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25';
       label = 'AST Validated';
       break;
     case 'NEEDS_HUMAN_REVIEW':
-      bgColor = 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30';
+    case 'ACTION_NEEDED':
+      dotColor = 'bg-rose-500';
+      badgeStyle = 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/25';
       pulse = true;
-      label = 'Fix Failed — Human Review';
+      label = 'Needs review';
       break;
     case 'FAILED':
-      bgColor = 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30';
+      dotColor = 'bg-rose-500';
+      badgeStyle = 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/25';
       label = 'Failed';
       break;
+    case 'NOMINAL':
+    case 'HEALTHY':
+      dotColor = 'bg-emerald-500';
+      badgeStyle = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25';
+      label = 'Nominal';
+      break;
     case 'CANCELLED':
-      bgColor = 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/30';
+      dotColor = 'bg-slate-400';
+      badgeStyle = 'bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-400 border-slate-200 dark:border-white/10';
       label = 'Cancelled';
       break;
     default:
+      label = status.replace(/_/g, ' ');
       break;
   }
 
-  const padding = size === 'sm' ? 'px-2.5 py-0.5 text-[11px]' : 'px-3 py-1 text-xs';
+  // Combine severity if provided
+  let fullLabel = label;
+  if (severity && !fullLabel.toLowerCase().includes(severity.toLowerCase())) {
+    fullLabel = `${severity} · ${fullLabel}`;
+  }
+  if (confidence !== undefined && confidence !== null) {
+    const formattedConf = typeof confidence === 'number' ? `${confidence}%` : confidence;
+    fullLabel = `${fullLabel} · ${formattedConf}`;
+  }
+
+  const padding = size === 'sm' ? 'px-2.5 py-0.5 text-xs' : 'px-3 py-1 text-xs';
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-semibold rounded-full border ${padding} ${bgColor} transition-colors select-none`}
+      className={`inline-flex items-center gap-1.5 font-medium rounded-full border ${padding} ${badgeStyle} ${className} transition-colors select-none`}
     >
-      {pulse && (
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span>
-        </span>
-      )}
-      {label}
+      <span className="relative flex h-1.5 w-1.5 shrink-0">
+        {pulse && (
+          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${dotColor}`} />
+        )}
+        <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${dotColor}`} />
+      </span>
+      <span>{fullLabel}</span>
     </span>
   );
 }

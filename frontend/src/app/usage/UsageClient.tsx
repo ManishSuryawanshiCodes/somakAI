@@ -2,35 +2,53 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Cpu,
   Zap,
   Terminal,
   Search,
   CheckCircle2,
-  TrendingUp,
-  CreditCard,
-  Sparkles,
   ArrowLeft,
   ArrowRight,
   Shield,
-  Layers,
   Key,
-  Check,
-  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  AlertTriangle,
+  Info,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
+import MiniSparkline from '@/components/MiniSparkline';
 import { useOrg } from '@/context/OrgContext';
+import { useNotifications } from '@/context/NotificationContext';
 import { getOrgUsage } from '@/lib/api';
 import type { OrgUsageSummary, ProviderModelSummary } from '@/lib/types';
 
-export default function UsagePage() {
+interface MeteredResource {
+  id: string;
+  title: string;
+  shortLabel: string;
+  current: string;
+  currentNum: number;
+  limit: string;
+  limitNum: number;
+  unit: string;
+  percent: number;
+  trend: number[];
+  detail: string;
+  color: 'indigo' | 'emerald' | 'amber' | 'rose' | 'slate';
+}
+
+export default function UsageClient() {
   const { currentOrg } = useOrg();
+  const { addNotification } = useNotifications();
   const isAcme = !currentOrg || currentOrg.id === 'org_acme';
   const [usageData, setUsageData] = useState<OrgUsageSummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [quotaWarningFired, setQuotaWarningFired] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -119,50 +137,171 @@ export default function UsagePage() {
     ? usageData.breakdown
     : (isAcme ? fallbackBreakdown : []);
 
-  const quotas = [
+  const currentPlan = ((currentOrg?.plan || 'team').toLowerCase()) as 'free' | 'team' | 'business' | 'enterprise';
+
+  const planConfig = {
+    free: {
+      label: 'Developer Tier · 1 Seat Active',
+      avoidedDowntime: '$12,500',
+      sla: 'Community SLA (Standard)',
+      tokensLimit: 500000,
+      tokensLimitStr: '500,000',
+      sandboxLimit: 25,
+      sandboxLimitStr: '25',
+      tavilyLimit: 100,
+      tavilyLimitStr: '100',
+      envoyLimit: 50000,
+      envoyLimitStr: '50,000',
+    },
+    team: {
+      label: 'Team Plan · 25 Seats Active',
+      avoidedDowntime: '$418,200',
+      sla: 'Tier-1 SLA ($3,200/min)',
+      tokensLimit: 5000000,
+      tokensLimitStr: '5,000,000',
+      sandboxLimit: 250,
+      sandboxLimitStr: '250',
+      tavilyLimit: 1000,
+      tavilyLimitStr: '1,000',
+      envoyLimit: 500000,
+      envoyLimitStr: '500,000',
+    },
+    business: {
+      label: 'Business Plan · Unlimited Seats',
+      avoidedDowntime: '$890,000',
+      sla: 'Tier-1 SLA ($4,800/min)',
+      tokensLimit: 20000000,
+      tokensLimitStr: '20,000,000',
+      sandboxLimit: 1500,
+      sandboxLimitStr: '1,500',
+      tavilyLimit: 5000,
+      tavilyLimitStr: '5,000',
+      envoyLimit: 2000000,
+      envoyLimitStr: '2,000,000',
+    },
+    enterprise: {
+      label: 'Enterprise Dedicated Tier · Unlimited Seats',
+      avoidedDowntime: '$1,850,000',
+      sla: 'Tier-0 SLA ($8,400/min)',
+      tokensLimit: 50000000,
+      tokensLimitStr: '50,000,000',
+      sandboxLimit: 5000,
+      sandboxLimitStr: '5,000',
+      tavilyLimit: 10000,
+      tavilyLimitStr: '10,000',
+      envoyLimit: 5000000,
+      envoyLimitStr: '5,000,000',
+    },
+  }[currentPlan] || {
+    label: 'Team Plan · 25 Seats Active',
+    avoidedDowntime: '$418,200',
+    sla: 'Tier-1 SLA ($3,200/min)',
+    tokensLimit: 5000000,
+    tokensLimitStr: '5,000,000',
+    sandboxLimit: 250,
+    sandboxLimitStr: '250',
+    tavilyLimit: 1000,
+    tavilyLimitStr: '1,000',
+    envoyLimit: 500000,
+    envoyLimitStr: '500,000',
+  };
+
+  const nemotronUsed = usageData ? usageData.platform_tokens_used : (isAcme ? (currentPlan === 'free' ? 142500 : 1428500) : 0);
+  const nemotronPercent = Math.min(100, Math.round((nemotronUsed / planConfig.tokensLimit) * 1000) / 10);
+
+  const sandboxUsed = isAcme ? (currentPlan === 'free' ? 14 : 84) : 0;
+  const sandboxPercent = Math.min(100, Math.round((sandboxUsed / planConfig.sandboxLimit) * 1000) / 10);
+
+  const tavilyUsed = isAcme ? (currentPlan === 'free' ? 32 : 142) : 0;
+  const tavilyPercent = Math.min(100, Math.round((tavilyUsed / planConfig.tavilyLimit) * 1000) / 10);
+
+  const envoyUsed = isAcme ? (currentPlan === 'free' ? 18000 : 112000) : 0;
+  const envoyPercent = Math.min(100, Math.round((envoyUsed / planConfig.envoyLimit) * 1000) / 10);
+
+  const resources: MeteredResource[] = [
     {
-      title: 'NVIDIA Nemotron-3 Token Consumption',
-      current: usageData ? usageData.platform_tokens_used.toLocaleString() : (isAcme ? '1,428,500' : '0'),
-      limit: '5,000,000',
+      id: 'nemotron',
+      title: 'NVIDIA Nemotron-3 Tokens',
+      shortLabel: 'Nemotron Tokens',
+      current: nemotronUsed.toLocaleString(),
+      currentNum: nemotronUsed,
+      limit: planConfig.tokensLimitStr,
+      limitNum: planConfig.tokensLimit,
       unit: 'Tokens',
-      percent: usageData ? usageData.platform_tokens_percent : (isAcme ? 28.5 : 0),
-      detail: isAcme ? 'Ultra-550B (AST Synthesis): 1.1M • Nano-30B (Triage): 328k' : 'Live metered consumption across active incident pipelines',
-      color: 'bg-indigo-500',
+      percent: nemotronPercent,
+      trend: [120, 180, 240, 310, 420, 580, 720, 890, 1100, 1280, 1428],
+      detail: isAcme ? 'Ultra-550B (AST Synthesis): 1.1M · Nano-30B (Triage): 328k' : 'Live metered consumption across active incident pipelines',
+      color: 'indigo',
     },
     {
-      title: 'Isolated Nebius Container Sandbox Executions',
-      current: isAcme ? '84' : '0',
-      limit: '250',
+      id: 'sandbox',
+      title: 'Nebius Firecracker MicroVM Runs',
+      shortLabel: 'Sandbox Runs',
+      current: sandboxUsed.toLocaleString(),
+      currentNum: sandboxUsed,
+      limit: planConfig.sandboxLimitStr,
+      limitNum: planConfig.sandboxLimit,
       unit: 'Runs',
-      percent: isAcme ? 33.6 : 0,
-      detail: isAcme ? 'Average verification execution latency: 4.2s (Exit 0)' : 'No sandbox runs recorded yet',
-      color: 'bg-emerald-500',
+      percent: sandboxPercent,
+      trend: [5, 12, 18, 26, 35, 48, 59, 68, 74, 80, 84],
+      detail: isAcme ? 'Average verification latency: 4.2s (Exit 0) · 100% clean teardown' : 'No sandbox runs recorded yet',
+      color: 'emerald',
     },
     {
-      title: 'Tavily Diagnostic Search Grounding Queries',
-      current: isAcme ? '142' : '0',
-      limit: '1,000',
+      id: 'tavily',
+      title: 'Tavily Diagnostic Search Grounding',
+      shortLabel: 'Search Queries',
+      current: tavilyUsed.toLocaleString(),
+      currentNum: tavilyUsed,
+      limit: planConfig.tavilyLimitStr,
+      limitNum: planConfig.tavilyLimit,
       unit: 'Queries',
-      percent: isAcme ? 14.2 : 0,
-      detail: isAcme ? 'Zero rate-limit throttling observed' : 'No diagnostic queries executed yet',
-      color: 'bg-cyan-500',
+      percent: tavilyPercent,
+      trend: [10, 22, 35, 48, 62, 75, 90, 108, 120, 134, 142],
+      detail: isAcme ? 'Zero rate-limit throttling observed · Official docs & CVE index' : 'No diagnostic queries executed yet',
+      color: 'indigo',
     },
     {
-      title: 'Envoy High-Throughput Telemetry Ingestion',
-      current: isAcme ? '112,000' : '0',
-      limit: '500,000',
+      id: 'envoy',
+      title: 'Envoy Telemetry Ingestion Peak',
+      shortLabel: 'Telemetry Ingestion',
+      current: envoyUsed.toLocaleString(),
+      currentNum: envoyUsed,
+      limit: planConfig.envoyLimitStr,
+      limitNum: planConfig.envoyLimit,
       unit: 'Req/min Peak',
-      percent: isAcme ? 22.4 : 0,
-      detail: isAcme ? 'Ingress bandwidth: 18.4 MB/s stream' : 'Nominal telemetry stream active',
-      color: 'bg-purple-500',
+      percent: envoyPercent,
+      trend: [45, 60, 80, 75, 95, 110, 105, 98, 115, 120, 112],
+      detail: isAcme ? 'Ingress stream throughput: 18.4 MB/s · TLS 1.3 encrypted' : 'Nominal telemetry stream active',
+      color: 'slate',
     },
   ];
 
+  // Check for any resource >= 80% to fire an alert/notification
+  const highQuotaResources = resources.filter((r) => r.percent >= 80);
+
+  useEffect(() => {
+    if (highQuotaResources.length > 0 && !quotaWarningFired) {
+      setQuotaWarningFired(true);
+      const res = highQuotaResources[0];
+      addNotification({
+        title: `Quota Alert: ${res.shortLabel} at ${res.percent}%`,
+        description: `${res.title} has reached ${res.percent}% of monthly organization threshold (${res.current} / ${res.limit} ${res.unit}).`,
+        severity: 'warning',
+        link: '/usage',
+      });
+    }
+  }, [highQuotaResources, quotaWarningFired, addNotification]);
+
+  const toggleRow = (id: string) => {
+    setExpandedRow((prev) => (prev === id ? null : id));
+  };
+
   return (
-    <div className="min-h-screen bg-black text-slate-100 flex flex-col pb-36 md:pb-12 relative z-10 transition-colors">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#070709] text-slate-900 dark:text-slate-100 flex flex-col pb-36 md:pb-12 relative z-10 transition-colors">
       <TopNav />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors w-fit"
@@ -171,236 +310,267 @@ export default function UsagePage() {
           <span>Back to Radar</span>
         </Link>
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/10">
+        {/* Top: Single Headline Stat & Small Inline Context */}
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 pb-4 border-b border-slate-200 dark:border-white/10">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                <Cpu className="w-5 h-5" />
+            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-slate-900 dark:text-white">
+              {planConfig.avoidedDowntime}
+              <span className="text-base font-normal font-sans text-slate-500 dark:text-slate-400 ml-2">
+                saved in avoided downtime
               </span>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                Platform Usage &amp; Quota
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  Billing Cycle: Sep 1 – Sep 30
-                </span>
-              </h1>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Multi-provider AI token consumption, BYOK invocation metrics, and monthly organization quotas.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 text-xs font-mono font-bold border border-indigo-200 dark:border-indigo-800">
-              Plan: Enterprise Tier (Dedicated)
-            </span>
-          </div>
-        </div>
-
-        {/* Cumulative Savings Hero Banner */}
-        <div className="p-6 rounded-3xl glass-card border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Autonomous Value Delivered
-            </span>
-            <div className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-mono">
-              $418,200 <span className="text-sm font-sans font-normal text-slate-500">Saved in Avoided Downtime</span>
+            <div className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-mono flex items-center flex-wrap gap-1.5">
+              <span>Billing Cycle: Current Month · {planConfig.label} · {planConfig.sla}</span>
+              <span className="text-slate-300 dark:text-slate-700">·</span>
+              <Link
+                href="/settings?tab=billing"
+                className="text-indigo-600 dark:text-indigo-400 hover:underline font-sans font-semibold"
+              >
+                Manage Billing &amp; Invoices →
+              </Link>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Based on enterprise Tier-0 SLA downtime valuation ($8,400/min) across autonomous mitigations.
-            </p>
           </div>
 
           <Link
-            href="/history"
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all shrink-0"
+            href="/audit"
+            className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors shrink-0"
           >
             <span>View Incident Audit Trail</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
 
-        {/* Platform Quotas Progress Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {quotas.map((q, idx) => (
-            <div
-              key={idx}
-              className="glass-card p-5 rounded-2xl border border-slate-200/90 dark:border-white/10 space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                  {q.title}
-                </h3>
-                <span className="text-xs font-mono font-bold text-slate-900 dark:text-white">
-                  {q.percent}%
-                </span>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="w-full h-2.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className={`h-full ${q.color} transition-all duration-300`}
-                  style={{ width: `${q.percent}%` }}
-                />
-              </div>
-
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-600 dark:text-slate-300 font-bold">
-                  {q.current} / {q.limit} {q.unit}
-                </span>
-                <span className="text-slate-400 text-[11px]">
-                  {(100 - q.percent).toFixed(1)}% headroom
-                </span>
-              </div>
-
-              <p className="text-[11px] text-slate-400 pt-1 border-t border-slate-100 dark:border-white/10/80">
-                {q.detail}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Multi-Provider AI (BYOK) Breakdown Section */}
-        <div className="bg-[#0a0a0a] rounded-2xl p-6 border border-white/10 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-xl bg-purple-500/10 text-purple-400">
-                  <Key className="w-4 h-4" />
-                </span>
-                <h2 className="text-base font-bold text-white">
-                  Consumption Breakdown by AI Provider &amp; Model
-                </h2>
-              </div>
-              <p className="text-xs text-slate-400 mt-1">
-                Detailed telemetry tracking calls and tokens across Platform Metered vs. customer BYOK models.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 text-xs">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-400 font-mono font-bold border border-indigo-500/20">
-                <span>Platform Metered:</span>
-                <span>{usageData ? usageData.platform_metered_calls : (isAcme ? 426 : 0)} calls</span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 font-mono font-bold border border-emerald-500/20">
-                <span>BYOK Direct:</span>
-                <span>{usageData ? usageData.byok_calls : (isAcme ? 104 : 0)} calls</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Breakdown Table */}
-          <div className="overflow-x-auto rounded-xl border border-white/10">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#141414] text-slate-400 border-b border-white/10">
-                <tr>
-                  <th className="py-3 px-4 font-bold">Provider &amp; Engine</th>
-                  <th className="py-3 px-4 font-bold">Pipeline Stage</th>
-                  <th className="py-3 px-4 font-bold">Billing Mode</th>
-                  <th className="py-3 px-4 font-bold text-right">Invocations</th>
-                  <th className="py-3 px-4 font-bold text-right">Tokens Consumed</th>
-                  <th className="py-3 px-4 font-bold text-right">Estimated Value</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10">
-                {breakdown.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-12 px-4 text-center">
-                      <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 mx-auto mb-3">
-                        <Cpu className="w-5 h-5" />
-                      </div>
-                      <h3 className="text-sm font-bold text-white mb-1">No AI Token Consumption Recorded</h3>
-                      <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                        Invocations through Platform Metered or BYOK inference models will appear here in real-time.
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  breakdown.map((item, idx) => (
-                  <tr
-                    key={idx}
-                    className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors"
-                  >
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`p-1.5 rounded-lg ${
-                          item.provider === 'nebius'
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                            : item.provider === 'anthropic'
-                            ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
-                            : item.provider === 'openai'
-                            ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
-                            : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                        }`}>
-                          <Cpu className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="font-bold text-slate-900 dark:text-white">
-                            {item.provider_name}
-                          </div>
-                          <div className="text-[11px] font-mono text-slate-400">
-                            {item.model}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-300">
-                      <span className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-bold ${
-                        item.stage.toLowerCase() === 'triage'
-                          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20'
-                          : 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20'
-                      }`}>
-                        {item.stage}
-                      </span>
-                    </td>
-
-                    <td className="py-3.5 px-4">
-                      {item.billing_type === 'metered' ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20">
-                          <CheckCircle2 className="w-3 h-3" />
-                          Platform Included
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                          <Key className="w-3 h-3" />
-                          BYOK (Direct Billing)
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white text-right">
-                      {item.calls.toLocaleString()} calls
-                    </td>
-
-                    <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-slate-300 text-right">
-                      <div className="font-bold">{item.total_tokens.toLocaleString()}</div>
-                      <div className="text-[10px] text-slate-400">
-                        {item.tokens_in.toLocaleString()} in • {item.tokens_out.toLocaleString()} out
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right">
-                      ${item.cost_saved.toLocaleString()}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-            </table>
-          </div>
-
-          {/* BYOK Exemption Notice */}
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5/40 border border-slate-200/80 dark:border-white/10 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+        {/* High Quota Alert Banner (If >= 80%) */}
+        {highQuotaResources.length > 0 && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-emerald-500 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
               <span>
-                <strong>Quota Exemption Guarantee:</strong> BYOK API calls route directly with your organization&apos;s provider credentials and do not decrement from your monthly 5,000,000 platform token quota.
+                <strong>Warning:</strong> {highQuotaResources.map((r) => r.shortLabel).join(', ')} has exceeded 80% quota threshold. Consider expanding plan headroom.
               </span>
             </div>
             <Link
               href="/settings"
-              className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline shrink-0 ml-4"
+              className="text-xs font-bold underline shrink-0 hover:text-amber-800 dark:hover:text-white"
+            >
+              Upgrade Headroom →
+            </Link>
+          </div>
+        )}
+
+        {/* Section 1: Metered Resources Compact List (Vercel Usage Pattern) */}
+        <div className="glass-card rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden shadow-xs">
+          <div className="px-5 py-3.5 border-b border-slate-100 dark:border-white/5 flex items-center justify-between text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">
+            <span>Metered Resource</span>
+            <div className="flex items-center gap-8">
+              <span className="hidden sm:inline">30-Day Trend</span>
+              <span>Used / Limit</span>
+            </div>
+          </div>
+
+          <div className="divide-y divide-slate-100 dark:divide-white/5">
+            {resources.map((res) => {
+              const isOver80 = res.percent >= 80;
+              const isExpanded = expandedRow === res.id;
+
+              return (
+                <div key={res.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-white/[0.02]">
+                  {/* Compact Row */}
+                  <div
+                    onClick={() => toggleRow(res.id)}
+                    className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none"
+                  >
+                    {/* Left: Label + Details Chevron */}
+                    <div className="flex items-center gap-2.5 min-w-0 sm:w-1/3">
+                      <button
+                        type="button"
+                        aria-label="Toggle details"
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0"
+                      >
+                        {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                      </button>
+                      <span className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                        {res.title}
+                      </span>
+                    </div>
+
+                    {/* Middle: Slim Progress Bar + Sparkline */}
+                    <div className="flex-1 flex items-center gap-3 sm:px-4">
+                      {/* Slim Single-Line Progress Bar */}
+                      <div className="flex-1 h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            isOver80
+                              ? 'bg-rose-500'
+                              : res.color === 'emerald'
+                              ? 'bg-emerald-500'
+                              : 'bg-indigo-600 dark:bg-indigo-400'
+                          }`}
+                          style={{ width: `${Math.min(100, res.percent)}%` }}
+                        />
+                      </div>
+
+                      {/* Mini Inline Trend Sparkline */}
+                      <div className="hidden sm:flex items-center shrink-0 w-16 justify-end" title="Usage trend across billing cycle">
+                        <MiniSparkline
+                          data={res.trend}
+                          color={isOver80 ? 'rose' : res.color === 'emerald' ? 'emerald' : 'indigo'}
+                          width={54}
+                          height={14}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Right: Used / Limit Number */}
+                    <div className="sm:w-1/4 flex items-center justify-end gap-2 shrink-0 font-mono text-xs">
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {res.current}
+                      </span>
+                      <span className="text-slate-400">/ {res.limit} {res.unit}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
+                        isOver80
+                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                          : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400'
+                      }`}>
+                        {res.percent}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Collapsed Details Subtext */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="px-5 pb-3 pt-0 text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-2"
+                      >
+                        <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{res.detail}</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Section 2: Multi-Provider AI (BYOK) Telemetry Breakdown */}
+        <div className="glass-card rounded-2xl border border-slate-200/80 dark:border-white/10 p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/5">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Key className="w-4 h-4 text-indigo-500" />
+                <span>AI Provider &amp; Model Breakdown</span>
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Real-time token telemetry tracking Platform Metered vs. customer BYOK keys
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                Platform Metered: {usageData ? usageData.platform_metered_calls : (isAcme ? 426 : 0)} calls
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                BYOK: {usageData ? usageData.byok_calls : (isAcme ? 104 : 0)} calls
+              </span>
+            </div>
+          </div>
+
+          {/* Breakdown Table */}
+          <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-white/5">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50/70 dark:bg-white/[0.02] text-slate-400 font-mono text-[10px] uppercase tracking-wider border-b border-slate-100 dark:border-white/5">
+                <tr>
+                  <th className="py-2.5 px-3.5 font-bold">Provider &amp; Model</th>
+                  <th className="py-2.5 px-3.5 font-bold">Pipeline Stage</th>
+                  <th className="py-2.5 px-3.5 font-bold">Billing Mode</th>
+                  <th className="py-2.5 px-3.5 font-bold text-right">Invocations</th>
+                  <th className="py-2.5 px-3.5 font-bold text-right">Tokens</th>
+                  <th className="py-2.5 px-3.5 font-bold text-right">Estimated Value</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-white/5 font-mono">
+                {breakdown.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
+                      No AI token consumption recorded yet.
+                    </td>
+                  </tr>
+                ) : (
+                  breakdown.map((item, idx) => (
+                    <tr
+                      key={idx}
+                      className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors"
+                    >
+                      <td className="py-2.5 px-3.5">
+                        <div className="flex items-center gap-2">
+                          <Cpu className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <div>
+                            <div className="font-semibold text-slate-900 dark:text-white font-sans text-xs">
+                              {item.model_name || item.model}
+                            </div>
+                            <div className="text-[10px] text-slate-400">
+                              {item.provider_name}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-2.5 px-3.5">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                          item.stage.toLowerCase() === 'triage'
+                            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                            : 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400'
+                        }`}>
+                          {item.stage}
+                        </span>
+                      </td>
+
+                      <td className="py-2.5 px-3.5">
+                        {item.billing_type === 'metered' ? (
+                          <span className="text-[10px] text-indigo-600 dark:text-indigo-400">
+                            Platform Included
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                            BYOK (Direct)
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-2.5 px-3.5 text-right font-bold text-slate-900 dark:text-white">
+                        {item.calls.toLocaleString()}
+                      </td>
+
+                      <td className="py-2.5 px-3.5 text-right text-slate-600 dark:text-slate-300">
+                        {item.total_tokens.toLocaleString()}
+                      </td>
+
+                      <td className="py-2.5 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-bold">
+                        ${item.cost_saved.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* BYOK Exemption Notice */}
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-2">
+              <Shield className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span>
+                BYOK API calls route directly with your provider keys and do not decrement from your monthly {planConfig.tokensLimitStr} platform token quota.
+              </span>
+            </div>
+            <Link
+              href="/settings"
+              className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline shrink-0 ml-3"
             >
               Manage Keys →
             </Link>

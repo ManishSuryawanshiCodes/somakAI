@@ -1,6 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
-  <!-- Somak AI Simplified Ring: Alabaster warm off-white #F2EFE7 arc with round caps -->
-  <path d="M 52 50 A 67 67 0 1 0 159 105 A 67 67 0 0 0 157 85" stroke="#F2EFE7" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Somak AI Gold Accent Dot: Champagne gold #C9A24B -->
+  <style>
+    path { stroke: #121212; }
+    @media (prefers-color-scheme: dark) {
+      path { stroke: #F2EFE7; }
+    }
+  </style>
+  <!-- Somak AI Simplified Ring Arc: Adaptive contrast with Champagne gold accent dot -->
+  <path d="M 52 50 A 67 67 0 1 0 159 105 A 67 67 0 0 0 157 85" stroke-width="21" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="142" cy="49" r="14.5" fill="#C9A24B"/>
 </svg>

@@ -156,10 +156,15 @@ export default function CreateOrgPage() {
         transition={{ duration: 0.35 }}
         className="text-center mb-8"
       >
-        <div className="inline-flex items-center gap-2 mb-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-xl shadow-indigo-500/30">
-            <Building2 className="w-5 h-5" />
+        <Link href="/" className="inline-flex items-center gap-2.5 group mb-3">
+          <div className="w-9 h-9 rounded-xl bg-[#0A0A0A] border border-black/10 dark:border-white/10 p-1 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform overflow-hidden">
+            <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-7 h-7 object-contain aspect-square" />
           </div>
+          <span className="font-mono font-bold text-sm tracking-tight text-slate-900 dark:text-white">
+            SOMAK AI
+          </span>
+        </Link>
+        <div className="flex justify-center mb-3">
           <span className="font-mono text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-900">
             Step 1 of 2 • Workspace Setup
           </span>

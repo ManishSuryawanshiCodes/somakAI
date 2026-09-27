@@ -500,6 +500,18 @@ export default function LandingPage() {
 
       {/* 2. Hero Section */}
       <section className="relative pt-16 pb-16 sm:pt-24 sm:pb-24 overflow-hidden">
+        {/* Subtle Atmospheric Gradient Glow (Vercel/Render touch) */}
+        <div
+          aria-hidden="true"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[920px] h-[360px] sm:h-[480px] bg-gradient-to-tr from-indigo-500/15 via-purple-500/10 to-cyan-500/10 dark:from-indigo-600/20 dark:via-purple-600/10 dark:to-cyan-600/15 blur-[130px] rounded-full pointer-events-none -z-10"
+        />
+
+        {/* Faint dot-grid overlay behind Hero */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] dark:bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none -z-10"
+        />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8 relative z-10">
           
           {/* Eyebrow Pill Badge */}
@@ -509,8 +521,8 @@ export default function LandingPage() {
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-xs font-semibold text-emerald-700 dark:text-emerald-300 shadow-xs backdrop-blur-sm"
           >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-            <span>SOMAK AI • Zero-Human-Latency Cloud SRE</span>
+            <Sparkles className="w-3.5 h-3.5 text-emerald-500" strokeWidth={1.75} />
+            <span className="font-mono text-[11px] uppercase tracking-wider">SOMAK AI • Zero-Human-Latency Cloud SRE</span>
             <span className="text-slate-400 dark:text-slate-600">•</span>
             <span className="font-mono text-[11px] text-cyan-600 dark:text-cyan-400 font-bold">95.2% Auto-Resolved</span>
           </motion.div>
@@ -549,7 +561,7 @@ export default function LandingPage() {
                 className="relative w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-md transition-all duration-200 active:scale-95"
               >
                 <span>Start Free with SOMAK AI</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4" strokeWidth={1.75} />
               </Link>
             </div>
 
@@ -558,7 +570,7 @@ export default function LandingPage() {
               disabled={isDemoLaunching}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white dark:bg-[#0B0F19] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-[#E8E3D9] dark:border-white/10 font-bold text-sm shadow-xs hover:border-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all liquid-glass"
             >
-              <Play className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500" />
+              <Play className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500" strokeWidth={1.75} />
               <span>{isDemoLaunching ? 'Starting Demo Session...' : 'View Live Demo'}</span>
             </button>
           </motion.div>
@@ -567,10 +579,53 @@ export default function LandingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="text-xs text-slate-500 dark:text-slate-400"
+            className="text-xs text-slate-500 dark:text-slate-400 font-mono"
           >
             Free during public beta • No credit card required • 5-minute setup
           </motion.p>
+        </div>
+      </section>
+
+      {/* 2B. Infrastructure Trust Strip (Vercel, Render, Supabase, Dodo Payments) */}
+      <section className="py-6 sm:py-8 border-y border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.01]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500 dark:text-neutral-400 font-semibold">
+            Built on Production-Grade Cloud Infrastructure
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 text-slate-600 dark:text-neutral-300">
+            {/* Vercel */}
+            <div className="flex items-center gap-2 hover:text-slate-900 dark:hover:text-white transition-colors duration-150 group">
+              <svg className="w-3.5 h-3.5 fill-current opacity-70 group-hover:opacity-100 transition-opacity" viewBox="0 0 1155 1000">
+                <path d="m577.3 0 577.4 1000H0z" />
+              </svg>
+              <span className="text-xs font-semibold tracking-tight">Vercel</span>
+            </div>
+
+            {/* Render */}
+            <div className="flex items-center gap-2 hover:text-slate-900 dark:hover:text-white transition-colors duration-150 group">
+              <svg className="w-3.5 h-3.5 fill-current opacity-70 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24">
+                <path d="M4 4h7.5c3.59 0 6.5 2.91 6.5 6.5 0 2.45-1.36 4.58-3.37 5.67L19 20h-4l-3.5-3.5H8V20H4V4zm4 4v5h3.5c1.38 0 2.5-1.12 2.5-2.5S12.88 8 11.5 8H8z" />
+              </svg>
+              <span className="text-xs font-semibold tracking-tight">Render</span>
+            </div>
+
+            {/* Supabase */}
+            <div className="flex items-center gap-2 hover:text-slate-900 dark:hover:text-white transition-colors duration-150 group">
+              <svg className="w-3.5 h-3.5 fill-current opacity-70 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24">
+                <path d="M21.362 9.354H12V.396a.396.396 0 0 0-.716-.233L.82 14.07a.792.792 0 0 0 .616 1.285H12v8.249a.396.396 0 0 0 .716.233l10.464-13.197a.792.792 0 0 0-.818-1.286z" />
+              </svg>
+              <span className="text-xs font-semibold tracking-tight">Supabase</span>
+            </div>
+
+            {/* Dodo Payments */}
+            <div className="flex items-center gap-2 hover:text-slate-900 dark:hover:text-white transition-colors duration-150 group">
+              <svg className="w-3.5 h-3.5 fill-none stroke-current opacity-70 group-hover:opacity-100 transition-opacity" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <rect width="20" height="14" x="2" y="5" rx="2" />
+                <line x1="2" x2="22" y1="10" y2="10" />
+              </svg>
+              <span className="text-xs font-semibold tracking-tight">Dodo Payments</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1238,10 +1293,10 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.05 }}
                 transition={{ duration: 0.4, delay: idx * 0.08 }}
-                className={`liquid-glass p-6 rounded-2xl shadow-xs space-y-4 transition-all duration-300 relative group border-2 ${
+                className={`liquid-glass p-6 rounded-2xl shadow-xs space-y-4 transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl relative group border-2 ${
                   isStepActive
                     ? `${step.borderColor} ring-2 ring-emerald-500/20 shadow-lg`
-                    : 'border-[#D8D2C6] dark:border-white/20 hover:border-indigo-500/50 dark:hover:border-white/35'
+                    : 'border-[#D8D2C6] dark:border-white/20 hover:border-indigo-500/50 dark:hover:border-indigo-400/50'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -1252,7 +1307,7 @@ export default function LandingPage() {
                         : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300'
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-5 h-5" strokeWidth={1.75} />
                   </div>
                   <span
                     className={`text-xs font-mono font-bold transition-colors ${
@@ -1316,12 +1371,12 @@ export default function LandingPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.05 }}
                   transition={{ duration: 0.4, delay: idx * 0.05 }}
-                  className="liquid-glass p-6 rounded-2xl shadow-xs space-y-3 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg border-2 border-[#E8E3D9] dark:border-white/15 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 flex flex-col justify-between group"
+                  className="liquid-glass p-6 rounded-2xl shadow-xs space-y-3 transition-all duration-200 ease-out hover:-translate-y-1 hover:border-indigo-500/40 dark:hover:border-indigo-400/40 hover:shadow-xl hover:shadow-indigo-500/5 border-2 border-[#E8E3D9] dark:border-white/15 flex flex-col justify-between group"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform">
-                        <Icon className="w-4 h-4" />
+                        <Icon className="w-4 h-4" strokeWidth={1.75} />
                       </div>
                       <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
                         {f.badge}
@@ -1466,10 +1521,10 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.05 }}
                 transition={{ duration: 0.4, delay: idx * 0.1 }}
-                className={`liquid-glass p-8 rounded-3xl shadow-lg space-y-6 flex flex-col justify-between relative group ${
+                className={`liquid-glass p-8 rounded-3xl shadow-lg space-y-6 flex flex-col justify-between relative group transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 ${
                   plan.highlighted
                     ? 'border-indigo-500 ring-2 ring-indigo-500/30'
-                    : 'border-[#E8E3D9] dark:border-white/10'
+                    : 'border-[#E8E3D9] dark:border-white/10 hover:border-indigo-500/40 dark:hover:border-indigo-400/40'
                 }`}
               >
                 {plan.highlighted && (
@@ -1499,7 +1554,13 @@ export default function LandingPage() {
                 </div>
 
                 <Link
-                  href="/signup"
+                  href={
+                    plan.name === 'Team'
+                      ? '/checkout?plan=team&redirect=true'
+                      : plan.name === 'Enterprise'
+                      ? '/contact'
+                      : '/signup'
+                  }
                   className={`w-full py-2.5 rounded-xl font-bold text-xs text-center transition-all ${
                     plan.highlighted
                       ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/25 btn-glow-primary'
@@ -1541,7 +1602,7 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.05 }}
             transition={{ duration: 0.4 }}
-            className="bg-white dark:bg-[#0a0a0a] rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden group hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-xs"
+            className="bg-white dark:bg-[#0a0a0a] rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden group hover:border-indigo-500/40 dark:hover:border-indigo-400/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-200 ease-out shadow-xs"
           >
             <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-6 font-mono font-bold text-sm">
               01
@@ -1561,7 +1622,7 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.05 }}
             transition={{ duration: 0.4, delay: 0.08 }}
-            className="bg-white dark:bg-[#0a0a0a] rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden group hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-xs"
+            className="bg-white dark:bg-[#0a0a0a] rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden group hover:border-indigo-500/40 dark:hover:border-indigo-400/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-200 ease-out shadow-xs"
           >
             <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-6 font-mono font-bold text-sm">
               02
@@ -1581,7 +1642,7 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.05 }}
             transition={{ duration: 0.4, delay: 0.16 }}
-            className="bg-white dark:bg-[#0a0a0a] rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden group hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-xs"
+            className="bg-white dark:bg-[#0a0a0a] rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 relative overflow-hidden group hover:border-indigo-500/40 dark:hover:border-indigo-400/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-200 ease-out shadow-xs"
           >
             <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mb-6 font-mono font-bold text-sm">
               03
@@ -1763,45 +1824,57 @@ export default function LandingPage() {
       </section>
 
       {/* 10. Final CTA Section */}
-      <section className="py-20 sm:py-28 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
+      <section className="py-20 sm:py-28 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8 relative">
+        {/* Soft atmospheric gradient glow behind final CTA */}
+        <div
+          aria-hidden="true"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] sm:w-[800px] h-[320px] sm:h-[440px] bg-gradient-to-tr from-indigo-500/15 via-purple-500/10 to-emerald-500/10 dark:from-indigo-600/20 dark:via-purple-600/10 dark:to-emerald-600/15 blur-[140px] rounded-full pointer-events-none -z-10"
+        />
+
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, amount: 0.05 }}
           transition={{ duration: 0.5 }}
-          className="bg-white dark:bg-[#0a0a0a] p-10 sm:p-16 rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl space-y-6 relative overflow-hidden"
+          className="bg-white dark:bg-[#0a0a0a] p-10 sm:p-16 rounded-3xl border border-slate-200 dark:border-white/10 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 shadow-2xl space-y-6 relative overflow-hidden transition-all duration-300"
         >
-          <div className="w-14 h-14 rounded-2xl bg-black border border-white/15 p-2.5 flex items-center justify-center mx-auto shadow-xl shadow-amber-500/10">
+          {/* Faint internal dot-grid texture */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-[radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] dark:bg-[radial-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"
+          />
+
+          <div className="w-14 h-14 rounded-2xl bg-black border border-white/15 p-2.5 flex items-center justify-center mx-auto shadow-xl shadow-amber-500/10 relative z-10">
             <img src="/somak-ai-icon-transparent.png" alt="SOMAK AI" className="w-full h-full object-contain" />
           </div>
 
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#181614] dark:text-white max-w-2xl mx-auto">
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#181614] dark:text-white max-w-2xl mx-auto relative z-10">
             Ready to eliminate 3 AM pages forever?
           </h2>
 
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 max-w-xl mx-auto relative z-10 leading-relaxed">
             Connect SOMAK AI to your telemetry in 5 minutes and see your first production incident resolved autonomously.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2 relative z-10">
             <Link
               href="/signup"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-md shadow-indigo-600/25 transition-all hover:-translate-y-0.5 active:translate-y-0 btn-glow-primary"
             >
               <span>Get Started Free</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4" strokeWidth={1.75} />
             </Link>
 
             <Link
               href="/docs"
               className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold text-sm transition-all"
             >
-              <BookOpen className="w-4 h-4 text-indigo-400" />
+              <BookOpen className="w-4 h-4 text-indigo-400" strokeWidth={1.75} />
               <span>Read Documentation</span>
             </Link>
           </div>
 
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-neutral-500 font-mono relative z-10">
             Free during public beta • No credit card required • 5-minute setup
           </p>
         </motion.div>
@@ -1819,43 +1892,112 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 11. Footer */}
-      <footer className="border-t border-slate-200 dark:border-white/10 py-12 text-xs text-neutral-400 bg-[#FAF8F5] dark:bg-[#0A0A0A]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/15 p-1 flex items-center justify-center shadow-xs overflow-hidden">
-              <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-6 h-6 object-contain aspect-square" />
+      {/* 11. Footer (Render-Style Clean Multi-Column Layout) */}
+      <footer className="border-t border-slate-200 dark:border-white/10 py-16 text-xs text-slate-500 dark:text-neutral-400 bg-[#FAF8F5] dark:bg-[#070709] transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 sm:gap-12 pb-12 border-b border-slate-200 dark:border-white/10">
+            {/* Col 1 & 2: Brand Lockup & Summary */}
+            <div className="col-span-2 space-y-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/15 p-1 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
+                  <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-5 h-5 object-contain aspect-square" />
+                </div>
+                <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">
+                  SOMAK AI
+                </span>
+                <span className="text-[9px] uppercase font-mono font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  ONLINE
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm leading-relaxed">
+                Autonomous zero-human-latency cloud SRE. Ingests crash telemetry, synthesizes AST hotfixes in Firecracker microVMs, and executes canary rollouts with auto-rollback.
+              </p>
+              <div className="text-[11px] font-mono text-slate-400 dark:text-neutral-500">
+                © {new Date().getFullYear()} SOMAK AI Inc. All rights reserved.
+              </div>
             </div>
-            <span className="font-bold text-slate-900 dark:text-white tracking-tight">
-              SOMAK AI
-            </span>
-            <span className="text-neutral-500">
-              © {new Date().getFullYear()} SOMAK AI Inc.
-            </span>
+
+            {/* Col 3: Product & Resources */}
+            <div className="space-y-3">
+              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                Platform
+              </div>
+              <ul className="space-y-2.5">
+                <li>
+                  <Link href="/docs" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                    Documentation
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/changelog" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                    Changelog
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/status" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                    System Status
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 4: Trust & Compliance */}
+            <div className="space-y-3">
+              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                Trust &amp; Security
+              </div>
+              <ul className="space-y-2.5">
+                <li>
+                  <Link href="/soc-audit" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                    Security &amp; Compliance
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacy" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                    Terms of Service
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 5: Company & Contact */}
+            <div className="space-y-3">
+              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                Contact
+              </div>
+              <ul className="space-y-2.5">
+                <li>
+                  <Link href="/contact" className="hover:text-indigo-600 dark:hover:text-indigo-400 text-indigo-600 dark:text-indigo-400 font-semibold transition-colors">
+                    Contact Us
+                  </Link>
+                </li>
+                <li>
+                  <a href="#pricing" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                    Pricing Plans
+                  </a>
+                </li>
+                <li>
+                  <a href="#demo" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                    Live Demo
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6">
-            <Link href="/contact" className="hover:text-white transition-colors text-indigo-400 font-semibold">
-              Contact Us
-            </Link>
-            <Link href="/privacy" className="hover:text-white transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-white transition-colors">
-              Terms of Service
-            </Link>
-            <Link href="/docs" className="hover:text-white transition-colors">
-              Documentation
-            </Link>
-            <Link href="/status" className="hover:text-white transition-colors">
-              System Status
-            </Link>
-            <Link href="/changelog" className="hover:text-white transition-colors">
-              Changelog
-            </Link>
-            <Link href="/soc-audit" className="hover:text-white transition-colors">
-              Security & Compliance
-            </Link>
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400 dark:text-neutral-500 font-mono">
+            <div>
+              Deterministic AST Verification · Zero Customer Blast Radius
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+              <span>All Systems Operational</span>
+            </div>
           </div>
         </div>
       </footer>
