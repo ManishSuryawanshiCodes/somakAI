@@ -431,36 +431,8 @@ async def update_setup(
     plan = current_org.plan
 
     # 1. Tier Enforcement: BYOK Multi-Provider AI
-    if plan == "free":
-        has_byok = any([
-            req.anthropic_api_key,
-            req.openai_api_key,
-            req.google_api_key,
-            req.anthropic_connected,
-            req.openai_connected,
-            req.google_connected,
-            req.triage_provider and req.triage_provider != "nebius",
-            req.synthesis_provider and req.synthesis_provider != "nebius",
-        ])
-        if has_byok:
-            raise HTTPException(
-                status_code=403,
-                detail="Bring Your Own Key (BYOK) multi-provider AI is available on Business and Enterprise plans. The Free tier is restricted to platform-included Nebius Nemotron."
-            )
-    elif plan == "team":
-        # Team tier: up to 1 additional BYOK provider
-        byok_count = 0
-        if req.anthropic_api_key or (current_org.setup_checklist.anthropic_api_key and req.anthropic_connected is not False):
-            byok_count += 1
-        if req.openai_api_key or (current_org.setup_checklist.openai_api_key and req.openai_connected is not False):
-            byok_count += 1
-        if req.google_api_key or (current_org.setup_checklist.google_api_key and req.google_connected is not False):
-            byok_count += 1
-        if byok_count > 1:
-            raise HTTPException(
-                status_code=403,
-                detail="Team plan supports up to 1 BYOK provider. Upgrade to Business plan for unlimited multi-provider AI orchestration."
-            )
+    # Standard providers (Nebius, NVIDIA NIM) and any user-supplied BYOK credentials (OpenAI, Anthropic, Gemini)
+    # are permitted for seamless integration across all plan tiers.
 
     # 2. Tier Enforcement: Custom Firecracker Sandbox Limits
     if (req.sandbox_concurrency and req.sandbox_concurrency > 4) or (req.sandbox_timeout and req.sandbox_timeout > 15):

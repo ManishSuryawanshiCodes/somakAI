@@ -17,6 +17,10 @@ import {
   ChevronRight,
   AlertTriangle,
   Info,
+  Radio,
+  Layers,
+  Check,
+  ExternalLink,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
@@ -44,7 +48,7 @@ interface MeteredResource {
 export default function UsageClient() {
   const { currentOrg } = useOrg();
   const { addNotification } = useNotifications();
-  const isAcme = !currentOrg || currentOrg.id === 'org_acme';
+  const isAcme = Boolean(currentOrg && currentOrg.id === 'org_acme');
   const [usageData, setUsageData] = useState<OrgUsageSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
@@ -52,13 +56,14 @@ export default function UsageClient() {
 
   useEffect(() => {
     setLoading(true);
-    getOrgUsage(currentOrg?.id || 'org_acme')
+    const orgId = currentOrg?.id || (isAcme ? 'org_acme' : undefined);
+    getOrgUsage(orgId || 'org_acme')
       .then((data) => {
         if (data) setUsageData(data);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [currentOrg?.id]);
+  }, [currentOrg?.id, isAcme]);
 
   const fallbackBreakdown: ProviderModelSummary[] = [
     {
@@ -206,10 +211,21 @@ export default function UsageClient() {
     envoyLimitStr: '500,000',
   };
 
+  // Dynamic avoided downtime
+  const dynamicAvoidedDowntime = React.useMemo(() => {
+    if (usageData && usageData.total_cost_saved > 0) {
+      return `$${Math.round(usageData.total_cost_saved).toLocaleString()}`;
+    }
+    if (isAcme) {
+      return planConfig.avoidedDowntime;
+    }
+    return '$0';
+  }, [usageData, isAcme, planConfig.avoidedDowntime]);
+
   const nemotronUsed = usageData ? usageData.platform_tokens_used : (isAcme ? (currentPlan === 'free' ? 142500 : 1428500) : 0);
   const nemotronPercent = Math.min(100, Math.round((nemotronUsed / planConfig.tokensLimit) * 1000) / 10);
 
-  const sandboxUsed = isAcme ? (currentPlan === 'free' ? 14 : 84) : 0;
+  const sandboxUsed = isAcme ? (currentPlan === 'free' ? 14 : 84) : (usageData?.platform_metered_calls || 0);
   const sandboxPercent = Math.min(100, Math.round((sandboxUsed / planConfig.sandboxLimit) * 1000) / 10);
 
   const tavilyUsed = isAcme ? (currentPlan === 'free' ? 32 : 142) : 0;
@@ -314,7 +330,7 @@ export default function UsageClient() {
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 pb-4 border-b border-slate-200 dark:border-white/10">
           <div>
             <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-slate-900 dark:text-white">
-              {planConfig.avoidedDowntime}
+              {dynamicAvoidedDowntime}
               <span className="text-base font-normal font-sans text-slate-500 dark:text-slate-400 ml-2">
                 saved in avoided downtime
               </span>
@@ -576,6 +592,163 @@ export default function UsageClient() {
             </Link>
           </div>
         </div>
+
+        {/* Section 3: Active API & Telemetry Integrations (User-Configured Services) */}
+        {(() => {
+          const ch = currentOrg?.setup_checklist;
+          const integrationsList = [
+            {
+              id: 'sentry',
+              name: 'Sentry Telemetry Monitoring',
+              type: 'Crash Telemetry Ingress',
+              icon: Radio,
+              connected: Boolean(ch?.sentry_connected || ch?.sentry_dsn || isAcme),
+              value: ch?.sentry_dsn ? `DSN: ${ch.sentry_dsn.slice(0, 18)}...` : (isAcme ? 'Inbound Webhook Connected' : (ch?.sentry_inbound_url ? 'Webhook Ingest Active' : 'Not Configured')),
+              badge: ch?.sentry_connected || isAcme ? 'Connected' : 'Pending',
+              color: 'rose',
+            },
+            {
+              id: 'nvidia',
+              name: 'NVIDIA NIM (Nemotron-3)',
+              type: 'Fast Triage & MoE Engine',
+              icon: Cpu,
+              connected: Boolean(ch?.nvidia_nim_connected || ch?.nvidia_nim_api_key || isAcme),
+              value: ch?.nvidia_nim_api_key ? `nvapi-••••${ch.nvidia_nim_api_key.slice(-4)}` : (isAcme ? 'Server Fallback #1 Active' : 'Platform Default'),
+              badge: ch?.nvidia_nim_api_key ? 'BYOK Custom' : 'Platform Included',
+              color: 'emerald',
+            },
+            {
+              id: 'nebius',
+              name: 'Nebius Firecracker MicroVM',
+              type: 'Isolated AST Sandbox Execution',
+              icon: Zap,
+              connected: Boolean(ch?.ai_connected || ch?.nebius_api_key || isAcme),
+              value: ch?.nebius_api_key ? `neb-••••${ch.nebius_api_key.slice(-4)}` : (isAcme ? 'neb-••••live' : 'Active (Cluster Node)'),
+              badge: 'Operational',
+              color: 'indigo',
+            },
+            {
+              id: 'gemini',
+              name: 'Google Gemini 2.5 Flash',
+              type: 'Low-Latency Triage Fallback',
+              icon: Layers,
+              connected: Boolean(ch?.google_connected || ch?.google_api_key || isAcme),
+              value: ch?.google_api_key ? `AIzaSy••••${ch.google_api_key.slice(-4)}` : (isAcme ? 'Server Fallback #2 Active' : 'Available'),
+              badge: ch?.google_api_key ? 'BYOK Custom' : 'Fallback Active',
+              color: 'indigo',
+            },
+            {
+              id: 'openai',
+              name: 'OpenAI (GPT-4o / Mini)',
+              type: 'High-Precision Code Synthesis',
+              icon: Key,
+              connected: Boolean(ch?.openai_connected || ch?.openai_api_key || (isAcme && breakdown.some(b => b.provider === 'openai'))),
+              value: ch?.openai_api_key ? `sk-••••${ch.openai_api_key.slice(-4)}` : (isAcme ? 'sk-••••mini' : 'Not Configured'),
+              badge: ch?.openai_api_key || isAcme ? 'BYOK Active' : 'Inactive',
+              color: 'slate',
+            },
+            {
+              id: 'anthropic',
+              name: 'Anthropic (Claude 3.5 Sonnet)',
+              type: 'Deep Frontier Reasoning',
+              icon: Terminal,
+              connected: Boolean(ch?.anthropic_connected || ch?.anthropic_api_key || (isAcme && breakdown.some(b => b.provider === 'anthropic'))),
+              value: ch?.anthropic_api_key ? `sk-ant-••••${ch.anthropic_api_key.slice(-4)}` : (isAcme ? 'sk-ant-••••2024' : 'Not Configured'),
+              badge: ch?.anthropic_api_key || isAcme ? 'BYOK Active' : 'Inactive',
+              color: 'purple',
+            },
+            {
+              id: 'tavily',
+              name: 'Tavily Diagnostic Search',
+              type: 'Real-Time Documentation Grounding',
+              icon: Search,
+              connected: Boolean(ch?.tavily_connected || ch?.tavily_api_key || isAcme),
+              value: ch?.tavily_api_key ? `tvly-••••${ch.tavily_api_key.slice(-4)}` : (isAcme ? 'tvly-••••prod' : 'Not Configured'),
+              badge: ch?.tavily_connected || isAcme ? 'Grounding Active' : 'Inactive',
+              color: 'indigo',
+            },
+            {
+              id: 'notifications',
+              name: 'Outbound Notifications',
+              type: 'Slack & PagerDuty Alert Dispatch',
+              icon: Shield,
+              connected: Boolean(ch?.slack_webhook || ch?.pagerduty_key || (isAcme && ch?.notifications_connected)),
+              value: ch?.slack_webhook ? 'Slack Webhook Active' : (isAcme ? 'Slack & PagerDuty Active' : 'Not Configured'),
+              badge: ch?.slack_webhook || ch?.pagerduty_key || isAcme ? 'Active' : 'Unconfigured',
+              color: 'emerald',
+            },
+          ];
+
+          const activeCount = integrationsList.filter(i => i.connected).length;
+
+          return (
+            <div className="glass-card rounded-2xl border border-slate-200/80 dark:border-white/10 p-5 space-y-4 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/5">
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-indigo-500" />
+                    <span>Configured API Integrations &amp; Connectors</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Real-time status of user telemetry sources, AI provider keys and outbound integrations
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    {activeCount} of {integrationsList.length} Connected
+                  </span>
+                  <Link
+                    href="/settings"
+                    className="text-xs font-semibold px-3 py-1 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition-colors"
+                  >
+                    Manage Settings →
+                  </Link>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {integrationsList.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div
+                      key={item.id}
+                      className="p-3.5 rounded-xl border border-slate-200/70 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.015] hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                          item.connected
+                            ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20'
+                            : 'bg-slate-100 dark:bg-white/5 text-slate-400 border border-slate-200 dark:border-white/10'
+                        }`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-xs text-slate-900 dark:text-white truncate">
+                            {item.name}
+                          </div>
+                          <div className="text-[11px] font-mono text-slate-400 truncate mt-0.5">
+                            {item.value}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                          item.connected
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                            : 'bg-slate-100 dark:bg-white/5 text-slate-400 border border-slate-200 dark:border-white/10'
+                        }`}>
+                          {item.badge}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
       </main>
 
       <FloatingDock />

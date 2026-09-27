@@ -583,6 +583,74 @@ export default function LandingPage() {
           >
             Free during public beta • No credit card required • 5-minute setup
           </motion.p>
+
+          {/* Creative Minimalistic Hero Element: Self-Healing Pipeline Pulse */}
+          <motion.div
+            initial={{ opacity: 0, y: 25 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.75, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-4xl mx-auto mt-6 p-4 sm:p-5 rounded-2xl bg-white/80 dark:bg-[#0A0D14]/80 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 shadow-xl"
+          >
+            {/* Minimal Header */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/5">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                </span>
+                <span className="font-mono text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
+                  Autonomous Remediation Lifecycle
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                  Zero Human In Loop
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                <span>Avg MTTR: <strong className="text-slate-900 dark:text-white font-bold">1m 42s</strong></span>
+                <span>•</span>
+                <span>Accuracy: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">99.4%</strong></span>
+              </div>
+            </div>
+
+            {/* Pipeline Stage Pills */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/5 hover:border-rose-500/40 transition-all text-left">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold text-rose-500 uppercase">01 • Ingest</span>
+                  <span className="text-[10px] font-mono text-slate-400">14ms</span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white mt-1">Sentry Ingest</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Fingerprint extraction</div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/5 hover:border-indigo-500/40 transition-all text-left">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold text-indigo-500 uppercase">02 • Reason</span>
+                  <span className="text-[10px] font-mono text-slate-400">1.4s</span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white mt-1">Nemotron MoE</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Deterministic AST fix</div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/5 hover:border-cyan-500/40 transition-all text-left">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold text-cyan-500 uppercase">03 • Verify</span>
+                  <span className="text-[10px] font-mono text-slate-400">18/18</span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white mt-1">MicroVM Jest</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Zero blast radius gate</div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/5 hover:border-emerald-500/40 transition-all text-left">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold text-emerald-500 uppercase">04 • Deploy</span>
+                  <span className="text-[10px] font-mono text-emerald-500 font-bold">100% Live</span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white mt-1">Canary Promote</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">0.00% Error rate</div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -631,12 +699,13 @@ export default function LandingPage() {
 
       {/* 3. INTERACTIVE LIVE REMEDIATION SIMULATOR (DEMO IN THE LANDING PAGE) */}
       <section id="demo" className="py-12 sm:py-16 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Desktop Interactive Simulator */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.05 }}
           transition={{ duration: 0.6 }}
-          className="liquid-glass rounded-3xl border border-[#E8E3D9] dark:border-white/10 overflow-hidden shadow-2xl relative"
+          className="hidden md:block liquid-glass rounded-3xl border border-[#E8E3D9] dark:border-white/10 overflow-hidden shadow-2xl relative"
         >
           {/* Window Chrome Header */}
           <div className="px-5 py-3.5 bg-slate-100/90 dark:bg-[#0A0A0A] border-b border-[#E8E3D9] dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
@@ -990,6 +1059,163 @@ export default function LandingPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Mobile-Only Render/Vercel-Inspired Minimalist Card */}
+        <div className="block md:hidden p-5 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/10 shadow-xl space-y-4">
+          {/* Top Bar with Stage Badge and Action */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+                Step {simStep + 1} of 4
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">
+                {simStep === 0 ? 'Crash' : simStep === 1 ? 'AST Fix' : simStep === 2 ? 'MicroVM' : 'Canary'}
+              </span>
+            </div>
+            <button
+              onClick={() => setIsSimPlaying((p) => !p)}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-slate-300 flex items-center gap-1.5 transition-colors"
+            >
+              {isSimPlaying ? <Pause className="w-3 h-3 text-amber-500" /> : <Play className="w-3 h-3 text-emerald-500 fill-emerald-500" />}
+              <span>{isSimPlaying ? 'Pause' : 'Auto'}</span>
+            </button>
+          </div>
+
+          {/* 4 Clean Segmented Progress Bars */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {[0, 1, 2, 3].map((stepIdx) => (
+              <button
+                key={stepIdx}
+                onClick={() => {
+                  setSimStep(stepIdx);
+                  setIsSimPlaying(false);
+                }}
+                className={`h-1.5 rounded-full transition-all ${
+                  simStep === stepIdx
+                    ? stepIdx === 0
+                      ? 'bg-rose-500'
+                      : stepIdx === 1
+                      ? 'bg-indigo-500'
+                      : stepIdx === 2
+                      ? 'bg-cyan-500'
+                      : 'bg-emerald-500'
+                    : simStep > stepIdx
+                    ? 'bg-emerald-500/50'
+                    : 'bg-slate-200 dark:bg-white/10'
+                }`}
+                aria-label={`Jump to step ${stepIdx + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Dynamic Step Content */}
+          <div className="space-y-3 pt-1">
+            {simStep === 0 && (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                    SEV-1 CRITICAL
+                  </span>
+                  <span className="text-rose-500 font-mono font-bold text-xs">14.8% Error Rate</span>
+                </div>
+                <div className="font-bold text-sm text-slate-900 dark:text-white">
+                  auth-service: Unhandled TypeError
+                </div>
+                <div className="p-3 rounded-xl bg-[#0B0F19] border border-slate-800 text-[11px] font-mono text-rose-300 leading-relaxed overflow-x-auto">
+                  <div>TypeError: Cannot read properties of undefined (reading &apos;tenantId&apos;)</div>
+                  <div className="text-slate-500 text-[10px] mt-1.5">at verifySessionToken (tokenService.ts:68) • 14ms Ingest</div>
+                </div>
+              </div>
+            )}
+
+            {simStep === 1 && (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+                    AST REASONING
+                  </span>
+                  <span className="text-indigo-500 font-mono font-bold text-xs">99.4% Confidence</span>
+                </div>
+                <div className="font-bold text-sm text-slate-900 dark:text-white">
+                  NVIDIA Nemotron 550B MoE Hotfix
+                </div>
+                <div className="p-3 rounded-xl bg-[#0B0F19] border border-slate-800 text-[11px] font-mono leading-relaxed overflow-x-auto space-y-1">
+                  <div className="text-rose-400 bg-rose-500/15 px-2 py-0.5 rounded">- const tenant = payload.organization.tenantId;</div>
+                  <div className="text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded">+ const tenant = payload?.organization?.tenantId || &apos;default-tenant&apos;;</div>
+                </div>
+              </div>
+            )}
+
+            {simStep === 2 && (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
+                    MICROVM SANDBOX
+                  </span>
+                  <span className="text-cyan-500 font-mono font-bold text-xs">18/18 Tests Passed</span>
+                </div>
+                <div className="font-bold text-sm text-slate-900 dark:text-white">
+                  Firecracker MicroVM Jest Gate
+                </div>
+                <div className="p-3 rounded-xl bg-[#0B0F19] border border-slate-800 text-[11px] font-mono text-emerald-400 space-y-1">
+                  <div>✓ resolves session when org present (12ms)</div>
+                  <div>✓ isolates undefined tenantId gracefully (15ms)</div>
+                  <div className="text-cyan-300 font-semibold text-[10px] pt-1">Safe-Deploy Gate: APPROVED (2.1s)</div>
+                </div>
+              </div>
+            )}
+
+            {simStep === 3 && (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    CANARY LIVE
+                  </span>
+                  <span className="text-emerald-500 font-mono font-bold text-xs">0.00% Error Rate</span>
+                </div>
+                <div className="font-bold text-sm text-slate-900 dark:text-white">
+                  Automated Envoy Weight Promotion
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs space-y-2">
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-500">Remediation MTTR:</span>
+                    <strong className="text-emerald-600 dark:text-emerald-400 font-mono">1m 42s</strong>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-500">Live Traffic Weight:</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-mono">{canarySliderValue}% Hotfix</strong>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-500">P99 Latency:</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-mono">38ms</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Stepper Footer Action */}
+          <div className="pt-2 flex items-center justify-between border-t border-slate-100 dark:border-white/5">
+            <button
+              onClick={() => setSimStep(0)}
+              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center gap-1"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset</span>
+            </button>
+            <button
+              onClick={() => setSimStep((prev) => (prev + 1) % 4)}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5 transition-all shadow-xs"
+            >
+              <span>{simStep === 3 ? 'Loop Demo' : 'Next Step'}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* 4. LIVE ANIMATED SVG TELEMETRY GRAPHS */}
@@ -1893,7 +2119,7 @@ export default function LandingPage() {
       </section>
 
       {/* 11. Footer (Render-Style Clean Multi-Column Layout) */}
-      <footer className="border-t border-slate-200 dark:border-white/10 py-16 text-xs text-slate-500 dark:text-neutral-400 bg-[#FAF8F5] dark:bg-[#070709] transition-colors">
+      <footer id="footer" className="border-t border-slate-200 dark:border-white/10 py-16 text-xs text-slate-500 dark:text-neutral-400 bg-[#FAF8F5] dark:bg-[#070709] transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 sm:gap-12 pb-12 border-b border-slate-200 dark:border-white/10">
             {/* Col 1 & 2: Brand Lockup & Summary */}

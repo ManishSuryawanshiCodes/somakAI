@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Organization, Invite, SetupChecklist } from '@/lib/types';
+export type { SetupChecklist };
 import { useAuth, UserRole } from './AuthContext';
 import * as api from '@/lib/api';
 
@@ -127,10 +128,16 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
 
       if (matched) {
         setCurrentOrg(matched.organization);
+        try {
+          localStorage.setItem('somak_active_org_id', matched.organization.id);
+          localStorage.setItem('sentryops_active_org', matched.organization.id);
+        } catch {}
       } else if (combined.length > 0) {
         setCurrentOrg(combined[0].organization);
         try {
           localStorage.setItem(`sentryops_active_org_${user.id}`, combined[0].organization.id);
+          localStorage.setItem('somak_active_org_id', combined[0].organization.id);
+          localStorage.setItem('sentryops_active_org', combined[0].organization.id);
         } catch {}
       } else {
         setCurrentOrg(null);
@@ -167,11 +174,13 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     const found = userOrgs.find((o) => o.organization.id === orgId);
     if (found) {
       setCurrentOrg(found.organization);
-      if (user) {
-        try {
+      try {
+        localStorage.setItem('somak_active_org_id', orgId);
+        localStorage.setItem('sentryops_active_org', orgId);
+        if (user) {
           localStorage.setItem(`sentryops_active_org_${user.id}`, orgId);
-        } catch {}
-      }
+        }
+      } catch {}
       // Load invites for new org
       api.getOrganizationInvites(orgId).then((data) => {
         if (data) setInvites(data);

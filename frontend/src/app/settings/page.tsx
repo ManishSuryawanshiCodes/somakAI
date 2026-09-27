@@ -26,13 +26,19 @@ import {
   Zap,
   GitBranch,
   Cpu,
+  Clock,
+  Copy,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
 import MiniSparkline from '@/components/MiniSparkline';
 import { useAuth, UserRole } from '@/context/AuthContext';
 import { useToast } from '@/components/ToastProvider';
-import { useOrg } from '@/context/OrgContext';
+import { useOrg, SetupChecklist } from '@/context/OrgContext';
 import { getOrganizationMembers } from '@/lib/api';
 import {
   getServiceRepoMappings,
@@ -202,12 +208,32 @@ const BYOK_PROVIDERS = [
 function SettingsContent() {
   const { user } = useAuth();
   const { showToast } = useToast();
-  const { currentOrg, updateChecklist } = useOrg();
+  const { currentOrg, updateChecklist, createInvites } = useOrg();
 
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SubTab>('general');
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Real-time ticking clock for multi-timeline
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Guided Activation Accordion states (Minimalistic design from onboarding)
+  const [expandedSetupId, setExpandedSetupId] = useState<string | null>(null);
+  const [setupSentryDsn, setSetupSentryDsn] = useState('');
+  const [setupAiProvider, setSetupAiProvider] = useState('nvidia_nim');
+  const [setupAiKey, setSetupAiKey] = useState('');
+  const [setupTavilyKey, setSetupTavilyKey] = useState('');
+  const [setupSlackWebhook, setSetupSlackWebhook] = useState('');
+  const [setupPagerdutyKey, setSetupPagerdutyKey] = useState('');
+  const [setupInviteEmail, setSetupInviteEmail] = useState('');
+  const [setupInviteRole, setSetupInviteRole] = useState<UserRole>('Operator');
+  const [setupCopiedWebhook, setSetupCopiedWebhook] = useState(false);
+  const [savingSetupId, setSavingSetupId] = useState<string | null>(null);
 
   // BYOK Multi-Provider & Model State
   const checklist = currentOrg?.setup_checklist;
@@ -228,6 +254,10 @@ function SettingsContent() {
       if (ch.triage_provider) setPreferredProvider(ch.triage_provider);
       if (ch.triage_model) setSelectedTriageModel(ch.triage_model);
       if (ch.synthesis_model) setSelectedSynthesisModel(ch.synthesis_model);
+      if (ch.sentry_dsn) setSetupSentryDsn(ch.sentry_dsn);
+      if (ch.tavily_api_key) setSetupTavilyKey(ch.tavily_api_key);
+      if (ch.slack_webhook) setSetupSlackWebhook(ch.slack_webhook);
+      if (ch.pagerduty_key) setSetupPagerdutyKey(ch.pagerduty_key);
     }
   }, [currentOrg]);
 
@@ -615,7 +645,531 @@ function SettingsContent() {
         {/* TAB 1: GENERAL */}
         {/* ======================================================== */}
         {activeTab === 'general' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Guided Activation & Setup Checklist (Minimalist Design from Onboarding) */}
+            {(() => {
+              const ch: Partial<SetupChecklist> = currentOrg?.setup_checklist || {};
+              const isSentryDone = Boolean(ch.sentry_connected || ch.sentry_dsn);
+              const isAiDone = Boolean(
+                ch.ai_connected ||
+                ch.ai_api_key ||
+                ch.nvidia_nim_connected ||
+                ch.nebius_api_key ||
+                ch.google_connected ||
+                ch.anthropic_connected ||
+                ch.openai_connected
+              );
+              const isTavilyDone = Boolean(ch.tavily_connected || ch.tavily_api_key);
+              const isNotifDone = Boolean(ch.notifications_connected || ch.slack_webhook || ch.pagerduty_key);
+              const isTeamDone = Boolean(ch.team_invited || (members && members.length > 1));
+
+              const completedCount = [isSentryDone, isAiDone, isTavilyDone, isNotifDone, isTeamDone].filter(Boolean).length;
+              const percent = Math.round((completedCount / 5) * 100);
+              const webhookUrl = ch.sentry_inbound_url || `https://api.somak.ai/v1/webhook/ingest/${currentOrg?.slug || 'workspace'}`;
+
+              return (
+                <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-white/5">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/20">
+                          Guided Activation
+                        </span>
+                        <span className="text-xs text-slate-400">•</span>
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          Configure {orgName || currentOrg?.name || 'Workspace'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Connect your telemetry sources and AI credentials. All integrations sync live across your workspace.
+                      </p>
+                    </div>
+
+                    <div className="sm:w-64 space-y-1.5 shrink-0">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Setup Progress</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">
+                          {completedCount} of 5 completed ({percent}%)
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-600 transition-all duration-500 rounded-full"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 5 Minimalist Accordion Step Cards */}
+                  <div className="space-y-3">
+                    {/* Step 1: Connect error monitoring */}
+                    <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] overflow-hidden transition-all">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedSetupId(expandedSetupId === 'sentry' ? null : 'sentry')}
+                        className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            isSentryDone ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'
+                          }`}>
+                            {isSentryDone ? <Check className="w-3.5 h-3.5" /> : '1'}
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900 dark:text-white">
+                              Connect error monitoring
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              This is how Somak AI finds out when something breaks in real-time.
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isSentryDone && (
+                            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                              Connected
+                            </span>
+                          )}
+                          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${
+                            expandedSetupId === 'sentry' ? 'rotate-180' : ''
+                          }`} />
+                        </div>
+                      </button>
+
+                      {expandedSetupId === 'sentry' && (
+                        <div className="p-4 pt-0 border-t border-slate-100 dark:border-white/5 space-y-3 text-xs">
+                          <div>
+                            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                              Option A: Inbound Webhook URL (for Sentry Alerts)
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                readOnly
+                                value={webhookUrl}
+                                className="flex-1 bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-200"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(webhookUrl);
+                                  setSetupCopiedWebhook(true);
+                                  showToast('Inbound Webhook URL copied', 'success');
+                                  setTimeout(() => setSetupCopiedWebhook(false), 2000);
+                                }}
+                                className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-slate-300 font-medium flex items-center gap-1.5 transition-colors shrink-0"
+                              >
+                                {setupCopiedWebhook ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                <span>{setupCopiedWebhook ? 'Copied' : 'Copy URL'}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                              Option B: Sentry Project DSN or Webhook Secret (optional)
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                placeholder="https://o123456@sentry.io/789012"
+                                value={setupSentryDsn}
+                                onChange={(e) => setSetupSentryDsn(e.target.value)}
+                                className="flex-1 bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                              <button
+                                type="button"
+                                disabled={savingSetupId === 'sentry'}
+                                onClick={async () => {
+                                  setSavingSetupId('sentry');
+                                  try {
+                                    await updateChecklist({
+                                      sentry_dsn: setupSentryDsn,
+                                      sentry_connected: Boolean(setupSentryDsn.trim() || webhookUrl),
+                                    });
+                                    showToast('Error monitoring configuration updated', 'success');
+                                    setExpandedSetupId('ai');
+                                  } catch {
+                                    showToast('Failed to save Sentry settings', 'error');
+                                  } finally {
+                                    setSavingSetupId(null);
+                                  }
+                                }}
+                                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-xs shrink-0 disabled:opacity-50"
+                              >
+                                {savingSetupId === 'sentry' ? 'Saving...' : 'Save & Continue'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Step 2: Connect an AI provider */}
+                    <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] overflow-hidden transition-all">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedSetupId(expandedSetupId === 'ai' ? null : 'ai')}
+                        className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            isAiDone ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'
+                          }`}>
+                            {isAiDone ? <Check className="w-3.5 h-3.5" /> : '2'}
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900 dark:text-white">
+                              Connect an AI provider
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              Powers automatic triage, root cause reasoning, and verified AST fix generation.
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isAiDone && (
+                            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                              Connected
+                            </span>
+                          )}
+                          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${
+                            expandedSetupId === 'ai' ? 'rotate-180' : ''
+                          }`} />
+                        </div>
+                      </button>
+
+                      {expandedSetupId === 'ai' && (
+                        <div className="p-4 pt-0 border-t border-slate-100 dark:border-white/5 space-y-3 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                                Provider
+                              </label>
+                              <select
+                                value={setupAiProvider}
+                                onChange={(e) => setSetupAiProvider(e.target.value)}
+                                className="w-full bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
+                              >
+                                <option value="nvidia_nim">NVIDIA NIM (Nemotron 3 Super/Ultra)</option>
+                                <option value="nebius">Nebius AI Studio</option>
+                                <option value="gemini">Google Gemini 2.5 Flash / Pro</option>
+                                <option value="openai">OpenAI (GPT-4o)</option>
+                                <option value="anthropic">Anthropic (Claude 3.5 Sonnet)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                                API Key (BYOK)
+                              </label>
+                              <input
+                                type="password"
+                                placeholder={setupAiProvider === 'nvidia_nim' ? 'nvapi-...' : 'sk-...'}
+                                value={setupAiKey}
+                                onChange={(e) => setSetupAiKey(e.target.value)}
+                                className="w-full bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              disabled={savingSetupId === 'ai'}
+                              onClick={async () => {
+                                setSavingSetupId('ai');
+                                try {
+                                  const payload: Record<string, any> = {
+                                    triage_provider: setupAiProvider,
+                                    synthesis_provider: setupAiProvider,
+                                  };
+                                  if (setupAiKey.trim()) {
+                                    if (setupAiProvider === 'nvidia_nim') {
+                                      payload.nvidia_nim_api_key = setupAiKey.trim();
+                                      payload.nvidia_nim_connected = true;
+                                    } else if (setupAiProvider === 'nebius') {
+                                      payload.nebius_api_key = setupAiKey.trim();
+                                      payload.ai_connected = true;
+                                    } else if (setupAiProvider === 'gemini') {
+                                      payload.google_api_key = setupAiKey.trim();
+                                      payload.google_connected = true;
+                                    } else if (setupAiProvider === 'openai') {
+                                      payload.openai_api_key = setupAiKey.trim();
+                                      payload.openai_connected = true;
+                                    } else if (setupAiProvider === 'anthropic') {
+                                      payload.anthropic_api_key = setupAiKey.trim();
+                                      payload.anthropic_connected = true;
+                                    }
+                                  }
+                                  await updateChecklist(payload);
+                                  showToast('AI Provider credentials updated', 'success');
+                                  setSetupAiKey('');
+                                  setExpandedSetupId('tavily');
+                                } catch (err: any) {
+                                  showToast('Failed to save AI settings: ' + (err?.message || ''), 'error');
+                                } finally {
+                                  setSavingSetupId(null);
+                                }
+                              }}
+                              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-xs disabled:opacity-50"
+                            >
+                              {savingSetupId === 'ai' ? 'Saving...' : 'Save & Continue'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Step 3: Connect Tavily search */}
+                    <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] overflow-hidden transition-all">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedSetupId(expandedSetupId === 'tavily' ? null : 'tavily')}
+                        className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            isTavilyDone ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'
+                          }`}>
+                            {isTavilyDone ? <Check className="w-3.5 h-3.5" /> : '3'}
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900 dark:text-white">
+                              Connect Tavily search <span className="font-normal text-slate-400">(optional)</span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              Lets the AI research real fixes and official documentation instead of guessing.
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isTavilyDone && (
+                            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                              Connected
+                            </span>
+                          )}
+                          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${
+                            expandedSetupId === 'tavily' ? 'rotate-180' : ''
+                          }`} />
+                        </div>
+                      </button>
+
+                      {expandedSetupId === 'tavily' && (
+                        <div className="p-4 pt-0 border-t border-slate-100 dark:border-white/5 space-y-3 text-xs">
+                          <div>
+                            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                              Tavily Search API Key
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="password"
+                                placeholder="tvly-..."
+                                value={setupTavilyKey}
+                                onChange={(e) => setSetupTavilyKey(e.target.value)}
+                                className="flex-1 bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                              <button
+                                type="button"
+                                disabled={savingSetupId === 'tavily'}
+                                onClick={async () => {
+                                  setSavingSetupId('tavily');
+                                  try {
+                                    await updateChecklist({
+                                      tavily_api_key: setupTavilyKey,
+                                      tavily_connected: Boolean(setupTavilyKey.trim()),
+                                    });
+                                    showToast('Tavily Search API key saved', 'success');
+                                    setExpandedSetupId('notifications');
+                                  } catch {
+                                    showToast('Failed to save Tavily key', 'error');
+                                  } finally {
+                                    setSavingSetupId(null);
+                                  }
+                                }}
+                                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-xs shrink-0 disabled:opacity-50"
+                              >
+                                {savingSetupId === 'tavily' ? 'Saving...' : 'Save & Continue'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Step 4: Connect notifications */}
+                    <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] overflow-hidden transition-all">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedSetupId(expandedSetupId === 'notifications' ? null : 'notifications')}
+                        className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            isNotifDone ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'
+                          }`}>
+                            {isNotifDone ? <Check className="w-3.5 h-3.5" /> : '4'}
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900 dark:text-white">
+                              Connect notifications
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              Deliver critical outage alerts and deployment approvals directly to your team.
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isNotifDone && (
+                            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                              Connected
+                            </span>
+                          )}
+                          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${
+                            expandedSetupId === 'notifications' ? 'rotate-180' : ''
+                          }`} />
+                        </div>
+                      </button>
+
+                      {expandedSetupId === 'notifications' && (
+                        <div className="p-4 pt-0 border-t border-slate-100 dark:border-white/5 space-y-3 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                                Slack Incoming Webhook
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="https://hooks.slack.com/services/..."
+                                value={setupSlackWebhook}
+                                onChange={(e) => setSetupSlackWebhook(e.target.value)}
+                                className="w-full bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                                PagerDuty Routing / Events Key
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="pd-key-..."
+                                value={setupPagerdutyKey}
+                                onChange={(e) => setSetupPagerdutyKey(e.target.value)}
+                                className="w-full bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              disabled={savingSetupId === 'notifications'}
+                              onClick={async () => {
+                                setSavingSetupId('notifications');
+                                try {
+                                  await updateChecklist({
+                                    slack_webhook: setupSlackWebhook,
+                                    pagerduty_key: setupPagerdutyKey,
+                                    notifications_connected: Boolean(setupSlackWebhook.trim() || setupPagerdutyKey.trim()),
+                                  });
+                                  showToast('Notification channels updated', 'success');
+                                  setExpandedSetupId('team');
+                                } catch {
+                                  showToast('Failed to save notification channels', 'error');
+                                } finally {
+                                  setSavingSetupId(null);
+                                }
+                              }}
+                              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-xs disabled:opacity-50"
+                            >
+                              {savingSetupId === 'notifications' ? 'Saving...' : 'Save & Continue'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Step 5: Invite your team */}
+                    <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] overflow-hidden transition-all">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedSetupId(expandedSetupId === 'team' ? null : 'team')}
+                        className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            isTeamDone ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'
+                          }`}>
+                            {isTeamDone ? <Check className="w-3.5 h-3.5" /> : '5'}
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900 dark:text-white">
+                              Invite your team
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              Invite your SRE and DevOps engineers with custom RBAC roles.
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isTeamDone && (
+                            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                              Active ({members.length})
+                            </span>
+                          )}
+                          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${
+                            expandedSetupId === 'team' ? 'rotate-180' : ''
+                          }`} />
+                        </div>
+                      </button>
+
+                      {expandedSetupId === 'team' && (
+                        <div className="p-4 pt-0 border-t border-slate-100 dark:border-white/5 space-y-3 text-xs">
+                          <div className="flex flex-col sm:flex-row items-center gap-2">
+                            <input
+                              type="email"
+                              placeholder="colleague@company.com"
+                              value={setupInviteEmail}
+                              onChange={(e) => setSetupInviteEmail(e.target.value)}
+                              className="flex-1 w-full bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            />
+                            <select
+                              value={setupInviteRole}
+                              onChange={(e) => setSetupInviteRole(e.target.value as UserRole)}
+                              className="w-full sm:w-32 bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
+                            >
+                              <option value="Admin">Admin</option>
+                              <option value="Operator">Operator</option>
+                              <option value="Viewer">Viewer</option>
+                            </select>
+                            <button
+                              type="button"
+                              disabled={savingSetupId === 'team' || !setupInviteEmail.trim()}
+                              onClick={async () => {
+                                setSavingSetupId('team');
+                                try {
+                                  await createInvites([setupInviteEmail.trim()], setupInviteRole);
+                                  await updateChecklist({ team_invited: true });
+                                  showToast(`Invitation sent to ${setupInviteEmail.trim()}`, 'success');
+                                  setSetupInviteEmail('');
+                                  setExpandedSetupId(null);
+                                } catch {
+                                  showToast('Failed to send team invitation', 'error');
+                                } finally {
+                                  setSavingSetupId(null);
+                                }
+                              }}
+                              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-xs shrink-0 disabled:opacity-50"
+                            >
+                              {savingSetupId === 'team' ? 'Sending...' : 'Send Invite'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-6">
               <div>
                 <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
@@ -671,27 +1225,89 @@ function SettingsContent() {
                 </div>
 
                 {/* Field 3: Timezone */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-white/5">
-                  <div className="sm:w-1/3">
-                    <label className="font-semibold text-slate-800 dark:text-slate-200">
-                      Primary Timezone
-                    </label>
-                    <p className="text-[11px] text-slate-400">Used for incident timestamps and shift rotas.</p>
+                <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-white/5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="sm:w-1/3">
+                      <label className="font-semibold text-slate-800 dark:text-slate-200">
+                        Primary Timezone
+                      </label>
+                      <p className="text-[11px] text-slate-400">Used for incident timestamps and shift rotas.</p>
+                    </div>
+                    <select
+                      value={timezone}
+                      onChange={(e) => {
+                        setTimezone(e.target.value);
+                        markDirty();
+                      }}
+                      className="sm:w-2/3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
+                    >
+                      <option value="Asia/Kolkata (IST - GMT+05:30)">Asia/Kolkata (IST - GMT+05:30)</option>
+                      <option value="UTC (GMT+00:00)">UTC (GMT+00:00)</option>
+                      <option value="America/New_York (EST - GMT-05:00)">America/New_York (EST - GMT-05:00)</option>
+                      <option value="America/Los_Angeles (PST - GMT-08:00)">America/Los_Angeles (PST - GMT-08:00)</option>
+                      <option value="America/Chicago (CST - GMT-06:00)">America/Chicago (CST - GMT-06:00)</option>
+                      <option value="Europe/London (BST/GMT - GMT+01:00)">Europe/London (BST/GMT - GMT+01:00)</option>
+                      <option value="Europe/Berlin (CET - GMT+02:00)">Europe/Berlin (CET - GMT+02:00)</option>
+                      <option value="Asia/Dubai (GST - GMT+04:00)">Asia/Dubai (GST - GMT+04:00)</option>
+                      <option value="Asia/Singapore (SGT - GMT+08:00)">Asia/Singapore (SGT - GMT+08:00)</option>
+                      <option value="Asia/Tokyo (JST - GMT+09:00)">Asia/Tokyo (JST - GMT+09:00)</option>
+                      <option value="Australia/Sydney (AEST - GMT+10:00)">Australia/Sydney (AEST - GMT+10:00)</option>
+                    </select>
                   </div>
-                  <select
-                    value={timezone}
-                    onChange={(e) => {
-                      setTimezone(e.target.value);
-                      markDirty();
-                    }}
-                    className="sm:w-2/3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
-                  >
-                    <option value="UTC (GMT+00:00)">UTC (GMT+00:00)</option>
-                    <option value="America/New_York (EST)">America/New_York (EST)</option>
-                    <option value="America/Los_Angeles (PST)">America/Los_Angeles (PST)</option>
-                    <option value="Europe/London (BST)">Europe/London (BST)</option>
-                    <option value="Asia/Tokyo (JST)">Asia/Tokyo (JST)</option>
-                  </select>
+
+                  {/* Live Real-Time Multi-Timeline Clock Card */}
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
+                          Live Operational Timelines
+                        </span>
+                      </div>
+                      {timezone !== 'Asia/Kolkata (IST - GMT+05:30)' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTimezone('Asia/Kolkata (IST - GMT+05:30)');
+                            markDirty();
+                          }}
+                          className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 hover:underline"
+                        >
+                          Quick Switch to IST
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono">
+                      <div className="p-2.5 rounded-lg bg-white dark:bg-black/40 border border-slate-200/60 dark:border-white/5">
+                        <div className="text-[10px] text-slate-400 uppercase tracking-wider">India Standard Time</div>
+                        <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                          {currentTime.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })}
+                        </div>
+                        <div className="text-[10px] text-emerald-500 font-semibold mt-0.5">GMT+05:30 (IST)</div>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-white dark:bg-black/40 border border-slate-200/60 dark:border-white/5">
+                        <div className="text-[10px] text-slate-400 uppercase tracking-wider">Workspace Selected</div>
+                        <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                          {(() => {
+                            try {
+                              const tzIana = timezone.split(' ')[0];
+                              return currentTime.toLocaleTimeString('en-US', { timeZone: tzIana, hour12: true });
+                            } catch {
+                              return currentTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour12: true });
+                            }
+                          })()}
+                        </div>
+                        <div className="text-[10px] text-indigo-500 font-semibold mt-0.5 truncate">{timezone}</div>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-white dark:bg-black/40 border border-slate-200/60 dark:border-white/5">
+                        <div className="text-[10px] text-slate-400 uppercase tracking-wider">SRE Cloud Standard</div>
+                        <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                          {currentTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour12: false })}
+                        </div>
+                        <div className="text-[10px] text-cyan-500 font-semibold mt-0.5">GMT+00:00 (UTC)</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Field 4: Data Retention */}

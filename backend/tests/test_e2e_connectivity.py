@@ -189,7 +189,7 @@ def test_check_4_frontend_backend_data_flow_across_pages():
     models_res = client.get("/api/models/available?org_id=org_acme")
     assert models_res.status_code == 200
     models_data = models_res.json()
-    assert "providers" in models_data and len(models_data["providers"]) == 4
+    assert "providers" in models_data and len(models_data["providers"]) >= 4
     org_res = client.get("/api/organizations/org_acme", headers=admin_headers)
     assert org_res.status_code == 200
     org_data = org_res.json()

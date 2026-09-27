@@ -26,10 +26,30 @@ export class AccountLockedError extends Error {
 
 async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T | null> {
   try {
+    const token = typeof window !== 'undefined'
+      ? (localStorage.getItem('somak_session_token') || localStorage.getItem('sentryops_session_token'))
+      : null;
+    const activeOrgId = typeof window !== 'undefined'
+      ? (localStorage.getItem('somak_active_org_id') || localStorage.getItem('sentryops_active_org'))
+      : null;
+
+    const customHeaders = (options?.headers as Record<string, string>) || {};
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...customHeaders,
+    };
+
+    if (token && !headers['Authorization'] && !headers['authorization']) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (activeOrgId && !headers['x-org-id']) {
+      headers['x-org-id'] = activeOrgId;
+    }
+
     const res = await fetch(`${API_BASE}${url}`, {
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include', // Ensures HttpOnly session cookies are transmitted
       ...options,
+      headers,
     });
     if (!res.ok) {
       if (res.status === 429) {
@@ -54,11 +74,16 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T | nul
         throw new AccountLockedError(detail, parseInt(retryHeader, 10));
       }
       const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody?.detail || `HTTP ${res.status}`);
+      const errDetail = errBody?.detail || `HTTP ${res.status}`;
+      throw new Error(errDetail);
     }
     return await res.json();
   } catch (e) {
     if (e instanceof RateLimitError || e instanceof AccountLockedError) {
+      throw e;
+    }
+    // Always rethrow errors for authentication and verification endpoints so callers can handle invalid credentials
+    if (url.startsWith('/api/auth/') || url.includes('/signup') || url.includes('/login') || url.includes('/verify')) {
       throw e;
     }
     console.warn(`API call failed: ${url}`, e);
@@ -449,24 +474,29 @@ export async function getStreamToken() {
   });
 }
 
-export async function getSLOs() {
-  return fetchJSON<any[]>('/api/slo');
+export async function getSLOs(orgId?: string) {
+  const query = orgId ? `?org_id=${encodeURIComponent(orgId)}` : '';
+  return fetchJSON<any[]>(`/api/slo${query}`);
 }
 
-export async function getOnCallShifts() {
-  return fetchJSON<any[]>('/api/oncall/shifts');
+export async function getOnCallShifts(orgId?: string) {
+  const query = orgId ? `?org_id=${encodeURIComponent(orgId)}` : '';
+  return fetchJSON<any[]>(`/api/oncall/shifts${query}`);
 }
 
-export async function getRunbooks() {
-  return fetchJSON<any[]>('/api/runbooks');
+export async function getRunbooks(orgId?: string) {
+  const query = orgId ? `?org_id=${encodeURIComponent(orgId)}` : '';
+  return fetchJSON<any[]>(`/api/runbooks${query}`);
 }
 
-export async function getIntegrations() {
-  return fetchJSON<any[]>('/api/integrations');
+export async function getIntegrations(orgId?: string) {
+  const query = orgId ? `?org_id=${encodeURIComponent(orgId)}` : '';
+  return fetchJSON<any[]>(`/api/integrations${query}`);
 }
 
-export async function getHistory() {
-  return fetchJSON<any[]>('/api/history');
+export async function getHistory(orgId?: string) {
+  const query = orgId ? `?org_id=${encodeURIComponent(orgId)}` : '';
+  return fetchJSON<any[]>(`/api/history${query}`);
 }
 
 export async function getPublicStatus() {
