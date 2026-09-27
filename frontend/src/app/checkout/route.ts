@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Checkout } from '@dodopayments/nextjs';
 
+export const dynamic = 'force-dynamic';
+
 const bearerToken = process.env.DODO_PAYMENTS_API_KEY || '';
 const environment = (process.env.DODO_PAYMENTS_ENVIRONMENT as 'test_mode' | 'live_mode') || 'test_mode';
 const returnUrl = process.env.DODO_PAYMENTS_RETURN_URL || 'http://localhost:3000/checkout/success';

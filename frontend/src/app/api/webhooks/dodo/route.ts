@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Webhooks } from '@dodopayments/nextjs';
 import { Webhook, WebhookVerificationError } from 'standardwebhooks';
 
-const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY || '';
+export const dynamic = 'force-dynamic';
 
 // Idempotency cache to prevent duplicate processing during webhook retries
 const processedEvents = new Set<string>();
@@ -36,44 +36,52 @@ function recordAuditLog(action: string, result: 'Success' | 'Warning' | 'Blocked
   if (recentBillingAudits.length > 50) recentBillingAudits.pop();
 }
 
-// Built-in adapter handler
-const dodoWebhookHandler = Webhooks({
-  webhookKey,
-  onPaymentSucceeded: async (payload: any) => {
-    const orgId = payload?.data?.metadata?.org_id || 'org_acme';
-    const plan = payload?.data?.metadata?.plan_id || 'team';
-    recordAuditLog(`Subscription payment succeeded: Upgraded to ${plan.toUpperCase()} tier (25 seats active)`, 'Success');
-    console.log(`[Dodo Webhook] payment.succeeded for org: ${orgId}, plan: ${plan}`);
-  },
-  onSubscriptionActive: async (payload: any) => {
-    const orgId = payload?.data?.metadata?.org_id || 'org_acme';
-    const plan = payload?.data?.metadata?.plan_id || 'team';
-    recordAuditLog(`Subscription activated: ${plan.toUpperCase()} Plan with autonomous canary gates enabled`, 'Success');
-    console.log(`[Dodo Webhook] subscription.active for org: ${orgId}`);
-  },
-  onSubscriptionRenewed: async (payload: any) => {
-    const orgId = payload?.data?.metadata?.org_id || 'org_acme';
-    recordAuditLog('Subscription renewed: Monthly billing cycle successfully charged', 'Success');
-    console.log(`[Dodo Webhook] subscription.renewed for org: ${orgId}`);
-  },
-  onSubscriptionCancelled: async (payload: any) => {
-    const orgId = payload?.data?.metadata?.org_id || 'org_acme';
-    recordAuditLog('Subscription cancelled: Organization reverted to Developer/Free tier at period end', 'Warning');
-    console.log(`[Dodo Webhook] subscription.cancelled for org: ${orgId}`);
-  },
-  onPaymentFailed: async (payload: any) => {
-    const orgId = payload?.data?.metadata?.org_id || 'org_acme';
-    recordAuditLog('Payment failed for Acme Corp: Automated Dodo invoice retry scheduled', 'Blocked');
-    console.warn(`[Dodo Webhook] payment.failed for org: ${orgId}`);
-  },
-  onSubscriptionUpdated: async (payload: any) => {
-    const orgId = payload?.data?.metadata?.org_id || 'org_acme';
-    recordAuditLog('Subscription updated: Seat count or plan parameters modified', 'Success');
-    console.log(`[Dodo Webhook] subscription.updated for org: ${orgId}`);
-  },
-});
+// Lazy creator for Dodo built-in adapter handler to avoid build-time initialization errors when env vars are unset
+function createDodoWebhookHandler(key: string) {
+  return Webhooks({
+    webhookKey: key,
+    onPaymentSucceeded: async (payload: any) => {
+      const orgId = payload?.data?.metadata?.org_id || 'org_acme';
+      const plan = payload?.data?.metadata?.plan_id || 'team';
+      recordAuditLog(`Subscription payment succeeded: Upgraded to ${plan.toUpperCase()} tier (25 seats active)`, 'Success');
+      console.log(`[Dodo Webhook] payment.succeeded for org: ${orgId}, plan: ${plan}`);
+    },
+    onSubscriptionActive: async (payload: any) => {
+      const orgId = payload?.data?.metadata?.org_id || 'org_acme';
+      const plan = payload?.data?.metadata?.plan_id || 'team';
+      recordAuditLog(`Subscription activated: ${plan.toUpperCase()} Plan with autonomous canary gates enabled`, 'Success');
+      console.log(`[Dodo Webhook] subscription.active for org: ${orgId}`);
+    },
+    onSubscriptionRenewed: async (payload: any) => {
+      const orgId = payload?.data?.metadata?.org_id || 'org_acme';
+      recordAuditLog('Subscription renewed: Monthly billing cycle successfully charged', 'Success');
+      console.log(`[Dodo Webhook] subscription.renewed for org: ${orgId}`);
+    },
+    onSubscriptionCancelled: async (payload: any) => {
+      const orgId = payload?.data?.metadata?.org_id || 'org_acme';
+      recordAuditLog('Subscription cancelled: Organization reverted to Developer/Free tier at period end', 'Warning');
+      console.log(`[Dodo Webhook] subscription.cancelled for org: ${orgId}`);
+    },
+    onPaymentFailed: async (payload: any) => {
+      const orgId = payload?.data?.metadata?.org_id || 'org_acme';
+      recordAuditLog('Payment failed for Acme Corp: Automated Dodo invoice retry scheduled', 'Blocked');
+      console.warn(`[Dodo Webhook] payment.failed for org: ${orgId}`);
+    },
+    onSubscriptionUpdated: async (payload: any) => {
+      const orgId = payload?.data?.metadata?.org_id || 'org_acme';
+      recordAuditLog('Subscription updated: Seat count or plan parameters modified', 'Success');
+      console.log(`[Dodo Webhook] subscription.updated for org: ${orgId}`);
+    },
+  });
+}
 
 export async function POST(req: NextRequest) {
+  const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
+  if (!webhookKey) {
+    console.error('[Dodo Webhook] DODO_PAYMENTS_WEBHOOK_KEY environment variable is not configured.');
+    return NextResponse.json({ error: 'Webhook secret is not configured on server' }, { status: 500 });
+  }
+
   const webhookId = req.headers.get('webhook-id') || '';
   const webhookTimestamp = req.headers.get('webhook-timestamp') || '';
   const webhookSignature = req.headers.get('webhook-signature') || '';
@@ -118,7 +126,8 @@ export async function POST(req: NextRequest) {
     body: rawBody,
   });
 
-  return await dodoWebhookHandler(forwardReq);
+  const handler = createDodoWebhookHandler(webhookKey);
+  return await handler(forwardReq);
 }
 
 export async function GET() {
