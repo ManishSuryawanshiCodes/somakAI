@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -161,13 +161,23 @@ const AUDIT_EVENTS: RichAuditEvent[] = [
 
 export default function AuditPage() {
   const { currentOrg } = useOrg();
-  const [events, setEvents] = useState<RichAuditEvent[]>(AUDIT_EVENTS);
+  const isAcme = Boolean(currentOrg && currentOrg.id === 'org_acme');
+  const [events, setEvents] = useState<RichAuditEvent[]>(isAcme ? AUDIT_EVENTS : []);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLive, setIsLive] = useState(true);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
   useEffect(() => {
-    getAuditEvents(currentOrg?.id || 'org_acme')
+    if (!currentOrg) {
+      setEvents([]);
+      return;
+    }
+    if (isAcme) {
+      setEvents(AUDIT_EVENTS);
+      return;
+    }
+
+    getAuditEvents(currentOrg.id)
       .then((backendEvents) => {
         if (backendEvents && backendEvents.length > 0) {
           const mapped: RichAuditEvent[] = backendEvents.map((be: any, idx: number) => ({
@@ -183,21 +193,25 @@ export default function AuditPage() {
             hash: be.tamper_hash || be.verificationHash || be.hash || '7b9102ca819df01823ab',
             ip: be.ipAddress || be.ip_address || 'internal-agent',
           }));
-          setEvents((prev) => {
-            const ids = new Set(mapped.map((m) => m.id));
-            const existingFiltered = prev.filter((p) => !ids.has(p.id));
-            return [...mapped, ...existingFiltered];
-          });
+          setEvents(mapped);
+        } else {
+          setEvents([]);
         }
       })
-      .catch(() => {});
-  }, [currentOrg?.id]);
+      .catch(() => {
+        setEvents([]);
+      });
+  }, [currentOrg?.id, isAcme]);
 
   // Left sidebar filter states
   const [timelineFilter, setTimelineFilter] = useState<'all' | '24h' | '7d'>('all');
   const [selectedActors, setSelectedActors] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
+
+  const availableActors = useMemo(() => Array.from(new Set(events.map((e) => e.actor))), [events]);
+  const availableCategories = useMemo(() => Array.from(new Set(events.map((e) => e.actionCategory))), [events]);
+  const availableResources = useMemo(() => Array.from(new Set(events.map((e) => e.resource))), [events]);
 
   // Collapsible sidebar sections
   const [collapsedSections, setCollapsedSections] = useState({
@@ -378,6 +392,15 @@ export default function AuditPage() {
             </div>
           </div>
         </div>
+        {/* Sample Demo Mode Banner */}
+        {isAcme && (
+          <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 text-xs">
+            <ShieldCheck className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>
+              <strong>Sample Audit Trail:</strong> Showing simulated SHA-256 tamper-evident audit records for Acme Corp. Real actions in your organization will be recorded here automatically.
+            </span>
+          </div>
+        )}
 
         {/* Main Content Layout: Left Filter Sidebar + Main Table (Vercel Logs Pattern) */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
@@ -462,20 +485,24 @@ export default function AuditPage() {
 
               {!collapsedSections.actor && (
                 <div className="space-y-1.5 pl-1">
-                  {['Marcus Vance', 'Elena Rostova', 'Sarah Chen', 'Autonomous Engine'].map((actor) => (
-                    <label
-                      key={actor}
-                      className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedActors.includes(actor)}
-                        onChange={() => handleActorToggle(actor)}
-                        className="rounded accent-slate-900 dark:accent-white"
-                      />
-                      <span>{actor}</span>
-                    </label>
-                  ))}
+                  {availableActors.length === 0 ? (
+                    <span className="text-[11px] text-slate-400">No actors recorded</span>
+                  ) : (
+                    availableActors.map((actor) => (
+                      <label
+                        key={actor}
+                        className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedActors.includes(actor)}
+                          onChange={() => handleActorToggle(actor)}
+                          className="rounded accent-slate-900 dark:accent-white"
+                        />
+                        <span>{actor}</span>
+                      </label>
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -538,20 +565,24 @@ export default function AuditPage() {
 
               {!collapsedSections.resource && (
                 <div className="space-y-1.5 pl-1">
-                  {['auth-service', 'billing-api', 'usr-3 (devin.zhao)', 'secrets/nebius_api_key', 'INC-1892'].map((res) => (
-                    <label
-                      key={res}
-                      className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedResources.includes(res)}
-                        onChange={() => handleResourceToggle(res)}
-                        className="rounded accent-slate-900 dark:accent-white"
-                      />
-                      <span className="font-mono text-[11px] truncate">{res}</span>
-                    </label>
-                  ))}
+                  {availableResources.length === 0 ? (
+                    <span className="text-[11px] text-slate-400">No resources recorded</span>
+                  ) : (
+                    availableResources.map((res) => (
+                      <label
+                        key={res}
+                        className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedResources.includes(res)}
+                          onChange={() => handleResourceToggle(res)}
+                          className="rounded accent-slate-900 dark:accent-white"
+                        />
+                        <span className="font-mono text-[11px] truncate">{res}</span>
+                      </label>
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -571,7 +602,17 @@ export default function AuditPage() {
 
             {/* Table Rows */}
             <div className="divide-y divide-slate-100 dark:divide-white/5 text-xs">
-              {filteredEvents.length === 0 ? (
+              {events.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 space-y-2">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center mx-auto text-slate-500">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <p className="font-semibold text-sm text-slate-800 dark:text-slate-200">No audit events recorded yet</p>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Actions performed by users and the autonomous engine will appear here in the tamper-evident cryptographic log.
+                  </p>
+                </div>
+              ) : filteredEvents.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 space-y-1">
                   <p className="font-semibold text-slate-800 dark:text-slate-200">No events matched filters</p>
                   <p className="text-xs">Try selecting fewer filter checkboxes or clearing your search.</p>

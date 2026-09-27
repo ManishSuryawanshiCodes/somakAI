@@ -148,8 +148,28 @@ async def signup(req: SignupRequest, response: Response):
     session_token = create_session(user.id, user.email, user.role)
     set_session_cookie(response, session_token)
 
-    # Check organizations
+    # Check organizations; auto-provision an isolated personal workspace if user has none
     orgs = org_store.list_user_orgs(user.id, clean_email)
+    if not orgs:
+        import re
+        base_name = req.name.strip() if req.name and req.name.strip() else clean_email.split('@')[0].capitalize()
+        org_name = f"{base_name}'s Org"
+        raw_slug = re.sub(r'[^a-z0-9]+', '-', base_name.lower()).strip('-') or "workspace"
+        base_slug = f"{raw_slug}-{uuid.uuid4().hex[:4]}"
+        try:
+            org_store.create_org(CreateOrgRequest(
+                name=org_name,
+                slug=base_slug,
+                team_size="2-10",
+                primary_use_case="Autonomous Incident Remediation",
+                user_id=user.id,
+                user_name=user.name,
+                user_email=user.email,
+                plan="business"
+            ))
+            orgs = org_store.list_user_orgs(user.id, clean_email)
+        except Exception as e:
+            print(f"Auto-org creation warning: {e}")
 
     return {
         "status": "success",

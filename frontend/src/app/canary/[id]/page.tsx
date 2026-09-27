@@ -244,6 +244,16 @@ export default function CanaryRolloutMonitor() {
           </div>
         </div>
 
+        {/* Demonstration Mode Notice Banner */}
+        {isDemo && (
+          <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 text-xs">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>
+              <strong>Sample Canary Demonstration:</strong> You are viewing simulated canary deployment telemetry for incident {id}. Real canary verification activates automatically when an autonomous remediation AST patch is deployed.
+            </span>
+          </div>
+        )}
+
         {/* Verdict Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-white/10">
           <div>

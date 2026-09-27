@@ -74,10 +74,8 @@ const OrgContext = createContext<OrgContextType | undefined>(undefined);
 
 export function OrgProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [currentOrg, setCurrentOrg] = useState<Organization | null>(DEFAULT_ACME_ORG);
-  const [userOrgs, setUserOrgs] = useState<UserOrgMembership[]>([
-    { organization: DEFAULT_ACME_ORG, role: 'Operator' },
-  ]);
+  const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
+  const [userOrgs, setUserOrgs] = useState<UserOrgMembership[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

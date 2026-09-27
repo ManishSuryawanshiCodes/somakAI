@@ -204,31 +204,29 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#FAF8F5] dark:bg-[#070709] text-slate-900 dark:text-white">
-      {/* LEFT COLUMN: Clean Linear/Vercel Auth Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-between p-6 sm:p-10 lg:p-14 xl:p-16 overflow-y-auto">
-        {/* Top Header: Brand + Back Button */}
-        <div className="flex items-center justify-between mb-8 sm:mb-12">
-          <Link href="/" className="inline-flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/10 p-1 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform overflow-hidden">
-              <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-6 h-6 object-contain aspect-square" />
-            </div>
-            <span className="font-mono font-bold text-sm tracking-tight text-slate-900 dark:text-white">
-              SOMAK AI
-            </span>
-          </Link>
+    <div className="min-h-screen w-full flex flex-col justify-between items-center p-6 sm:p-10 lg:p-12 bg-[#FAF8F5] dark:bg-[#070709] text-slate-900 dark:text-white relative overflow-y-auto">
+      {/* Top Header: Brand + Back Button */}
+      <div className="w-full max-w-md flex items-center justify-between mb-8">
+        <Link href="/" className="inline-flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] border border-black/10 dark:border-white/10 p-1 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform overflow-hidden">
+            <img src="/somak-ai-icon-simplified-transparent.png" alt="SOMAK AI" className="w-6 h-6 object-contain aspect-square" />
+          </div>
+          <span className="font-mono font-bold text-sm tracking-tight text-slate-900 dark:text-white">
+            SOMAK AI
+          </span>
+        </Link>
 
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Home</span>
-          </Link>
-        </div>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Home</span>
+        </Link>
+      </div>
 
-        {/* Center: Auth Form Container */}
-        <div className="w-full max-w-sm mx-auto my-auto py-4">
+      {/* Center: Auth Form Container */}
+      <div className="w-full max-w-md my-auto py-4">
           <div className="mb-6">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               Sign in to SOMAK AI
@@ -528,123 +526,6 @@ export default function LoginPage() {
             </Link>
           </div>
         </div>
-      </div>
-
-      {/* RIGHT COLUMN: Desktop-only Visual Preview of Product (Radar / Stepper) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#090C10] border-l border-white/10 relative overflow-hidden flex-col justify-center items-center p-8 xl:p-14">
-        {/* Ambient background glow */}
-        <div className="absolute top-1/4 -right-24 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 -left-24 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Product Pipeline Preview Frame */}
-        <div className="w-full max-w-lg bg-[#0F1319] border border-white/10 rounded-2xl shadow-2xl overflow-hidden relative z-10">
-          {/* Top Window Bar */}
-          <div className="px-4 py-3 bg-[#0A0D12] border-b border-white/5 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-rose-500/70" />
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
-              <span className="ml-2 font-mono text-[10px] text-slate-400">
-                somak-orchestrator — live pipeline
-              </span>
-            </div>
-            <div className="flex items-center gap-1 font-mono text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
-              <span>LIVE</span>
-            </div>
-          </div>
-
-          <div className="p-5 space-y-4">
-            {/* Active Incident Header Card */}
-            <div className="p-3 bg-white/[0.03] border border-white/10 rounded-xl flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-                  <Activity className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-white">INC-2041</span>
-                    <span className="text-[9px] font-mono px-1.5 py-0.2 bg-rose-500/20 text-rose-400 rounded">SEV-1</span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 font-mono">
-                    auth-service V8 OOM Memory Leak
-                  </div>
-                </div>
-              </div>
-              <span className="text-[10px] font-mono text-indigo-400 font-semibold bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
-                99.4% Match
-              </span>
-            </div>
-
-            {/* 4-Stage Stepper Pipeline */}
-            <div className="space-y-2 font-mono text-[11px]">
-              <div className="flex items-start gap-2.5 p-2 rounded-lg bg-white/[0.02]">
-                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <Check className="w-3 h-3" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-white font-semibold">1. Telemetry Ingest & Sentry Hook</div>
-                  <div className="text-slate-400 text-[10px]">Stacktrace normalized in 0.12s across 3 clusters</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2.5 p-2 rounded-lg bg-white/[0.02]">
-                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <Check className="w-3 h-3" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-white font-semibold">2. Nemotron-3 AST Synthesis</div>
-                  <div className="text-slate-400 text-[10px]">Synthesized exact LRU cache patch (zero hallucination)</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2.5 p-2 rounded-lg bg-white/[0.02]">
-                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <Check className="w-3 h-3" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-white font-semibold">3. MicroVM Sandbox Verification</div>
-                  <div className="text-slate-400 text-[10px]">14 unit + 6 e2e regression tests passed in Firecracker</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2.5 p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/25">
-                <div className="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center shrink-0 mt-0.5">
-                  <Terminal className="w-3 h-3" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-indigo-300 font-semibold flex items-center justify-between">
-                    <span>4. Autonomous Canary Rollout</span>
-                    <span className="text-[10px] text-emerald-400">100% HEALTHY</span>
-                  </div>
-                  <div className="text-slate-400 text-[10px]">5% &rarr; 25% &rarr; 100% traffic shift with zero latency regression</div>
-                </div>
-              </div>
-            </div>
-
-            {/* AST Code Diff Preview */}
-            <div className="p-3 bg-[#0A0D12] rounded-xl border border-white/5 font-mono text-[10px] space-y-1">
-              <div className="text-slate-500 text-[9px] uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>diff --git a/services/auth.ts b/services/auth.ts</span>
-                <span className="text-emerald-400">+1 / -1</span>
-              </div>
-              <div className="text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded">
-                - const leak = globalCache.set(req.id, buffer);
-              </div>
-              <div className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                + const leak = lruCache.set(req.id, buffer, &#123; ttl: 60000 &#125;);
-              </div>
-            </div>
-
-            {/* Bottom Metrics Pill */}
-            <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-slate-400">
-              <div>MTTR: <span className="text-emerald-400 font-semibold">3m 42s</span></div>
-              <div>Auto-Remediated: <span className="text-indigo-400 font-semibold">95.2%</span></div>
-              <div>Zero-Human Latency</div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Forgot Password Modal */}
       <AnimatePresence>

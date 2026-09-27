@@ -33,6 +33,7 @@ import MiniSparkline from '@/components/MiniSparkline';
 import { useAuth, UserRole } from '@/context/AuthContext';
 import { useToast } from '@/components/ToastProvider';
 import { useOrg } from '@/context/OrgContext';
+import { getOrganizationMembers } from '@/lib/api';
 import {
   getServiceRepoMappings,
   saveServiceRepoMapping,
@@ -293,17 +294,19 @@ function SettingsContent() {
     }
   }, [searchParams]);
 
+  const isAcme = Boolean(currentOrg && currentOrg.id === 'org_acme');
+
   // Form State
-  const [orgName, setOrgName] = useState(currentOrg?.name || 'Acme Infrastructure');
-  const [orgSlug, setOrgSlug] = useState('acme-infra');
+  const [orgName, setOrgName] = useState(currentOrg?.name || 'Workspace');
+  const [orgSlug, setOrgSlug] = useState(currentOrg?.slug || 'workspace');
   const [timezone, setTimezone] = useState('UTC (GMT+00:00)');
   const [retentionDays, setRetentionDays] = useState('90');
 
   // Keys State
-  const [keys, setKeys] = useState<KeyProvider[]>(INITIAL_KEYS);
+  const [keys, setKeys] = useState<KeyProvider[]>(isAcme ? INITIAL_KEYS : []);
 
   // Members State
-  const [members, setMembers] = useState<TeamMember[]>(INITIAL_MEMBERS);
+  const [members, setMembers] = useState<TeamMember[]>(isAcme ? INITIAL_MEMBERS : []);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<UserRole>('Operator');
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -315,6 +318,102 @@ function SettingsContent() {
   const [newRepoFullName, setNewRepoFullName] = useState('');
   const [newDefaultBranch, setNewDefaultBranch] = useState('main');
   const [newAutoMerge, setNewAutoMerge] = useState(true);
+
+  useEffect(() => {
+    if (!currentOrg) return;
+    setOrgName(currentOrg.name);
+    setOrgSlug(currentOrg.slug);
+
+    if (isAcme) {
+      setMembers(INITIAL_MEMBERS);
+      setKeys(INITIAL_KEYS);
+    } else {
+      // For real orgs, fetch real members
+      getOrganizationMembers(currentOrg.id).then((orgMembers) => {
+        if (orgMembers && orgMembers.length > 0) {
+          const mapped: TeamMember[] = orgMembers.map((m) => ({
+            id: m.id,
+            name: m.user.name,
+            email: m.user.email,
+            role: m.role,
+            avatar: m.user.avatar || (m.user.name ? m.user.name.slice(0, 2).toUpperCase() : 'OP'),
+            lastActive: 'Active now',
+          }));
+          setMembers(mapped);
+        } else if (user) {
+          setMembers([
+            {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: 'Admin',
+              avatar: user.name ? user.name.slice(0, 2).toUpperCase() : 'AD',
+              lastActive: 'Active now',
+            },
+          ]);
+        } else {
+          setMembers([]);
+        }
+      });
+
+      // Build real keys from setup_checklist
+      const realKeys: KeyProvider[] = [];
+      const ch = currentOrg.setup_checklist;
+      if (ch) {
+        if (ch.nvidia_nim_api_key || ch.nvidia_nim_connected) {
+          realKeys.push({
+            id: 'key-nim',
+            name: 'NVIDIA NIM Inference Key',
+            type: 'BYOK Provider Key',
+            status: 'active',
+            fingerprint: ch.nvidia_nim_api_key ? `nvapi-${ch.nvidia_nim_api_key.slice(-4)}` : 'nvapi-••••',
+            lastRotated: 'Configured',
+          });
+        }
+        if (ch.ai_api_key || ch.ai_connected) {
+          realKeys.push({
+            id: 'key-nebius',
+            name: 'Nebius Nemotron Key',
+            type: 'BYOK Provider Key',
+            status: 'active',
+            fingerprint: ch.ai_api_key ? `neb-${ch.ai_api_key.slice(-4)}` : 'neb-••••',
+            lastRotated: 'Configured',
+          });
+        }
+        if (ch.google_api_key || ch.google_connected) {
+          realKeys.push({
+            id: 'key-gemini',
+            name: 'Google Gemini Key',
+            type: 'BYOK Provider Key',
+            status: 'active',
+            fingerprint: ch.google_api_key ? `AIzaSy-${ch.google_api_key.slice(-4)}` : 'AIzaSy-••••',
+            lastRotated: 'Configured',
+          });
+        }
+        if (ch.anthropic_api_key || ch.anthropic_connected) {
+          realKeys.push({
+            id: 'key-anthropic',
+            name: 'Anthropic Claude Key',
+            type: 'BYOK Provider Key',
+            status: 'active',
+            fingerprint: ch.anthropic_api_key ? `sk-ant-${ch.anthropic_api_key.slice(-4)}` : 'sk-ant-••••',
+            lastRotated: 'Configured',
+          });
+        }
+        if (ch.openai_api_key || ch.openai_connected) {
+          realKeys.push({
+            id: 'key-openai',
+            name: 'OpenAI Key',
+            type: 'BYOK Provider Key',
+            status: 'active',
+            fingerprint: ch.openai_api_key ? `sk-${ch.openai_api_key.slice(-4)}` : 'sk-••••',
+            lastRotated: 'Configured',
+          });
+        }
+      }
+      setKeys(realKeys);
+    }
+  }, [currentOrg, isAcme, user]);
 
   useEffect(() => {
     setRepoMappings(getServiceRepoMappings());
@@ -894,49 +993,59 @@ function SettingsContent() {
                 </button>
               </div>
 
-              {/* Rows (Vercel Env Variables Pattern) */}
-              <div className="divide-y divide-slate-100 dark:divide-white/5">
-                {keys.map((k) => (
-                  <div
-                    key={k.id}
-                    className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="font-semibold text-slate-900 dark:text-white">{k.name}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 dark:bg-white/5 text-slate-500">
-                          {k.type}
-                        </span>
+              {/* Rows or Empty State (Vercel Env Variables Pattern) */}
+              {keys.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 space-y-2">
+                  <Key className="w-6 h-6 mx-auto text-slate-400 opacity-60" />
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No envelope encryption keys connected</p>
+                  <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                    Configure your AI provider keys in the Keys section above, or connect an enterprise KMS provider for hardware-isolated envelope encryption.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-white/5">
+                  {keys.map((k) => (
+                    <div
+                      key={k.id}
+                      className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span className="font-semibold text-slate-900 dark:text-white">{k.name}</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 dark:bg-white/5 text-slate-500">
+                            {k.type}
+                          </span>
+                        </div>
+                        <div className="font-mono text-[11px] text-slate-400 truncate max-w-md">
+                          {k.fingerprint}
+                        </div>
                       </div>
-                      <div className="font-mono text-[11px] text-slate-400 truncate max-w-md">
-                        {k.fingerprint}
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
-                      <span className="text-[11px] font-mono text-slate-400">
-                        Rotated {k.lastRotated}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRotateKey(k.id)}
-                        className="px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors"
-                      >
-                        Rotate
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveKey(k.id)}
-                        className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
-                        title="Disconnect Key"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+                        <span className="text-[11px] font-mono text-slate-400">
+                          Rotated {k.lastRotated}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRotateKey(k.id)}
+                          className="px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors"
+                        >
+                          Rotate
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveKey(k.id)}
+                          className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                          title="Disconnect Key"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -966,51 +1075,71 @@ function SettingsContent() {
                 </button>
               </div>
 
-              {/* Members List */}
-              <div className="divide-y divide-slate-100 dark:divide-white/5">
-                {members.map((m) => (
-                  <div
-                    key={m.id}
-                    className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-slate-300 shrink-0">
-                        {m.avatar}
+              {/* Sample Demo Mode Banner */}
+              {isAcme && (
+                <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 text-xs">
+                  <Users className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>
+                    <strong>Sample Demo Roster:</strong> Demonstrating RBAC membership and dual-approval enforcement for Acme Corp. Real members you invite will appear here.
+                  </span>
+                </div>
+              )}
+
+              {/* Members List or Empty State */}
+              {members.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 space-y-2">
+                  <Users className="w-6 h-6 mx-auto text-slate-400 opacity-60" />
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No team members invited yet</p>
+                  <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                    Invite operators and engineers to collaborate with dual-approval authorization on AST remediations.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-white/5">
+                  {members.map((m) => (
+                    <div
+                      key={m.id}
+                      className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-slate-300 shrink-0">
+                          {m.avatar}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-900 dark:text-white">{m.name}</div>
+                          <div className="text-[11px] text-slate-400">{m.email}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-semibold text-slate-900 dark:text-white">{m.name}</div>
-                        <div className="text-[11px] text-slate-400">{m.email}</div>
+
+                      <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+                        <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">
+                          {m.lastActive}
+                        </span>
+
+                        {/* Inline Role Selector */}
+                        <select
+                          value={m.role}
+                          onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
+                          className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-medium focus:outline-none"
+                        >
+                          <option value="Admin">Admin</option>
+                          <option value="Operator">Operator</option>
+                          <option value="Viewer">Viewer</option>
+                        </select>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMember(m.id)}
+                          className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                          title="Remove Member"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
-                      <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">
-                        {m.lastActive}
-                      </span>
-
-                      {/* Inline Role Selector */}
-                      <select
-                        value={m.role}
-                        onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
-                        className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-medium focus:outline-none"
-                      >
-                        <option value="Admin">Admin</option>
-                        <option value="Operator">Operator</option>
-                        <option value="Viewer">Viewer</option>
-                      </select>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveMember(m.id)}
-                        className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
-                        title="Remove Member"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Invite Modal */}

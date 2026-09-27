@@ -142,6 +142,16 @@ Status: ${isPublished ? 'Signed & Published' : 'Under Review'}`;
           </span>
         </div>
 
+        {/* Demonstration Mode Notice Banner */}
+        {isDemo && (
+          <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 text-xs">
+            <Lock className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>
+              <strong>Sample Post-Mortem Demonstration:</strong> Showing compliance post-mortem report for sample incident {id}. Real post-mortems are generated automatically upon incident resolution.
+            </span>
+          </div>
+        )}
+
         {/* Header Strip with Sign & Publish Action */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/10">
           <div>

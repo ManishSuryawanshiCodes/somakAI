@@ -316,7 +316,7 @@ export default function Sidebar({
                 <div className="flex items-center gap-2 min-w-0">
                   <Building2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                   <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
-                    {currentOrg?.name || 'Acme Corp'}
+                    {currentOrg?.name || 'Workspace'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 ml-1">

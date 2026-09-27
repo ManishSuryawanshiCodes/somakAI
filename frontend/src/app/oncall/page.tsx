@@ -19,6 +19,8 @@ import {
 import TopNav from '@/components/TopNav';
 import StatusBadge from '@/components/StatusBadge';
 import { useToast } from '@/components/ToastProvider';
+import { useOrg } from '@/context/OrgContext';
+import { getOnCallShifts } from '@/lib/api';
 
 interface Responder {
   name: string;
@@ -111,13 +113,54 @@ const INITIAL_ONCALL_SERVICES: ServiceOnCall[] = [
 ];
 
 export default function OnCallPage() {
+  const { currentOrg } = useOrg();
+  const isAcme = Boolean(currentOrg && currentOrg.id === 'org_acme');
   const [search, setSearch] = useState('');
-  const [services, setServices] = useState<ServiceOnCall[]>(INITIAL_ONCALL_SERVICES);
+  const [services, setServices] = useState<ServiceOnCall[]>(isAcme ? INITIAL_ONCALL_SERVICES : []);
   const [countdownSeconds, setCountdownSeconds] = useState(258); // 04:18
   const [overrideModalService, setOverrideModalService] = useState<ServiceOnCall | null>(null);
   const [selectedSubstitute, setSelectedSubstitute] = useState('Marcus Vance');
   const [overrideReason, setOverrideReason] = useState('');
   const { addToast } = useToast();
+
+  useEffect(() => {
+    if (!currentOrg) {
+      setServices([]);
+      return;
+    }
+    if (isAcme) {
+      setServices(INITIAL_ONCALL_SERVICES);
+      return;
+    }
+
+    getOnCallShifts().then((shifts) => {
+      if (shifts && shifts.length > 0) {
+        const mapped: ServiceOnCall[] = shifts.map((s: any) => ({
+          service: s.service || 'production-workloads',
+          status: s.status || 'nominal',
+          primary: {
+            name: s.primary?.name || 'On-Call Engineer',
+            email: s.primary?.email || 'sre@company.com',
+            phone: s.primary?.phone || '+1 (555) 000-0000',
+          },
+          secondary: {
+            name: s.secondary?.name || 'Secondary SRE',
+            email: s.secondary?.email || 'sre-2@company.com',
+            phone: s.secondary?.phone || '+1 (555) 000-0001',
+          },
+          escalationMinutes: 10,
+          weekSchedule: (s.schedule || []).map((sc: any) => ({
+            day: sc.day,
+            responder: sc.responder,
+            isToday: sc.isToday,
+          })),
+        }));
+        setServices(mapped);
+      } else {
+        setServices([]);
+      }
+    });
+  }, [currentOrg, isAcme]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -224,10 +267,44 @@ export default function OnCallPage() {
           </div>
         </div>
 
-        {/* One clean card per service */}
+        {/* Sample Demo Mode Banner */}
+        {isAcme && (
+          <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 text-xs">
+            <Shield className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>
+              <strong>Sample Demo Roster:</strong> Demonstrating on-call rotation policies for Acme Corp. Add team members in Settings to configure your organization&apos;s real schedule.
+            </span>
+          </div>
+        )}
+
+        {/* One clean card per service or empty state */}
         <div className="space-y-4">
-          {filtered.map((item) => {
-            const isPaging = item.status === 'paging';
+          {filtered.length === 0 ? (
+            <div className="rounded-2xl p-10 text-center bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 space-y-4 shadow-2xs">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto border border-indigo-500/20">
+                <UserCheck className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  No on-call rotations configured
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  Add team members or configure service ownership in Settings to set up automated primary and secondary responder rotations.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href="/settings?tab=members"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shadow-2xs"
+                >
+                  <span>Invite Team Members</span>
+                  <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+                </Link>
+              </div>
+            </div>
+          ) : (
+            filtered.map((item) => {
+              const isPaging = item.status === 'paging';
 
             return (
               <div
@@ -340,7 +417,7 @@ export default function OnCallPage() {
 
               </div>
             );
-          })}
+          }))}
         </div>
       </main>
 
