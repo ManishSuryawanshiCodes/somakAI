@@ -157,21 +157,16 @@ class UsageStore:
             grouped[key]["tokens_out"] += r.tokens_out
             grouped[key]["cost_saved"] += r.cost_estimate
 
-        # Map to display names
-        provider_display = {
-            "nebius": "NVIDIA / Nebius Token Factory",
-            "anthropic": "Anthropic Claude",
-            "openai": "OpenAI GPT",
-            "google": "Google Gemini"
-        }
+        # Map to registry display names
+        from app.core.llm_provider import get_provider_display_name, get_model_display_name
 
         breakdown = []
         for (prov, mdl, stg, btype), val in grouped.items():
             breakdown.append(ProviderModelSummary(
                 provider=prov,
-                provider_name=provider_display.get(prov, prov.capitalize()),
+                provider_name=get_provider_display_name(prov),
                 model=mdl,
-                model_name=mdl.split("/")[-1].replace("-", " ").title(),
+                model_name=get_model_display_name(prov, mdl),
                 stage=stg.capitalize(),
                 calls=val["calls"],
                 tokens_in=val["tokens_in"],

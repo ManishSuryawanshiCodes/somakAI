@@ -52,6 +52,14 @@ export default function IncidentCard({
       : 'API gateway timeout backpressure cascading into downstream sessions.';
   })();
 
+  // Multi-Provider Full Disclosure Badge
+  const disclosureBadge = incident.disclosure_badge || (
+    incident.execution_mode === 'live' || (incident.synthesis_source && incident.synthesis_source !== 'simulated')
+      ? `Live — ${incident.provider_display_name || 'NVIDIA NIM'} (${incident.model_display_name || 'Nemotron-3-Ultra'})`
+      : 'Simulated result — no live API call'
+  );
+  const isLive = disclosureBadge.startsWith('Live');
+
   const handleCardClick = () => {
     if (onSelect) onSelect(incident.id);
     router.push(`/remediation/${incident.id}`);
@@ -75,7 +83,7 @@ export default function IncidentCard({
       }`}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Left: Severity dot + Service name + One-line plain summary + Timestamp */}
+        {/* Left: Severity dot + Service name + One-line plain summary + Timestamp + Disclosure Badge */}
         <div className="flex items-start gap-3.5 min-w-0">
           {/* Calm Severity dot (color only, no noisy verbose badges) */}
           <div className="pt-1.5 shrink-0">
@@ -105,6 +113,16 @@ export default function IncidentCard({
               <span className="inline-flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
                 <Clock className="w-3 h-3" />
                 {timeAgo}
+              </span>
+              <span className="text-slate-300 dark:text-slate-700 text-xs">•</span>
+              {/* Disclosure Badge */}
+              <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+                isLive
+                  ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                  : 'text-amber-700 dark:text-amber-400 bg-amber-500/10 border-amber-500/20'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                {disclosureBadge}
               </span>
             </div>
 

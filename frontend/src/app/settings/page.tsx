@@ -25,6 +25,7 @@ import {
   CreditCard,
   Zap,
   GitBranch,
+  Cpu,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
@@ -129,15 +130,161 @@ const INITIAL_MEMBERS: TeamMember[] = [
   },
 ];
 
+const BYOK_PROVIDERS = [
+  {
+    id: 'nvidia_nim',
+    name: 'NVIDIA NIM',
+    description: 'Free tier available, hosts Nemotron models',
+    badge: 'Server Fallback #1 / BYOK',
+    keyPrefix: 'nvapi-',
+    triageModels: [
+      { id: 'nvidia/nemotron-3-super-120b-a12b', name: 'Nemotron-3-Super (120B MoE)' }
+    ],
+    synthesisModels: [
+      { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'Nemotron-3-Ultra (550B MoE)' }
+    ],
+  },
+  {
+    id: 'nebius',
+    name: 'Nebius AI Studio',
+    description: 'Dedicated GPU cloud hosting Nemotron models',
+    badge: 'BYOK Enabled',
+    keyPrefix: 'sk-neb-',
+    triageModels: [
+      { id: 'nvidia/nemotron-3-nano-30b-a3b', name: 'Nemotron-3-Nano (30B Dense)' }
+    ],
+    synthesisModels: [
+      { id: 'nvidia/nemotron-3-ultra-550b', name: 'Nemotron-3-Ultra (550B MoE)' }
+    ],
+  },
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    description: 'Ultra-low latency, large context window',
+    badge: 'Server Fallback #2 / BYOK',
+    keyPrefix: 'AIzaSy',
+    triageModels: [
+      { id: 'gemini-flash-latest', name: 'Gemini 2.5 Flash' }
+    ],
+    synthesisModels: [
+      { id: 'gemini-flash-latest', name: 'Gemini 2.5 Flash (AST Reasoning)' }
+    ],
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic',
+    description: 'Deep reasoning and frontier complexity',
+    badge: 'BYOK Enabled',
+    keyPrefix: 'sk-ant-',
+    triageModels: [
+      { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' }
+    ],
+    synthesisModels: [
+      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' }
+    ],
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI',
+    description: 'High-precision code synthesis and fast triage',
+    badge: 'BYOK Enabled',
+    keyPrefix: 'sk-',
+    triageModels: [
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini' }
+    ],
+    synthesisModels: [
+      { id: 'gpt-4o', name: 'GPT-4o' }
+    ],
+  },
+];
+
 function SettingsContent() {
   const { user } = useAuth();
   const { showToast } = useToast();
-  const { currentOrg } = useOrg();
+  const { currentOrg, updateChecklist } = useOrg();
 
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SubTab>('general');
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // BYOK Multi-Provider & Model State
+  const checklist = currentOrg?.setup_checklist;
+  const [preferredProvider, setPreferredProvider] = useState<string>(checklist?.triage_provider || 'nvidia_nim');
+  const [selectedTriageModel, setSelectedTriageModel] = useState<string>(checklist?.triage_model || 'nvidia/nemotron-3-super-120b-a12b');
+  const [selectedSynthesisModel, setSelectedSynthesisModel] = useState<string>(checklist?.synthesis_model || 'nvidia/nemotron-3-ultra-550b-a55b');
+  const [nvidiaNimKey, setNvidiaNimKey] = useState<string>('');
+  const [nebiusKey, setNebiusKey] = useState<string>('');
+  const [geminiKey, setGeminiKey] = useState<string>('');
+  const [anthropicKey, setAnthropicKey] = useState<string>('');
+  const [openaiKey, setOpenaiKey] = useState<string>('');
+  const [savingByok, setSavingByok] = useState<boolean>(false);
+  const [showOtherKeys, setShowOtherKeys] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (currentOrg?.setup_checklist) {
+      const ch = currentOrg.setup_checklist;
+      if (ch.triage_provider) setPreferredProvider(ch.triage_provider);
+      if (ch.triage_model) setSelectedTriageModel(ch.triage_model);
+      if (ch.synthesis_model) setSelectedSynthesisModel(ch.synthesis_model);
+    }
+  }, [currentOrg]);
+
+  const activeProviderMeta = BYOK_PROVIDERS.find(p => p.id === preferredProvider) || BYOK_PROVIDERS[0];
+
+  const handleProviderChange = (newProvId: string) => {
+    setPreferredProvider(newProvId);
+    const prov = BYOK_PROVIDERS.find(p => p.id === newProvId);
+    if (prov) {
+      if (prov.triageModels[0]) setSelectedTriageModel(prov.triageModels[0].id);
+      if (prov.synthesisModels[0]) setSelectedSynthesisModel(prov.synthesisModels[0].id);
+    }
+  };
+
+  const handleSaveByok = async () => {
+    setSavingByok(true);
+    try {
+      const payload: Record<string, any> = {
+        triage_provider: preferredProvider,
+        synthesis_provider: preferredProvider,
+        triage_model: selectedTriageModel,
+        synthesis_model: selectedSynthesisModel,
+      };
+      if (nvidiaNimKey.trim()) {
+        payload.nvidia_nim_api_key = nvidiaNimKey.trim();
+        payload.nvidia_nim_connected = true;
+      }
+      if (nebiusKey.trim()) {
+        payload.nebius_api_key = nebiusKey.trim();
+        payload.ai_api_key = nebiusKey.trim();
+        payload.ai_connected = true;
+      }
+      if (geminiKey.trim()) {
+        payload.google_api_key = geminiKey.trim();
+        payload.google_connected = true;
+      }
+      if (anthropicKey.trim()) {
+        payload.anthropic_api_key = anthropicKey.trim();
+        payload.anthropic_connected = true;
+      }
+      if (openaiKey.trim()) {
+        payload.openai_api_key = openaiKey.trim();
+        payload.openai_connected = true;
+      }
+
+      await updateChecklist(payload);
+      showToast('AI Provider & BYOK settings encrypted and saved', 'success');
+      setNvidiaNimKey('');
+      setNebiusKey('');
+      setGeminiKey('');
+      setAnthropicKey('');
+      setOpenaiKey('');
+    } catch (err: any) {
+      showToast('Failed to save BYOK keys: ' + (err?.message || 'Network error'), 'error');
+    } finally {
+      setSavingByok(false);
+    }
+  };
 
   useEffect(() => {
     const tabParam = searchParams?.get('tab') as SubTab;
@@ -479,12 +626,259 @@ function SettingsContent() {
         {/* TAB 2: ENVIRONMENT & KEYS (BYOK) */}
         {/* ======================================================== */}
         {activeTab === 'keys' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Priority Chain & Architecture Card */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40 space-y-3">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                  Multi-Provider Priority Chain & Key Disclosure
+                </h3>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                When an incident is triaged or synthesized, Somak AI attempts providers strictly in the following priority order. Server-level keys are stored securely on the backend and rate-limited per organization plan tier to protect shared credits.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1 text-xs">
+                <div className="p-3 rounded-xl bg-white dark:bg-black/40 border border-indigo-100 dark:border-white/10 space-y-1">
+                  <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-white">
+                    <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                    <span>Org BYOK Key</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Your org's custom encrypted API key for preferred provider. Zero platform token metering.
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-white dark:bg-black/40 border border-indigo-100 dark:border-white/10 space-y-1">
+                  <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-white">
+                    <span className="w-4 h-4 rounded-full bg-slate-700 text-white flex items-center justify-center text-[10px] font-bold">2</span>
+                    <span>Server Fallback</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Automated fallback: <strong className="text-slate-700 dark:text-slate-200">NVIDIA NIM</strong> first, then <strong className="text-slate-700 dark:text-slate-200">Google Gemini</strong>.
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-white dark:bg-black/40 border border-indigo-100 dark:border-white/10 space-y-1">
+                  <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-white">
+                    <span className="w-4 h-4 rounded-full bg-slate-400 text-white flex items-center justify-center text-[10px] font-bold">3</span>
+                    <span>Simulated Mode</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Deterministic offline execution if live provider APIs are unavailable.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* AI Provider & Models Selection Card */}
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-white/5">
+                <div>
+                  <h3 className="font-semibold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-indigo-500" />
+                    <span>Inference Provider & Model Configuration (BYOK)</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Select your preferred AI engine and configure custom API keys for root cause reasoning and AST patch synthesis.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveByok}
+                  disabled={savingByok}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition-colors shrink-0 disabled:opacity-50"
+                >
+                  {savingByok ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  <span>Save BYOK Configuration</span>
+                </button>
+              </div>
+
+              {/* Form Controls */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                {/* Preferred Provider Dropdown */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block">
+                    Preferred Provider
+                  </label>
+                  <select
+                    value={preferredProvider}
+                    onChange={(e) => handleProviderChange(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  >
+                    {BYOK_PROVIDERS.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.description})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-semibold">
+                      {activeProviderMeta.badge}
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Prefix format: <code className="font-mono text-slate-600 dark:text-slate-300">{activeProviderMeta.keyPrefix}...</code>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Triage Model */}
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block">
+                    Triage Stage Model (Log Classification)
+                  </label>
+                  <select
+                    value={selectedTriageModel}
+                    onChange={(e) => setSelectedTriageModel(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none"
+                  >
+                    {activeProviderMeta.triageModels.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Synthesis Model */}
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block">
+                    Synthesis Stage Model (AST Patch Generation)
+                  </label>
+                  <select
+                    value={selectedSynthesisModel}
+                    onChange={(e) => setSelectedSynthesisModel(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none"
+                  >
+                    {activeProviderMeta.synthesisModels.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Active Provider BYOK Key Input */}
+                <div className="space-y-1.5 md:col-span-2 pt-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-slate-700 dark:text-slate-300 block">
+                      {activeProviderMeta.name} API Key (BYOK)
+                    </label>
+                    <span className="text-[11px] text-slate-400">
+                      {checklist && (
+                        (preferredProvider === 'nvidia_nim' && checklist.nvidia_nim_connected) ||
+                        (preferredProvider === 'nebius' && checklist.ai_connected) ||
+                        (preferredProvider === 'gemini' && checklist.google_connected) ||
+                        (preferredProvider === 'anthropic' && checklist.anthropic_connected) ||
+                        (preferredProvider === 'openai' && checklist.openai_connected)
+                      ) ? (
+                        <span className="text-emerald-500 font-medium inline-flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Org Key Configured
+                        </span>
+                      ) : (
+                        <span className="text-amber-500 font-medium">Using Server Fallback</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <Key className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="password"
+                      placeholder={`Enter ${activeProviderMeta.name} API key (${activeProviderMeta.keyPrefix}...)`}
+                      value={
+                        preferredProvider === 'nvidia_nim' ? nvidiaNimKey :
+                        preferredProvider === 'nebius' ? nebiusKey :
+                        preferredProvider === 'gemini' ? geminiKey :
+                        preferredProvider === 'anthropic' ? anthropicKey :
+                        openaiKey
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (preferredProvider === 'nvidia_nim') setNvidiaNimKey(val);
+                        else if (preferredProvider === 'nebius') setNebiusKey(val);
+                        else if (preferredProvider === 'gemini') setGeminiKey(val);
+                        else if (preferredProvider === 'anthropic') setAnthropicKey(val);
+                        else setOpenaiKey(val);
+                      }}
+                      className="w-full font-mono text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-9 pr-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Saved keys are encrypted immediately with AES-GCM envelope encryption before persistence.
+                  </p>
+                </div>
+              </div>
+
+              {/* Collapsible Section for All Provider Keys */}
+              <div className="pt-2 border-t border-slate-100 dark:border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setShowOtherKeys(!showOtherKeys)}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 transition-colors"
+                >
+                  <Key className="w-3.5 h-3.5" />
+                  <span>{showOtherKeys ? 'Hide other provider credentials' : 'Configure keys for multiple providers'}</span>
+                </button>
+
+                {showOtherKeys && (
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    {/* NVIDIA NIM */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">NVIDIA NIM Key</label>
+                      <input
+                        type="password"
+                        placeholder="nvapi-..."
+                        value={nvidiaNimKey}
+                        onChange={(e) => setNvidiaNimKey(e.target.value)}
+                        className="w-full font-mono text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5"
+                      />
+                    </div>
+                    {/* Google Gemini */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Google Gemini Key</label>
+                      <input
+                        type="password"
+                        placeholder="AIzaSy..."
+                        value={geminiKey}
+                        onChange={(e) => setGeminiKey(e.target.value)}
+                        className="w-full font-mono text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5"
+                      />
+                    </div>
+                    {/* Anthropic */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Anthropic Claude Key</label>
+                      <input
+                        type="password"
+                        placeholder="sk-ant-..."
+                        value={anthropicKey}
+                        onChange={(e) => setAnthropicKey(e.target.value)}
+                        className="w-full font-mono text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5"
+                      />
+                    </div>
+                    {/* OpenAI */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">OpenAI Key</label>
+                      <input
+                        type="password"
+                        placeholder="sk-..."
+                        value={openaiKey}
+                        onChange={(e) => setOpenaiKey(e.target.value)}
+                        className="w-full font-mono text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* KMS Envelope Encryption Card */}
             <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-white/5">
                 <div>
                   <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
-                    Connected Key Providers (BYOK)
+                    Tenant Envelope Encryption (KMS / HSM)
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Envelope encryption keys managed inside your tenancy for zero data exposure.

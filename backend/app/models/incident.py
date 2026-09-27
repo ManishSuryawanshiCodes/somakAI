@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Literal
 
 class TavilyCitation(BaseModel):
@@ -26,6 +26,8 @@ class Patch(BaseModel):
     sandboxExecution: SandboxExecution | None = None
 
 class Incident(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     id: str
     organization_id: str = "org_acme"
     fingerprint: str
@@ -39,10 +41,16 @@ class Incident(BaseModel):
     rootCauseAnalysis: RootCauseAnalysis | None = None
     patch: Patch | None = None
     postMortemReport: str | None = None
-    triage_provider: str = "nebius"
-    triage_model: str = "nvidia/nemotron-3-nano-30b-a3b"
-    synthesis_provider: str = "nebius"
-    synthesis_model: str = "nvidia/nemotron-3-ultra-550b"
+    triage_provider: str = "nvidia_nim"
+    triage_model: str = "nvidia/nemotron-3-super-120b-a12b"
+    triage_source: str = "none"
+    synthesis_provider: str = "nvidia_nim"
+    synthesis_model: str = "nvidia/nemotron-3-ultra-550b-a55b"
+    synthesis_source: str = "none"
+    execution_mode: str = "simulated"
+    provider_display_name: str = "Simulated"
+    model_display_name: str = "No live API call"
+    disclosure_badge: str = "Simulated result — no live API call"
     fallback_occurred: bool = False
     fallback_message: str | None = None
     reasoning_steps: list[dict] = []

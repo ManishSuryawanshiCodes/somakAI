@@ -92,6 +92,10 @@ export default function SetupChecklistPage() {
     setSavingItem('ai');
     await updateChecklist({
       ai_api_key: aiKey,
+      nvidia_nim_api_key: aiKey.startsWith('nvapi-') ? aiKey : undefined,
+      nebius_api_key: !aiKey.startsWith('nvapi-') ? aiKey : undefined,
+      triage_provider: aiKey.startsWith('nvapi-') ? 'nvidia_nim' : 'nebius',
+      synthesis_provider: aiKey.startsWith('nvapi-') ? 'nvidia_nim' : 'nebius',
       ai_model_tier: modelTier,
       ai_connected: Boolean(aiKey.trim()),
     });
@@ -390,20 +394,23 @@ export default function SetupChecklistPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Default Model Tier
+                    Default Model Tier (NVIDIA NIM / Nebius)
                   </label>
                   <select
                     value={modelTier}
                     onChange={(e) => setModelTier(e.target.value)}
                     className="w-full text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-900 dark:text-white font-mono"
                   >
-                    <option value="nvidia/nemotron-3-nano-30b-a3b">
-                      Nemotron-3-Nano (30B dense — sub-10ms fast triage)
+                    <option value="nvidia/nemotron-3-super-120b-a12b">
+                      Nemotron-3-Super (120B MoE — ultra-fast sub-100ms triage)
                     </option>
-                    <option value="nvidia/nemotron-3-ultra-550b">
+                    <option value="nvidia/nemotron-3-ultra-550b-a55b">
                       Nemotron-3-Ultra (550B MoE — deep AST code synthesis)
                     </option>
                   </select>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    If no BYOK key is provided, Somak AI automatically uses the server-level fallback key (NVIDIA NIM, then Gemini).
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">

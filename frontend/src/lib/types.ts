@@ -58,6 +58,12 @@ export interface Incident {
   triage_model?: string;
   synthesis_provider?: string;
   synthesis_model?: string;
+  triage_source?: 'byok' | 'server_fallback' | 'simulated';
+  synthesis_source?: 'byok' | 'server_fallback' | 'simulated';
+  execution_mode?: 'live' | 'simulated';
+  provider_display_name?: string;
+  model_display_name?: string;
+  disclosure_badge?: string;
   fallback_occurred?: boolean;
   fallback_message?: string;
   reasoning_steps?: Array<{
@@ -79,6 +85,8 @@ export interface SetupChecklist {
   ai_connected: boolean;
   ai_api_key: string;
   nebius_api_key?: string;
+  nvidia_nim_connected?: boolean;
+  nvidia_nim_api_key?: string;
   ai_model_tier: string;
   triage_provider?: string;
   triage_model?: string;
@@ -142,6 +150,7 @@ export interface ProviderCatalogItem {
   name: string;
   badge: string;
   keyPrefix: string;
+  description?: string;
   isConfigured: boolean;
   isPlatformDefault: boolean;
   defaultTriage: string;

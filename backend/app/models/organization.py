@@ -18,6 +18,8 @@ class SetupChecklist(BaseModel):
     synthesis_provider: str = "nebius"
     synthesis_model: str = "nvidia/nemotron-3-ultra-550b"
     nebius_api_key: str = ""
+    nvidia_nim_connected: bool = False
+    nvidia_nim_api_key: str = ""
     anthropic_connected: bool = False
     anthropic_api_key: str = ""
     openai_connected: bool = False
@@ -38,6 +40,7 @@ class SetupChecklist(BaseModel):
         copy_data = self.model_dump()
         copy_data["ai_api_key"] = mask_secret(self.ai_api_key)
         copy_data["nebius_api_key"] = mask_secret(self.nebius_api_key or self.ai_api_key)
+        copy_data["nvidia_nim_api_key"] = mask_secret(self.nvidia_nim_api_key)
         copy_data["anthropic_api_key"] = mask_secret(self.anthropic_api_key)
         copy_data["openai_api_key"] = mask_secret(self.openai_api_key)
         copy_data["google_api_key"] = mask_secret(self.google_api_key)
@@ -134,6 +137,8 @@ class UpdateSetupRequest(BaseModel):
     synthesis_provider: str | None = None
     synthesis_model: str | None = None
     nebius_api_key: str | None = None
+    nvidia_nim_connected: bool | None = None
+    nvidia_nim_api_key: str | None = None
     anthropic_connected: bool | None = None
     anthropic_api_key: str | None = None
     openai_connected: bool | None = None
@@ -153,6 +158,7 @@ class RotateSecretRequest(BaseModel):
     secret_type: Literal[
         'ai_api_key',
         'nebius_api_key',
+        'nvidia_nim_api_key',
         'anthropic_api_key',
         'openai_api_key',
         'google_api_key',

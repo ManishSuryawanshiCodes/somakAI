@@ -1780,39 +1780,41 @@ async def get_available_models(
     result = []
     for prov_id, prov_data in SUPPORTED_PROVIDERS.items():
         is_configured = False
-        if prov_id == "nebius":
-            # Platform default is always available
-            is_configured = True
-        elif checklist:
-            if prov_id == "anthropic":
+        if checklist:
+            if prov_id == "nvidia_nim":
+                is_configured = bool(checklist.nvidia_nim_api_key or checklist.nvidia_nim_connected)
+            elif prov_id == "nebius":
+                is_configured = bool(checklist.nebius_api_key or checklist.ai_api_key or checklist.ai_connected)
+            elif prov_id == "anthropic":
                 is_configured = bool(checklist.anthropic_api_key or checklist.anthropic_connected)
             elif prov_id == "openai":
                 is_configured = bool(checklist.openai_api_key or checklist.openai_connected)
-            elif prov_id == "google":
+            elif prov_id in ("google", "gemini"):
                 is_configured = bool(checklist.google_api_key or checklist.google_connected)
 
         result.append({
             "id": prov_id,
-            "name": prov_data["name"],
-            "badge": prov_data["badge"],
-            "keyPrefix": prov_data["keyPrefix"],
+            "name": prov_data.get("display_name") or prov_data.get("name", prov_id),
+            "badge": prov_data.get("badge", "BYOK Enabled"),
+            "keyPrefix": prov_data.get("keyPrefix", ""),
+            "description": prov_data.get("description", ""),
             "isConfigured": is_configured,
-            "isPlatformDefault": prov_id == "nebius",
-            "defaultTriage": prov_data["defaultTriage"],
-            "defaultSynthesis": prov_data["defaultSynthesis"],
-            "triageModels": prov_data["triageModels"],
-            "synthesisModels": prov_data["synthesisModels"]
+            "isPlatformDefault": prov_id == "nvidia_nim",
+            "defaultTriage": prov_data.get("defaultTriage", ""),
+            "defaultSynthesis": prov_data.get("defaultSynthesis", ""),
+            "triageModels": prov_data.get("triageModels", []),
+            "synthesisModels": prov_data.get("synthesisModels", [])
         })
 
     response_payload = {
         "providers": result,
         "selectedTriage": {
-            "provider": checklist.triage_provider if checklist else "nebius",
-            "model": checklist.triage_model if checklist else "nvidia/nemotron-3-nano-30b-a3b"
+            "provider": checklist.triage_provider if checklist else "nvidia_nim",
+            "model": checklist.triage_model if checklist else "nvidia/nemotron-3-super-120b-a12b"
         },
         "selectedSynthesis": {
-            "provider": checklist.synthesis_provider if checklist else "nebius",
-            "model": checklist.synthesis_model if checklist else "nvidia/nemotron-3-ultra-550b"
+            "provider": checklist.synthesis_provider if checklist else "nvidia_nim",
+            "model": checklist.synthesis_model if checklist else "nvidia/nemotron-3-ultra-550b-a55b"
         }
     }
     cache_service.set(cache_key, response_payload, ttl_seconds=120)

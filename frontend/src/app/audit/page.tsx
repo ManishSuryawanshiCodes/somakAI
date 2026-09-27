@@ -41,6 +41,32 @@ interface RichAuditEvent {
 
 const AUDIT_EVENTS: RichAuditEvent[] = [
   {
+    id: 'aud-9844',
+    time: '14:22:10',
+    actor: 'Autonomous Engine',
+    action: 'Synthesized AST hotfix using server fallback key (NVIDIA NIM / Nemotron-3-Ultra)',
+    actionCategory: 'deploy',
+    resource: 'auth-service',
+    result: 'Success',
+    blockNumber: 494,
+    prevHash: '8f4c91a201de38bb47ac',
+    hash: '7b9102ca819df01823ab',
+    ip: 'nim.api.nvidia.com',
+  },
+  {
+    id: 'aud-9843',
+    time: '14:21:55',
+    actor: 'Autonomous Engine',
+    action: 'Executed incident triage using server fallback key (NVIDIA NIM / Nemotron-3-Super)',
+    actionCategory: 'setting',
+    resource: 'auth-service',
+    result: 'Success',
+    blockNumber: 493,
+    prevHash: '7b9102ca819df01823ab',
+    hash: '9fa012bc5541e89201fc',
+    ip: 'nim.api.nvidia.com',
+  },
+  {
     id: 'aud-9842',
     time: '14:04:18',
     actor: 'Marcus Vance',
@@ -139,6 +165,33 @@ export default function AuditPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLive, setIsLive] = useState(true);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+
+  useEffect(() => {
+    getAuditEvents(currentOrg?.id || 'org_acme')
+      .then((backendEvents) => {
+        if (backendEvents && backendEvents.length > 0) {
+          const mapped: RichAuditEvent[] = backendEvents.map((be: any, idx: number) => ({
+            id: be.id || `aud-live-${idx}`,
+            time: be.timestamp ? new Date(be.timestamp).toLocaleTimeString() : 'Just now',
+            actor: typeof be.actor === 'string' ? be.actor : (be.actor_name || be.actor?.name || 'Autonomous Engine'),
+            action: be.action,
+            actionCategory: (be.actionCategory || be.category || be.action_category || 'deploy') as any,
+            resource: be.resource || be.targetResource || be.target || 'cluster',
+            result: (be.result || (be.status === 'success' || be.status === 'Success' ? 'Success' : be.status === 'blocked' ? 'Blocked' : 'Success')) as any,
+            blockNumber: 500 + idx,
+            prevHash: be.previous_hash || be.prev_hash || '8f4c91a201de38bb47ac',
+            hash: be.tamper_hash || be.verificationHash || be.hash || '7b9102ca819df01823ab',
+            ip: be.ipAddress || be.ip_address || 'internal-agent',
+          }));
+          setEvents((prev) => {
+            const ids = new Set(mapped.map((m) => m.id));
+            const existingFiltered = prev.filter((p) => !ids.has(p.id));
+            return [...mapped, ...existingFiltered];
+          });
+        }
+      })
+      .catch(() => {});
+  }, [currentOrg?.id]);
 
   // Left sidebar filter states
   const [timelineFilter, setTimelineFilter] = useState<'all' | '24h' | '7d'>('all');

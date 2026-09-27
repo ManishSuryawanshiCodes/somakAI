@@ -477,6 +477,12 @@ class OrgStore:
         if req.ai_connected is not None:
             checklist.ai_connected = req.ai_connected
 
+        if req.nvidia_nim_api_key is not None:
+            checklist.nvidia_nim_api_key = encrypt_secret(req.nvidia_nim_api_key)
+            checklist.nvidia_nim_connected = bool(req.nvidia_nim_api_key)
+        if req.nvidia_nim_connected is not None:
+            checklist.nvidia_nim_connected = req.nvidia_nim_connected
+
         if req.anthropic_api_key is not None:
             checklist.anthropic_api_key = encrypt_secret(req.anthropic_api_key)
             checklist.anthropic_connected = bool(req.anthropic_api_key)
@@ -548,6 +554,8 @@ class OrgStore:
                 org.setup_checklist.openai_connected = bool(new_value)
             elif secret_type == "google_api_key":
                 org.setup_checklist.google_connected = bool(new_value)
+            elif secret_type == "nvidia_nim_api_key":
+                org.setup_checklist.nvidia_nim_connected = bool(new_value)
             elif secret_type == "tavily_api_key":
                 org.setup_checklist.tavily_connected = bool(new_value)
             self._sync_org_to_db(org)
@@ -566,8 +574,10 @@ class OrgStore:
             enc_key = ch.anthropic_api_key
         elif prov == "openai":
             enc_key = ch.openai_api_key
-        elif prov == "google":
+        elif prov in ("google", "gemini"):
             enc_key = ch.google_api_key
+        elif prov in ("nvidia_nim", "nvidia"):
+            enc_key = getattr(ch, "nvidia_nim_api_key", "")
         elif prov == "nebius":
             enc_key = ch.nebius_api_key or ch.ai_api_key
 

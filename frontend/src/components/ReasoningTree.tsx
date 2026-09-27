@@ -17,8 +17,8 @@ export default function ReasoningTree({ currentStep = 4, incidentId, incident }:
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
 
   // Derive steps dynamically from incident if available, or use defaults
-  const triageModelName = incident?.triage_model?.split('/')?.pop()?.replace(/-/g, ' ') || 'Nemotron-3-Nano (30B)';
-  const synthModelName = incident?.synthesis_model?.split('/')?.pop()?.replace(/-/g, ' ') || 'Nemotron-3-Ultra (550B)';
+  const triageModelName = incident?.model_display_name || incident?.triage_model?.split('/')?.pop()?.replace(/-/g, ' ') || 'Nemotron-3-Super (120B)';
+  const synthModelName = incident?.model_display_name || incident?.synthesis_model?.split('/')?.pop()?.replace(/-/g, ' ') || 'Nemotron-3-Ultra (550B)';
 
   const defaultSteps = [
     {
@@ -26,11 +26,11 @@ export default function ReasoningTree({ currentStep = 4, incidentId, incident }:
       title: 'Triage & Log Fingerprinting',
       desc: incident?.triage_model 
         ? `${incident.triage_model.split('/').pop()} extracted stack signature and classified root cause as ${incident.severity} on ${incident.service}.`
-        : 'NVIDIA Nemotron-3-Nano extracted stack signature ERR_EVENTEMITTER_LEAK and flagged src/services/tokenService.ts as SEV-1 root.',
+        : 'NVIDIA Nemotron-3-Super extracted stack signature ERR_EVENTEMITTER_LEAK and flagged src/services/tokenService.ts as SEV-1 root.',
       duration: '0.4s',
       model: triageModelName,
       statusText: `Classified ${incident?.severity || 'SEV-1'}`,
-      fallback: incident?.fallback_occurred && incident?.triage_provider === 'nebius' && incident?.triage_model?.includes('nemotron'),
+      fallback: incident?.fallback_occurred && (incident?.triage_source === 'server_fallback' || incident?.triage_source === 'simulated'),
       fallbackMessage: incident?.fallback_message,
     },
     {
@@ -54,7 +54,7 @@ export default function ReasoningTree({ currentStep = 4, incidentId, incident }:
       duration: '3.8s',
       model: synthModelName,
       statusText: 'AST Verified',
-      fallback: incident?.fallback_occurred && incident?.synthesis_provider === 'nebius' && incident?.synthesis_model?.includes('nemotron'),
+      fallback: incident?.fallback_occurred && (incident?.synthesis_source === 'server_fallback' || incident?.synthesis_source === 'simulated'),
       fallbackMessage: incident?.fallback_message,
     },
     {

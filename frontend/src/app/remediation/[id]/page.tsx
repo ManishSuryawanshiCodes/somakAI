@@ -175,6 +175,14 @@ export default function RemediationStudio() {
   const isHumanReview = activeIncident.status === 'NEEDS_HUMAN_REVIEW';
   const citations = activeIncident.rootCauseAnalysis?.tavilyCitations || [];
 
+  // Multi-Provider Full Disclosure Badge
+  const disclosureBadge = activeIncident.disclosure_badge || (
+    activeIncident.execution_mode === 'live' || (activeIncident.synthesis_source && activeIncident.synthesis_source !== 'simulated')
+      ? `Live — ${activeIncident.provider_display_name || 'NVIDIA NIM'} (${activeIncident.model_display_name || 'Nemotron-3-Ultra'})`
+      : 'Simulated result — no live API call'
+  );
+  const isLive = disclosureBadge.startsWith('Live');
+
   useEffect(() => {
     if (activeIncident?.service) {
       const mapping = getServiceRepoMapping(activeIncident.service);
@@ -206,13 +214,23 @@ export default function RemediationStudio() {
         {/* Verdict Header: One status pill + confidence number */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-white/10">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-mono text-xs text-slate-400 dark:text-slate-500">
                 {activeIncident.id}
               </span>
               <span className="text-slate-300 dark:text-slate-700 text-xs">•</span>
               <span className="font-semibold text-base text-slate-900 dark:text-white tracking-tight">
                 {activeIncident.service}
+              </span>
+              <span className="text-slate-300 dark:text-slate-700 text-xs">•</span>
+              {/* Full Disclosure Badge */}
+              <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full border ${
+                isLive
+                  ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                  : 'text-amber-700 dark:text-amber-400 bg-amber-500/10 border-amber-500/20'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                {disclosureBadge}
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
