@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Search,
@@ -14,6 +14,8 @@ import {
   ChevronUp,
   History,
   Sparkles,
+  Layers,
+  X,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import { useToast } from '@/components/ToastProvider';
@@ -107,8 +109,13 @@ const RUNBOOKS: RunbookPattern[] = [
   },
 ];
 
-export default function RunbooksPage() {
+function RunbooksContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const incidentQuery = searchParams.get('incident');
+
+  // If incident param is provided, use it; otherwise default to no incident context unless requested
+  const [activeIncident, setActiveIncident] = useState<string | null>(incidentQuery);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
@@ -130,6 +137,15 @@ export default function RunbooksPage() {
     });
   }, [search, selectedCategory]);
 
+  // Find the single highest-confidence match for the active incident
+  const topMatchId = useMemo(() => {
+    if (!activeIncident) return null;
+    const matches = filtered
+      .filter((r) => r.activeIncidentMatch === activeIncident)
+      .sort((a, b) => b.confidenceScore - a.confidenceScore);
+    return matches[0]?.id || null;
+  }, [activeIncident, filtered]);
+
   const handleApply = (pattern: RunbookPattern) => {
     setStagingId(pattern.id);
     addToast(`Staging ${pattern.id} to hotfix pipeline for ${pattern.targetService}...`, 'info');
@@ -142,9 +158,9 @@ export default function RunbooksPage() {
   };
 
   const handleApplyToActiveIncident = (pattern: RunbookPattern) => {
-    if (!pattern.activeIncidentMatch) return;
-    addToast(`Staging ${pattern.id} AST fix directly to active incident ${pattern.activeIncidentMatch}...`, 'info');
-    router.push(`/remediation/${pattern.activeIncidentMatch}?pattern=${pattern.id}`);
+    if (!activeIncident) return;
+    addToast(`Staging ${pattern.id} AST fix directly to active incident ${activeIncident}...`, 'info');
+    router.push(`/remediation/${activeIncident}?pattern=${pattern.id}`);
   };
 
   return (
@@ -161,14 +177,35 @@ export default function RunbooksPage() {
           <span>Radar</span>
         </Link>
 
-        {/* Clean Header: Title + Single Search Box + Single Filter Menu */}
+        {/* Clean Header: Title + Active Incident Indicator + Search & Filter */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-white/10">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Runbook Patterns
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Verified Abstract Syntax Tree remediation templates for recurring failure modes.
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                Runbook Patterns
+              </h1>
+              {activeIncident && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  Target: {activeIncident}
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              {activeIncident ? (
+                <span className="flex items-center gap-2">
+                  <span>Filtered recommendations for {activeIncident}.</span>
+                  <button
+                    onClick={() => setActiveIncident(null)}
+                    className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
+                  >
+                    Browse all patterns
+                  </button>
+                </span>
+              ) : (
+                'Verified Abstract Syntax Tree remediation templates for recurring failure modes.'
+              )}
             </p>
           </div>
 
@@ -189,7 +226,7 @@ export default function RunbooksPage() {
             <div className="relative">
               <button
                 onClick={() => setFilterMenuOpen((prev) => !prev)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <Filter className="w-3.5 h-3.5 text-slate-400" />
                 <span>{selectedCategory === 'all' ? 'Filter' : selectedCategory}</span>
@@ -205,7 +242,7 @@ export default function RunbooksPage() {
                         setSelectedCategory(cat);
                         setFilterMenuOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-slate-50 dark:hover:bg-white/5 transition-colors ${
+                      className={`w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer ${
                         selectedCategory === cat
                           ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
                           : 'text-slate-700 dark:text-slate-300'
@@ -223,6 +260,7 @@ export default function RunbooksPage() {
         {/* List of Runbook Pattern Cards */}
         <div className="space-y-3.5">
           {filtered.map((item) => {
+            const isTopMatch = activeIncident && item.id === topMatchId;
             const isApplied = appliedId === item.id;
             const isStaging = stagingId === item.id;
             const isVersionExpanded = expandedVersionId === item.id;
@@ -231,7 +269,11 @@ export default function RunbooksPage() {
             return (
               <div
                 key={item.id}
-                className="bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-xs hover:border-slate-300 dark:hover:border-white/20 transition-all space-y-3.5"
+                className={`bg-white dark:bg-[#0A0A0A] border rounded-2xl p-5 sm:p-6 shadow-xs transition-all space-y-3.5 ${
+                  isTopMatch
+                    ? 'border-emerald-500/50 dark:border-emerald-500/40 ring-1 ring-emerald-500/20'
+                    : 'border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
+                }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="space-y-1">
@@ -241,12 +283,12 @@ export default function RunbooksPage() {
                       <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                         {item.targetService}
                       </span>
-                      {item.activeIncidentMatch && (
+                      {activeIncident && isTopMatch && (
                         <>
                           <span className="text-slate-300 dark:text-slate-700">•</span>
-                          <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
                             <Sparkles className="w-2.5 h-2.5" />
-                            <span>Matches {item.activeIncidentMatch}</span>
+                            <span>Best Match for {activeIncident}</span>
                           </span>
                         </>
                       )}
@@ -261,48 +303,50 @@ export default function RunbooksPage() {
                       {item.confidenceScore}% confidence
                     </span>
 
-                    {item.activeIncidentMatch && (
+                    {/* Prominent Apply button ONLY on the single top match */}
+                    {isTopMatch ? (
                       <button
                         onClick={() => handleApplyToActiveIncident(item)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-2xs"
+                        className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-md shadow-emerald-600/20 active:scale-98 cursor-pointer"
                       >
                         <Sparkles className="w-3 h-3" />
-                        <span>Apply to {item.activeIncidentMatch}</span>
+                        <span>Apply to {activeIncident}</span>
+                      </button>
+                    ) : (
+                      /* Clean neutral Stage Fix button on all secondary/unmatched cards */
+                      <button
+                        onClick={() => handleApply(item)}
+                        disabled={isApplied || isStaging}
+                        title={isStaging ? 'Staging fix to pipeline…' : isApplied ? 'Fix staged' : 'Stage fix to hotfix pipeline'}
+                        className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          isApplied
+                            ? 'bg-emerald-600 text-white'
+                            : isStaging
+                            ? 'bg-slate-400 text-white cursor-not-allowed'
+                            : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 shadow-2xs'
+                        }`}
+                      >
+                        {isApplied ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Staged</span>
+                          </>
+                        ) : isStaging ? (
+                          <>
+                            <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            <span>Staging…</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Stage Fix</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </>
+                        )}
                       </button>
                     )}
-
-                    <button
-                      onClick={() => handleApply(item)}
-                      disabled={isApplied || isStaging}
-                      title={isStaging ? 'Staging fix to pipeline…' : isApplied ? 'Fix staged' : 'Stage fix to hotfix pipeline'}
-                      className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                        isApplied
-                          ? 'bg-emerald-600 text-white'
-                          : isStaging
-                          ? 'bg-slate-400 text-white cursor-not-allowed'
-                          : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 shadow-2xs'
-                      }`}
-                    >
-                      {isApplied ? (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Staged</span>
-                        </>
-                      ) : isStaging ? (
-                        <>
-                          <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          <span>Staging…</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Stage Fix</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </>
-                      )}
-                    </button>
                   </div>
                 </div>
 
@@ -315,7 +359,7 @@ export default function RunbooksPage() {
                   <div className="flex items-center justify-between">
                     <button
                       onClick={() => setExpandedVersionId(isVersionExpanded ? null : item.id)}
-                      className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
                     >
                       <History className="w-3.5 h-3.5 text-slate-400" />
                       <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
@@ -365,5 +409,13 @@ export default function RunbooksPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function RunbooksPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0A0A0A]" />}>
+      <RunbooksContent />
+    </Suspense>
   );
 }

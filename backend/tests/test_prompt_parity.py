@@ -141,7 +141,7 @@ async def test_graceful_degradation():
     from app.models.organization import CreateOrgRequest
     org = org_store.create_org(CreateOrgRequest(
         name="Parity Test Org",
-        slug="parity-test",
+        slug=f"parity-test-{int(time.time() * 1000)}",
         user_id="usr_parity",
         user_name="Parity Tester",
         user_email="parity@test.internal"

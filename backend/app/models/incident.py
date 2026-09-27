@@ -72,3 +72,8 @@ class SystemHealth(BaseModel):
     healthHistory: list[float]
     memoryUsage: list[dict]
     latencyData: list[dict]
+    status: str = "operational"  # "operational" | "degraded" | "outage"
+    database_status: str = "operational"
+    ai_provider_status: str = "operational"
+    webhook_status: str = "operational"
+    sandbox_status: str = "operational"

@@ -20,13 +20,14 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password?: string, role?: UserRole, name?: string) => Promise<{ user?: User; hasOrgs?: boolean; mfaRequired?: boolean; mfaTicket?: string }>;
-  completeMfaLogin: (ticket: string, code: string) => Promise<{ user: User; hasOrgs: boolean }>;
+  login: (email: string, password?: string, role?: UserRole, name?: string) => Promise<{ user?: User; hasOrgs?: boolean; onboardingCompleted?: boolean; mfaRequired?: boolean; mfaTicket?: string }>;
+  completeMfaLogin: (ticket: string, code: string) => Promise<{ user: User; hasOrgs: boolean; onboardingCompleted?: boolean }>;
   loginAsDemo: () => Promise<User>;
   signup: (email: string, password?: string, name?: string) => Promise<User>;
   signInWithOAuth: (provider: 'google' | 'github') => Promise<void>;
   logout: () => Promise<void> | void;
   switchRole: (role: UserRole) => void;
+  updateProfile: (updates: Partial<User>) => Promise<void>;
   canDeploy: boolean;
   canRollback: boolean;
   canManageSettings: boolean;
@@ -216,7 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password?: string,
     role: UserRole = 'Operator',
     name?: string
-  ): Promise<{ user?: User; hasOrgs?: boolean; mfaRequired?: boolean; mfaTicket?: string }> => {
+  ): Promise<{ user?: User; hasOrgs?: boolean; onboardingCompleted?: boolean; mfaRequired?: boolean; mfaTicket?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
     const defaultName = name || (cleanEmail
       ? cleanEmail.split('@')[0].replace('.', ' ').replace(/(^\w|\s\w)/g, (m) => m.toUpperCase())
@@ -272,7 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('somak_session_token', 'demo_session_' + demoRole.toLowerCase());
       } catch {}
 
-      return { user: demoUser, hasOrgs: true };
+      return { user: demoUser, hasOrgs: true, onboardingCompleted: true };
     }
 
     // 1. Try Supabase Auth login
@@ -347,37 +348,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {}
 
-    const hasOrgs = ((backendRes as any)?.organizations?.length > 0) || (backendRes as any)?.has_organizations || false;
-    return { user: newUser, hasOrgs };
+    const orgsList = (backendRes as any)?.organizations || [];
+    const hasOrgs = orgsList.length > 0 || (backendRes as any)?.has_organizations || false;
+    const activeOrg = orgsList[0];
+    const onboardingCompleted = activeOrg
+      ? (activeOrg.onboarding_completed ?? activeOrg.setup_checklist?.onboarding_completed ?? false)
+      : false;
+
+    return { user: newUser, hasOrgs, onboardingCompleted };
   };
 
   const signInWithOAuth = async (provider: 'google' | 'github') => {
     try {
       const supabase = createClient();
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${origin}/auth/callback`,
+          skipBrowserRedirect: true,
         },
       });
+
       if (error) {
         throw error;
       }
-    } catch (err: any) {
-      console.warn(`[OAuth] ${provider} direct signInWithOAuth fallback triggered:`, err?.message || err);
-      const isGoogle = provider.toLowerCase() === 'google';
-      const demoEmail = isGoogle ? 'developer@google-workspace.io' : 'octocat@github-enterprise.io';
-      const demoName = isGoogle ? 'Google Developer' : 'GitHub Engineer';
-      
-      const loggedUser = await login(demoEmail, undefined, 'Admin', demoName);
-      if (typeof window !== 'undefined') {
-        window.location.href = loggedUser.hasOrgs ? '/' : '/onboarding/create-org';
+
+      if (data?.url) {
+        // Pre-test the authorize endpoint to catch disabled/unsupported OAuth providers gracefully
+        try {
+          const testRes = await fetch(data.url, { method: 'GET', mode: 'cors' });
+          if (!testRes.ok && testRes.status === 400) {
+            const errJson = await testRes.json().catch(() => null);
+            if (errJson?.msg?.includes('Unsupported provider') || errJson?.error_code === 'validation_failed') {
+              throw new Error(
+                `${provider === 'google' ? 'Google' : 'GitHub'} OAuth is not enabled in your Supabase project settings. Please sign in with email/password or configure the provider in Supabase Auth.`
+              );
+            }
+          }
+        } catch (fetchErr: any) {
+          if (fetchErr.message?.includes('OAuth is not enabled')) {
+            throw fetchErr;
+          }
+          // CORS errors on subsequent 302 redirect indicate the endpoint attempted redirect to the provider, which means it is enabled!
+        }
+
+        window.location.href = data.url;
+        return;
       }
+    } catch (err: any) {
+      console.warn(`[OAuth] ${provider} signInWithOAuth error:`, err?.message || err);
+      throw err;
     }
   };
 
-  const completeMfaLogin = async (ticket: string, code: string): Promise<{ user: User; hasOrgs: boolean }> => {
+  const completeMfaLogin = async (ticket: string, code: string): Promise<{ user: User; hasOrgs: boolean; onboardingCompleted?: boolean }> => {
     const { verifyMfa } = await import('@/lib/api');
     const res = await verifyMfa(ticket, code);
     if (!res || !res.user) {
@@ -401,8 +426,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('somak_session_token', res.session_token);
       }
     } catch {}
-    const hasOrgs = (res.organizations?.length || 0) > 0;
-    return { user: newUser, hasOrgs };
+    const orgsList = (res as any)?.organizations || [];
+    const hasOrgs = orgsList.length > 0 || (res as any)?.has_organizations || false;
+    const activeOrg = orgsList[0];
+    const onboardingCompleted = activeOrg
+      ? (activeOrg.onboarding_completed ?? activeOrg.setup_checklist?.onboarding_completed ?? false)
+      : false;
+    return { user: newUser, hasOrgs, onboardingCompleted };
   };
 
   const loginAsDemo = async (): Promise<User> => {
@@ -460,6 +490,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   };
 
+  const updateProfile = async (updates: Partial<User>) => {
+    if (!user) return;
+    const updated: User = { ...user, ...updates };
+    if (updates.name) {
+      updated.avatar = updates.name.substring(0, 2).toUpperCase();
+    }
+    setUser(updated);
+    try {
+      localStorage.setItem('somak_user', JSON.stringify(updated));
+      localStorage.setItem('sentryops_user', JSON.stringify(updated));
+    } catch {}
+
+    try {
+      const supabase = createClient();
+      await supabase.auth.updateUser({
+        data: {
+          full_name: updated.name,
+          name: updated.name,
+        },
+      });
+    } catch (e) {
+      console.warn('[updateProfile] Supabase metadata update non-fatal:', e);
+    }
+  };
+
   const canDeploy = user?.role === 'Operator' || user?.role === 'Admin';
   const canRollback = user?.role === 'Operator' || user?.role === 'Admin';
   const canManageSettings = user?.role === 'Admin';
@@ -476,6 +531,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginAsDemo,
         logout,
         switchRole,
+        updateProfile,
         canDeploy,
         canRollback,
         canManageSettings,

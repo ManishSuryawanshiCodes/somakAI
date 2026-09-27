@@ -34,6 +34,7 @@ class SetupChecklist(BaseModel):
     team_invited: bool = False
     sandbox_concurrency: int = 4
     sandbox_timeout: int = 15
+    onboarding_completed: bool = False
 
     def get_masked(self) -> "SetupChecklist":
         """Returns sanitized checklist with secret values masked for public API transmission."""
@@ -58,6 +59,7 @@ class Organization(BaseModel):
     team_size: str | None = "2-10"
     primary_use_case: str | None = "Autonomous Incident Remediation"
     mfa_enforced: bool = False
+    onboarding_completed: bool = False
     plan: Literal['free', 'team', 'business', 'enterprise'] = 'business'
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     created_by: str
@@ -153,6 +155,7 @@ class UpdateSetupRequest(BaseModel):
     team_invited: bool | None = None
     sandbox_concurrency: int | None = None
     sandbox_timeout: int | None = None
+    onboarding_completed: bool | None = None
 
 class RotateSecretRequest(BaseModel):
     secret_type: Literal[

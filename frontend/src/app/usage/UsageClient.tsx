@@ -293,8 +293,26 @@ export default function UsageClient() {
     },
   ];
 
-  // Check for any resource >= 80% to fire an alert/notification
-  const highQuotaResources = resources.filter((r) => r.percent >= 80);
+  const checklist = currentOrg?.setup_checklist;
+  const connectedResources = resources.filter((res) => {
+    if (isAcme) return true;
+    if (res.id === 'nemotron') {
+      return Boolean(checklist?.ai_connected || nemotronUsed > 0);
+    }
+    if (res.id === 'sandbox') {
+      return Boolean(checklist?.ai_connected || sandboxUsed > 0);
+    }
+    if (res.id === 'tavily') {
+      return Boolean(checklist?.tavily_connected || tavilyUsed > 0);
+    }
+    if (res.id === 'envoy') {
+      return Boolean(checklist?.sentry_connected || envoyUsed > 0);
+    }
+    return true;
+  });
+
+  // Check for any connected resource >= 80% to fire an alert/notification
+  const highQuotaResources = connectedResources.filter((r) => r.percent >= 80);
 
   useEffect(() => {
     if (highQuotaResources.length > 0 && !quotaWarningFired) {
@@ -385,7 +403,27 @@ export default function UsageClient() {
           </div>
 
           <div className="divide-y divide-slate-100 dark:divide-white/5">
-            {resources.map((res) => {
+            {connectedResources.length === 0 ? (
+              <div className="p-8 text-center space-y-2">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto">
+                  <Cpu className="w-5 h-5" />
+                </div>
+                <div className="text-xs font-semibold text-slate-900 dark:text-white">No metered resources connected</div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                  Connect your Sentry DSN or configure an AI reasoning provider in Setup to activate live telemetry metering.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    href="/onboarding/setup"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                  >
+                    <span>Configure Integrations</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              connectedResources.map((res) => {
               const isOver80 = res.percent >= 80;
               const isExpanded = expandedRow === res.id;
 
@@ -469,7 +507,7 @@ export default function UsageClient() {
                   </AnimatePresence>
                 </div>
               );
-            })}
+            }))}
           </div>
         </div>
 

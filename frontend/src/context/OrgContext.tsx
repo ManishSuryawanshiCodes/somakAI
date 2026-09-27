@@ -41,6 +41,7 @@ export const DEFAULT_ACME_ORG: Organization = {
   plan: 'enterprise',
   created_at: '2026-09-01T00:00:00Z',
   created_by: 'usr_mv492',
+  onboarding_completed: true,
   setup_checklist: {
     sentry_connected: true,
     sentry_dsn: 'https://o000000.ingest.sentry.io/0000000',
@@ -67,6 +68,7 @@ export const DEFAULT_ACME_ORG: Organization = {
     slack_webhook: 'https://hooks.slack.com/services/T00/B00/XXXXXX',
     pagerduty_key: 'pd_••••••••••••••••',
     team_invited: true,
+    onboarding_completed: true,
   },
 };
 
@@ -221,6 +223,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         primary_use_case: data.primary_use_case || 'Autonomous Incident Remediation',
         created_at: new Date().toISOString(),
         created_by: user.id,
+        onboarding_completed: false,
         setup_checklist: {
           sentry_connected: false,
           sentry_dsn: '',
@@ -234,6 +237,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
           slack_webhook: '',
           pagerduty_key: '',
           team_invited: false,
+          onboarding_completed: false,
         },
       };
     }
@@ -267,6 +271,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
 
     const nextOrg: Organization = updated || {
       ...currentOrg,
+      onboarding_completed: data.onboarding_completed ?? currentOrg.onboarding_completed,
       setup_checklist: {
         ...currentOrg.setup_checklist,
         ...data,

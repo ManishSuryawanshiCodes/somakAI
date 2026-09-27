@@ -808,6 +808,9 @@ PROVIDER_REGISTRY = {
     },
 }
 
+# Provide backwards-compatible alias for "google"
+PROVIDER_REGISTRY["google"] = PROVIDER_REGISTRY["gemini"]
+
 SUPPORTED_PROVIDERS = PROVIDER_REGISTRY
 
 

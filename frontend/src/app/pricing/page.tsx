@@ -74,7 +74,7 @@ export default function PricingPage() {
             </div>
 
             <Link
-              href="/signup"
+              href="/signup?plan=free"
               className="w-full py-2.5 rounded-xl text-xs font-semibold text-center bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 transition-colors"
             >
               Start Free with SOMAK
@@ -121,13 +121,13 @@ export default function PricingPage() {
               </div>
             </div>
 
-            <button
-              onClick={handleCheckoutTeam}
+            <Link
+              href="/signup?plan=team"
               className="w-full py-2.5 rounded-xl text-xs font-semibold text-center bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs transition-colors flex items-center justify-center gap-1.5"
             >
-              <span>Start Free Trial (Dodo Checkout)</span>
+              <span>Get Started with Team</span>
               <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            </Link>
           </div>
 
           {/* Enterprise Tier */}

@@ -23,10 +23,80 @@ import {
   ExternalLink,
   Key,
   Flame,
+  Loader2,
 } from 'lucide-react';
 import { useOrg } from '@/context/OrgContext';
 import { useToast } from '@/components/ToastProvider';
 import InviteTeam from '@/components/InviteTeam';
+import { CustomSelect } from '@/components/CustomSelect';
+import { SetupChecklist } from '@/lib/types';
+
+interface AiProviderConfig {
+  id: string;
+  name: string;
+  badge: string;
+  placeholder: string;
+  hint: string;
+  models: { id: string; name: string }[];
+}
+
+const AI_PROVIDERS: AiProviderConfig[] = [
+  {
+    id: 'nvidia_nim',
+    name: 'NVIDIA NIM',
+    badge: 'Recommended',
+    placeholder: 'nvapi-...',
+    hint: 'API key starts with nvapi-',
+    models: [
+      { id: 'nvidia/nemotron-3-super-120b-a12b', name: 'Nemotron-3-Super (120B MoE — ultra-fast sub-100ms triage)' },
+      { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'Nemotron-3-Ultra (550B MoE — deep AST code synthesis)' },
+    ],
+  },
+  {
+    id: 'nebius',
+    name: 'Nebius AI Studio',
+    badge: 'BYOK Enabled',
+    placeholder: 'neb-... or sk-neb-...',
+    hint: 'API key starts with neb- or sk-neb-',
+    models: [
+      { id: 'nvidia/nemotron-3-nano-30b-a3b', name: 'Nemotron-3-Nano (30B Dense)' },
+      { id: 'nvidia/nemotron-3-ultra-550b', name: 'Nemotron-3-Ultra (550B MoE)' },
+    ],
+  },
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    badge: 'Server Fallback',
+    placeholder: 'AIzaSy...',
+    hint: 'API key starts with AIzaSy',
+    models: [
+      { id: 'gemini-flash-latest', name: 'Gemini 2.5 Flash (AST Reasoning & Low Latency)' },
+      { id: 'gemini-pro-latest', name: 'Gemini 2.5 Pro (Deep Code Synthesis)' },
+    ],
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic Claude',
+    badge: 'BYOK Enabled',
+    placeholder: 'sk-ant-...',
+    hint: 'API key starts with sk-ant-',
+    models: [
+      { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (Fast Triage)' },
+      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Frontier AST Patching)' },
+    ],
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI',
+    badge: 'BYOK Enabled',
+    placeholder: 'sk-...',
+    hint: 'API key starts with sk-',
+    models: [
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Fast Log Classification)' },
+      { id: 'gpt-4o', name: 'GPT-4o (High-Precision Code Synthesis)' },
+    ],
+  },
+];
 
 export default function SetupChecklistPage() {
   const router = useRouter();
@@ -34,6 +104,7 @@ export default function SetupChecklistPage() {
   const { showToast } = useToast();
 
   const [expandedId, setExpandedId] = useState<string | null>('sentry');
+  const [isCompleting, setIsCompleting] = useState(false);
 
   // Form states for checklist items
   const checklist = currentOrg?.setup_checklist || {
@@ -51,12 +122,33 @@ export default function SetupChecklistPage() {
     team_invited: false,
   };
 
+  const handleCompleteOrSkip = async () => {
+    setIsCompleting(true);
+    try {
+      await updateChecklist({ onboarding_completed: true });
+    } catch (e) {
+      console.warn('Failed to persist onboarding_completed:', e);
+    }
+    router.push('/');
+  };
+
   const [sentryDsn, setSentryDsn] = useState(checklist.sentry_dsn || '');
+  const [aiProvider, setAiProvider] = useState<string>(checklist.triage_provider || 'nvidia_nim');
   const [aiKey, setAiKey] = useState(checklist.ai_api_key || '');
-  const [modelTier, setModelTier] = useState(checklist.ai_model_tier || 'nvidia/nemotron-3-nano-30b-a3b');
+  const [modelTier, setModelTier] = useState(checklist.ai_model_tier || 'nvidia/nemotron-3-super-120b-a12b');
   const [tavilyKey, setTavilyKey] = useState(checklist.tavily_api_key || '');
   const [slackWebhook, setSlackWebhook] = useState(checklist.slack_webhook || '');
   const [pagerdutyKey, setPagerdutyKey] = useState(checklist.pagerduty_key || '');
+
+  const currentProviderConfig = AI_PROVIDERS.find((p) => p.id === aiProvider) || AI_PROVIDERS[0];
+
+  const handleProviderSelect = (providerId: string) => {
+    setAiProvider(providerId);
+    const target = AI_PROVIDERS.find((p) => p.id === providerId);
+    if (target && target.models.length > 0) {
+      setModelTier(target.models[0].id);
+    }
+  };
 
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [savingItem, setSavingItem] = useState<string | null>(null);
@@ -90,17 +182,24 @@ export default function SetupChecklistPage() {
 
   const handleSaveAI = async () => {
     setSavingItem('ai');
-    await updateChecklist({
+    const updates: Partial<SetupChecklist> = {
       ai_api_key: aiKey,
-      nvidia_nim_api_key: aiKey.startsWith('nvapi-') ? aiKey : undefined,
-      nebius_api_key: !aiKey.startsWith('nvapi-') ? aiKey : undefined,
-      triage_provider: aiKey.startsWith('nvapi-') ? 'nvidia_nim' : 'nebius',
-      synthesis_provider: aiKey.startsWith('nvapi-') ? 'nvidia_nim' : 'nebius',
+      triage_provider: aiProvider,
+      synthesis_provider: aiProvider,
+      triage_model: modelTier,
+      synthesis_model: modelTier,
       ai_model_tier: modelTier,
       ai_connected: Boolean(aiKey.trim()),
-    });
+    };
+    if (aiProvider === 'nvidia_nim') updates.nvidia_nim_api_key = aiKey;
+    if (aiProvider === 'nebius') updates.nebius_api_key = aiKey;
+    if (aiProvider === 'gemini') updates.google_api_key = aiKey;
+    if (aiProvider === 'anthropic') updates.anthropic_api_key = aiKey;
+    if (aiProvider === 'openai') updates.openai_api_key = aiKey;
+
+    await updateChecklist(updates);
     setSavingItem(null);
-    showToast('AI reasoning provider saved', 'success');
+    showToast(`${currentProviderConfig.name} provider saved`, 'success');
     setExpandedId('tavily');
   };
 
@@ -153,15 +252,25 @@ export default function SetupChecklistPage() {
       <div className="absolute top-1/4 -left-32 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Back to Radar Navigation */}
+      {/* Back to Radar Navigation & Skip Option */}
       <div className="w-full max-w-2xl mb-4 flex items-center justify-between z-10">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+        <button
+          type="button"
+          onClick={handleCompleteOrSkip}
+          disabled={isCompleting}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Radar</span>
-        </Link>
+        </button>
+        <button
+          type="button"
+          onClick={handleCompleteOrSkip}
+          disabled={isCompleting}
+          className="text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
+        >
+          Skip setup for now →
+        </button>
       </div>
 
       {/* Brand & Setup Header */}
@@ -307,8 +416,11 @@ export default function SetupChecklistPage() {
                 <div className="flex items-center justify-between pt-2">
                   <button
                     type="button"
-                    onClick={() => setExpandedId('ai')}
-                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    onClick={() => {
+                      updateChecklist({ onboarding_completed: true });
+                      setExpandedId('ai');
+                    }}
+                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
                   >
                     Skip for now
                   </button>
@@ -376,48 +488,70 @@ export default function SetupChecklistPage() {
                 exit={{ height: 0, opacity: 0 }}
                 className="p-4 pt-0 border-t border-slate-100 dark:border-white/10 space-y-3"
               >
+                {/* Provider Selector */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Nebius Token Factory / NVIDIA API Key
+                    AI Provider
                   </label>
+                  <CustomSelect
+                    value={aiProvider}
+                    onChange={handleProviderSelect}
+                    options={AI_PROVIDERS.map((p) => ({
+                      value: p.id,
+                      label: p.name,
+                      badge: p.badge,
+                    }))}
+                  />
+                </div>
+
+                {/* Dynamic API Key Input */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {currentProviderConfig.name} API Key (BYOK)
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {currentProviderConfig.hint}
+                    </span>
+                  </div>
                   <div className="relative">
                     <Key className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="password"
                       value={aiKey}
                       onChange={(e) => setAiKey(e.target.value)}
-                      placeholder="neb-tok-live-..."
-                      className="w-full font-mono text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-9 pr-3 text-slate-900 dark:text-white placeholder-slate-400"
+                      placeholder={currentProviderConfig.placeholder}
+                      className="w-full font-mono text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-9 pr-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                   </div>
                 </div>
 
+                {/* Dynamic Model Tier Selector */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Default Model Tier (NVIDIA NIM / Nebius)
+                    Default Model Tier
                   </label>
-                  <select
+                  <CustomSelect
                     value={modelTier}
-                    onChange={(e) => setModelTier(e.target.value)}
-                    className="w-full text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-900 dark:text-white font-mono"
-                  >
-                    <option value="nvidia/nemotron-3-super-120b-a12b">
-                      Nemotron-3-Super (120B MoE — ultra-fast sub-100ms triage)
-                    </option>
-                    <option value="nvidia/nemotron-3-ultra-550b-a55b">
-                      Nemotron-3-Ultra (550B MoE — deep AST code synthesis)
-                    </option>
-                  </select>
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    If no BYOK key is provided, Somak AI automatically uses the server-level fallback key (NVIDIA NIM, then Gemini).
+                    onChange={setModelTier}
+                    options={currentProviderConfig.models.map((m) => ({
+                      value: m.id,
+                      label: m.name,
+                    }))}
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
+                    If no BYOK key is provided, Somak AI automatically routes through server-level platform-metered Nemotron / Gemini fallback keys.
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
                   <button
                     type="button"
-                    onClick={() => setExpandedId('tavily')}
-                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    onClick={() => {
+                      updateChecklist({ onboarding_completed: true });
+                      setExpandedId('tavily');
+                    }}
+                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
                   >
                     Skip for now
                   </button>
@@ -507,8 +641,11 @@ export default function SetupChecklistPage() {
                 <div className="flex items-center justify-between pt-2">
                   <button
                     type="button"
-                    onClick={() => setExpandedId('notifications')}
-                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    onClick={() => {
+                      updateChecklist({ onboarding_completed: true });
+                      setExpandedId('notifications');
+                    }}
+                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
                   >
                     Skip for now
                   </button>
@@ -615,8 +752,11 @@ export default function SetupChecklistPage() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setExpandedId('team')}
-                      className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      onClick={() => {
+                        updateChecklist({ onboarding_completed: true });
+                        setExpandedId('team');
+                      }}
+                      className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
                     >
                       Skip for now
                     </button>
@@ -704,11 +844,21 @@ export default function SetupChecklistPage() {
 
           <button
             type="button"
-            onClick={() => router.push('/')}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 active:scale-98 btn-glow-primary"
+            onClick={handleCompleteOrSkip}
+            disabled={isCompleting}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 active:scale-98 btn-glow-primary cursor-pointer disabled:opacity-70"
           >
-            <span>Go to Dashboard</span>
-            <ArrowRight className="w-4 h-4" />
+            {isCompleting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Entering Dashboard...</span>
+              </>
+            ) : (
+              <>
+                <span>Go to Dashboard</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
       </motion.div>

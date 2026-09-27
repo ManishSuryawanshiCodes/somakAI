@@ -50,6 +50,7 @@ class OrgStore:
             slack_webhook=encrypt_secret("https://hooks.slack.com/services/T00/B00/X123456"),
             pagerduty_key=encrypt_secret("pd_live_a89f920bc481"),
             team_invited=True,
+            onboarding_completed=True,
         )
 
         acme_org = Organization(
@@ -61,6 +62,7 @@ class OrgStore:
             created_at=datetime.now(timezone.utc).isoformat(),
             created_by="usr_elena",
             plan="enterprise",
+            onboarding_completed=True,
             setup_checklist=acme_checklist,
         )
 
@@ -190,7 +192,8 @@ class OrgStore:
         inbound_url = f"https://api.somak.ai/v1/webhook/ingest/{clean_slug}"
         
         checklist = SetupChecklist(
-            sentry_inbound_url=inbound_url
+            sentry_inbound_url=inbound_url,
+            onboarding_completed=False,
         )
 
         org = Organization(
@@ -202,6 +205,7 @@ class OrgStore:
             plan=req.plan or "business",
             created_at=datetime.now(timezone.utc).isoformat(),
             created_by=req.user_id,
+            onboarding_completed=False,
             setup_checklist=checklist
         )
 
@@ -254,6 +258,7 @@ class OrgStore:
                         plan=r.get("plan", "business"),
                         created_at=r["created_at"],
                         created_by=r["created_by"],
+                        onboarding_completed=r.get("onboarding_completed", checklist.onboarding_completed),
                         setup_checklist=checklist
                     )
                     self._organizations[org.id] = org
@@ -523,6 +528,9 @@ class OrgStore:
             checklist.sandbox_concurrency = req.sandbox_concurrency
         if req.sandbox_timeout is not None:
             checklist.sandbox_timeout = req.sandbox_timeout
+        if req.onboarding_completed is not None:
+            checklist.onboarding_completed = req.onboarding_completed
+            org.onboarding_completed = req.onboarding_completed
 
         self._sync_org_to_db(org)
         return org

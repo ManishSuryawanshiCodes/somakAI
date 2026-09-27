@@ -90,7 +90,9 @@ class AgentRunner:
         try:
             func = getattr(target_provider, exec_func_name)
             result = await asyncio.wait_for(func(*args, **kwargs), timeout=stage_timeout)
-            return result, config.provider, config.model or "", config.source, "live", False, None
+            is_fallback = config.source == "server_fallback"
+            fallback_msg = f"Org BYOK unavailable, falling back to {config.display_name} server fallback" if is_fallback else None
+            return result, config.provider, config.model or "", config.source, "live", is_fallback, fallback_msg
         except Exception as e:
             last_error = str(e)
             logger.warning(f"[PriorityChain] Primary execution failed for {config.display_name} ({exec_func_name}): {e}")
@@ -220,15 +222,17 @@ class AgentRunner:
             incident.status = "INVESTIGATING"
 
             # Record Stage 1 consumption in usage store
+            t_in = triage_data.get("_tokens_in", 420)
+            t_out = triage_data.get("_tokens_out", 180)
             usage_store.record_call(
                 org_id=org_id,
                 provider=actual_triage_prov,
                 model=actual_triage_mdl,
                 stage="triage",
                 billing_type="byok" if actual_triage_src == "byok" else "metered",
-                tokens_in=420,
-                tokens_out=180,
-                cost_estimate=12.50
+                tokens_in=t_in,
+                tokens_out=t_out,
+                cost_estimate=round((t_in * 0.000008) + (t_out * 0.000024), 4) if actual_triage_src != "byok" else 0.0
             )
 
             triage_model_disp = get_model_display_name(actual_triage_prov, actual_triage_mdl)
@@ -316,15 +320,17 @@ class AgentRunner:
                 incident.disclosure_badge = "Simulated result — no live API call"
 
             # Record Stage 2 consumption in usage store
+            s_in = patch_data.get("_tokens_in", 1250)
+            s_out = patch_data.get("_tokens_out", 890)
             usage_store.record_call(
                 org_id=org_id,
                 provider=actual_synth_prov,
                 model=actual_synth_mdl,
                 stage="synthesis",
                 billing_type="byok" if actual_synth_src == "byok" else "metered",
-                tokens_in=1250,
-                tokens_out=890,
-                cost_estimate=48.00
+                tokens_in=s_in,
+                tokens_out=s_out,
+                cost_estimate=round((s_in * 0.000015) + (s_out * 0.000045), 4) if actual_synth_src != "byok" else 0.0
             )
 
             # Audit Log Entry with Full Key Source and Model Disclosure

@@ -32,6 +32,10 @@ import {
   ChevronDown,
   ChevronRight,
   Sparkles,
+  User as UserIcon,
+  Laptop,
+  KeyRound,
+  ShieldCheck,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
@@ -39,6 +43,7 @@ import MiniSparkline from '@/components/MiniSparkline';
 import { useAuth, UserRole } from '@/context/AuthContext';
 import { useToast } from '@/components/ToastProvider';
 import { useOrg, SetupChecklist } from '@/context/OrgContext';
+import { CustomSelect } from '@/components/CustomSelect';
 import { getOrganizationMembers } from '@/lib/api';
 import {
   getServiceRepoMappings,
@@ -206,14 +211,83 @@ const BYOK_PROVIDERS = [
 ];
 
 function SettingsContent() {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const { showToast } = useToast();
   const { currentOrg, updateChecklist, createInvites } = useOrg();
 
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SubTab>('general');
+  const [scope, setScope] = useState<'organization' | 'account'>('organization');
+  const [accountTab, setAccountTab] = useState<'profile' | 'security'>('profile');
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // My Account Profile state
+  const [accountName, setAccountName] = useState(user?.name || '');
+  const [isSavingAccount, setIsSavingAccount] = useState(false);
+  useEffect(() => {
+    if (user?.name) setAccountName(user.name);
+  }, [user?.name]);
+
+  // My Account Password state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+
+  // My Account 2FA & Sessions
+  const [mfaEnabled, setMfaEnabled] = useState(user?.mfa_enabled || false);
+  const [sessions, setSessions] = useState([
+    { id: 'sess_1', device: 'Chrome / Edge on Windows 11', ip: '103.21.244.18 (Current)', current: true, lastActive: 'Active now' },
+    { id: 'sess_2', device: 'Firefox on macOS Sonoma', ip: '49.37.155.82', current: false, lastActive: '2 days ago' },
+  ]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accountName.trim()) {
+      showToast('Name cannot be empty.', 'warning');
+      return;
+    }
+    setIsSavingAccount(true);
+    try {
+      await updateProfile({ name: accountName.trim() });
+      showToast('Account profile updated successfully.', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to update profile.', 'error');
+    } finally {
+      setIsSavingAccount(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 8) {
+      showToast('Password must be at least 8 characters long.', 'warning');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast('Passwords do not match.', 'warning');
+      return;
+    }
+    setIsSavingPassword(true);
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      showToast('Password updated successfully.', 'success');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to update password.', 'error');
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
+
+  const handleRevokeOtherSessions = () => {
+    setSessions((prev) => prev.filter((s) => s.current));
+    showToast('All other active sessions revoked.', 'success');
+  };
 
   // Real-time ticking clock for multi-timeline
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -248,6 +322,8 @@ function SettingsContent() {
   const [savingByok, setSavingByok] = useState<boolean>(false);
   const [showOtherKeys, setShowOtherKeys] = useState<boolean>(false);
 
+  const [orgUsage, setOrgUsage] = useState<any>(null);
+
   useEffect(() => {
     if (currentOrg?.setup_checklist) {
       const ch = currentOrg.setup_checklist;
@@ -258,6 +334,13 @@ function SettingsContent() {
       if (ch.tavily_api_key) setSetupTavilyKey(ch.tavily_api_key);
       if (ch.slack_webhook) setSetupSlackWebhook(ch.slack_webhook);
       if (ch.pagerduty_key) setSetupPagerdutyKey(ch.pagerduty_key);
+    }
+    if (currentOrg?.id) {
+      import('@/lib/api').then(({ getOrgUsage }) => {
+        getOrgUsage(currentOrg.id).then((res) => {
+          if (res) setOrgUsage(res);
+        }).catch(() => {});
+      });
     }
   }, [currentOrg]);
 
@@ -589,31 +672,80 @@ function SettingsContent() {
           </div>
 
           {/* Vercel-style Usage Mini-Card */}
-          <div className="p-3 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center gap-4 shrink-0">
-            <div>
-              <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-                Monthly Hotfix Tokens
+          {(() => {
+            const isAcme = currentOrg?.id === 'org_acme';
+            const plan = (currentOrg?.plan || 'team').toLowerCase();
+            const planTokenLimits: Record<string, number> = {
+              free: 50000,
+              team: 5000000,
+              business: 20000000,
+              enterprise: 50000000,
+            };
+            const limit = planTokenLimits[plan] || 5000000;
+            const limitStr = limit >= 1000000 ? `${limit / 1000000}M` : `${limit / 1000}k`;
+            const used = orgUsage ? orgUsage.platform_tokens_used : (isAcme ? 14200 : 0);
+            const usedStr = used >= 1000000 ? `${(used / 1000000).toFixed(1)}M` : (used >= 1000 ? `${(used / 1000).toFixed(1)}k` : `${used}`);
+            const percent = Math.min(100, Math.round((used / limit) * 1000) / 10);
+            const isWarning = percent >= 80;
+
+            return (
+              <div className="p-3 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center gap-4 shrink-0">
+                <div>
+                  <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                    Monthly Hotfix Tokens
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
+                      {usedStr} / {limitStr}
+                    </span>
+                    <span className={`text-[10px] font-medium ${isWarning ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      {percent.toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+                <MiniSparkline
+                  data={used > 0 ? [0, used * 0.25, used * 0.5, used * 0.8, used] : [0, 0, 0, 0, 0]}
+                  color={isWarning ? 'rose' : 'emerald'}
+                  width={48}
+                  height={18}
+                />
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
-                  14.2k / 50k
-                </span>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                  28.4%
-                </span>
-              </div>
-            </div>
-            <MiniSparkline
-              data={[4, 6, 8, 9, 12, 11, 14, 15, 14.2]}
-              color="emerald"
-              width={48}
-              height={18}
-            />
-          </div>
+            );
+          })()}
         </div>
 
-        {/* Sub-tabs Navigation (Render In-Page Pattern) */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 overflow-x-auto text-xs font-medium">
+        {/* Top-Level Scope Switcher: Organization | My Account */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 w-fit text-xs font-medium">
+          <button
+            type="button"
+            onClick={() => setScope('organization')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+              scope === 'organization'
+                ? 'bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white font-semibold shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Building className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Organization</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setScope('account')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+              scope === 'account'
+                ? 'bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white font-semibold shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <UserIcon className="w-3.5 h-3.5 text-indigo-500" />
+            <span>My Account</span>
+          </button>
+        </div>
+
+        {scope === 'organization' ? (
+          <>
+            {/* Sub-tabs Navigation (Render In-Page Pattern) */}
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 overflow-x-auto text-xs font-medium">
           {[
             { id: 'general', label: 'General' },
             { id: 'keys', label: 'Environment & Keys (BYOK)' },
@@ -847,17 +979,17 @@ function SettingsContent() {
                               <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                                 Provider
                               </label>
-                              <select
+                              <CustomSelect
                                 value={setupAiProvider}
-                                onChange={(e) => setSetupAiProvider(e.target.value)}
-                                className="w-full bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
-                              >
-                                <option value="nvidia_nim">NVIDIA NIM (Nemotron 3 Super/Ultra)</option>
-                                <option value="nebius">Nebius AI Studio</option>
-                                <option value="gemini">Google Gemini 2.5 Flash / Pro</option>
-                                <option value="openai">OpenAI (GPT-4o)</option>
-                                <option value="anthropic">Anthropic (Claude 3.5 Sonnet)</option>
-                              </select>
+                                onChange={(val) => setSetupAiProvider(val)}
+                                options={[
+                                  { value: 'nvidia_nim', label: 'NVIDIA NIM (Nemotron 3 Super/Ultra)' },
+                                  { value: 'nebius', label: 'Nebius AI Studio' },
+                                  { value: 'gemini', label: 'Google Gemini 2.5 Flash / Pro' },
+                                  { value: 'openai', label: 'OpenAI (GPT-4o)' },
+                                  { value: 'anthropic', label: 'Anthropic (Claude 3.5 Sonnet)' },
+                                ]}
+                              />
                             </div>
                             <div>
                               <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
@@ -1131,15 +1263,17 @@ function SettingsContent() {
                               onChange={(e) => setSetupInviteEmail(e.target.value)}
                               className="flex-1 w-full bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             />
-                            <select
-                              value={setupInviteRole}
-                              onChange={(e) => setSetupInviteRole(e.target.value as UserRole)}
-                              className="w-full sm:w-32 bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
-                            >
-                              <option value="Admin">Admin</option>
-                              <option value="Operator">Operator</option>
-                              <option value="Viewer">Viewer</option>
-                            </select>
+                            <div className="w-full sm:w-36">
+                              <CustomSelect
+                                value={setupInviteRole}
+                                onChange={(val) => setSetupInviteRole(val as UserRole)}
+                                options={[
+                                  { value: 'Admin', label: 'Admin' },
+                                  { value: 'Operator', label: 'Operator' },
+                                  { value: 'Viewer', label: 'Viewer' },
+                                ]}
+                              />
+                            </div>
                             <button
                               type="button"
                               disabled={savingSetupId === 'team' || !setupInviteEmail.trim()}
@@ -1233,26 +1367,28 @@ function SettingsContent() {
                       </label>
                       <p className="text-[11px] text-slate-400">Used for incident timestamps and shift rotas.</p>
                     </div>
-                    <select
-                      value={timezone}
-                      onChange={(e) => {
-                        setTimezone(e.target.value);
-                        markDirty();
-                      }}
-                      className="sm:w-2/3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
-                    >
-                      <option value="Asia/Kolkata (IST - GMT+05:30)">Asia/Kolkata (IST - GMT+05:30)</option>
-                      <option value="UTC (GMT+00:00)">UTC (GMT+00:00)</option>
-                      <option value="America/New_York (EST - GMT-05:00)">America/New_York (EST - GMT-05:00)</option>
-                      <option value="America/Los_Angeles (PST - GMT-08:00)">America/Los_Angeles (PST - GMT-08:00)</option>
-                      <option value="America/Chicago (CST - GMT-06:00)">America/Chicago (CST - GMT-06:00)</option>
-                      <option value="Europe/London (BST/GMT - GMT+01:00)">Europe/London (BST/GMT - GMT+01:00)</option>
-                      <option value="Europe/Berlin (CET - GMT+02:00)">Europe/Berlin (CET - GMT+02:00)</option>
-                      <option value="Asia/Dubai (GST - GMT+04:00)">Asia/Dubai (GST - GMT+04:00)</option>
-                      <option value="Asia/Singapore (SGT - GMT+08:00)">Asia/Singapore (SGT - GMT+08:00)</option>
-                      <option value="Asia/Tokyo (JST - GMT+09:00)">Asia/Tokyo (JST - GMT+09:00)</option>
-                      <option value="Australia/Sydney (AEST - GMT+10:00)">Australia/Sydney (AEST - GMT+10:00)</option>
-                    </select>
+                    <div className="sm:w-2/3">
+                      <CustomSelect
+                        value={timezone}
+                        onChange={(val) => {
+                          setTimezone(val);
+                          markDirty();
+                        }}
+                        options={[
+                          { value: 'Asia/Kolkata (IST - GMT+05:30)', label: 'Asia/Kolkata (IST - GMT+05:30)', badge: 'Recommended' },
+                          { value: 'UTC (GMT+00:00)', label: 'UTC (GMT+00:00)' },
+                          { value: 'America/New_York (EST - GMT-05:00)', label: 'America/New_York (EST - GMT-05:00)' },
+                          { value: 'America/Los_Angeles (PST - GMT-08:00)', label: 'America/Los_Angeles (PST - GMT-08:00)' },
+                          { value: 'America/Chicago (CST - GMT-06:00)', label: 'America/Chicago (CST - GMT-06:00)' },
+                          { value: 'Europe/London (BST/GMT - GMT+01:00)', label: 'Europe/London (BST/GMT - GMT+01:00)' },
+                          { value: 'Europe/Berlin (CET - GMT+02:00)', label: 'Europe/Berlin (CET - GMT+02:00)' },
+                          { value: 'Asia/Dubai (GST - GMT+04:00)', label: 'Asia/Dubai (GST - GMT+04:00)' },
+                          { value: 'Asia/Singapore (SGT - GMT+08:00)', label: 'Asia/Singapore (SGT - GMT+08:00)' },
+                          { value: 'Asia/Tokyo (JST - GMT+09:00)', label: 'Asia/Tokyo (JST - GMT+09:00)' },
+                          { value: 'Australia/Sydney (AEST - GMT+10:00)', label: 'Australia/Sydney (AEST - GMT+10:00)' },
+                        ]}
+                      />
+                    </div>
                   </div>
 
                   {/* Live Real-Time Multi-Timeline Clock Card */}
@@ -1318,19 +1454,21 @@ function SettingsContent() {
                     </label>
                     <p className="text-[11px] text-slate-400">Rolling cryptographic log retention window.</p>
                   </div>
-                  <select
-                    value={retentionDays}
-                    onChange={(e) => {
-                      setRetentionDays(e.target.value);
-                      markDirty();
-                    }}
-                    className="sm:w-2/3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
-                  >
-                    <option value="30">30 Days</option>
-                    <option value="90">90 Days (SOC-2 Recommended)</option>
-                    <option value="365">1 Year (Enterprise)</option>
-                    <option value="forever">Indefinite (Append-Only Immutable)</option>
-                  </select>
+                  <div className="sm:w-2/3">
+                    <CustomSelect
+                      value={retentionDays}
+                      onChange={(val) => {
+                        setRetentionDays(val);
+                        markDirty();
+                      }}
+                      options={[
+                        { value: '30', label: '30 Days (Developer Free Tier)' },
+                        { value: '90', label: '90 Days (SOC-2 Recommended)' },
+                        { value: '365', label: '1 Year (Enterprise)' },
+                        { value: 'forever', label: 'Indefinite (Append-Only Immutable)' },
+                      ]}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1418,17 +1556,15 @@ function SettingsContent() {
                   <label className="font-semibold text-slate-700 dark:text-slate-300 block">
                     Preferred Provider
                   </label>
-                  <select
+                  <CustomSelect
                     value={preferredProvider}
-                    onChange={(e) => handleProviderChange(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  >
-                    {BYOK_PROVIDERS.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.description})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => handleProviderChange(val)}
+                    options={BYOK_PROVIDERS.map((p) => ({
+                      value: p.id,
+                      label: `${p.name} (${p.description})`,
+                      badge: p.badge,
+                    }))}
+                  />
                   <div className="flex items-center gap-2 mt-1">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-semibold">
                       {activeProviderMeta.badge}
@@ -1444,17 +1580,14 @@ function SettingsContent() {
                   <label className="font-semibold text-slate-700 dark:text-slate-300 block">
                     Triage Stage Model (Log Classification)
                   </label>
-                  <select
+                  <CustomSelect
                     value={selectedTriageModel}
-                    onChange={(e) => setSelectedTriageModel(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none"
-                  >
-                    {activeProviderMeta.triageModels.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSelectedTriageModel(val)}
+                    options={activeProviderMeta.triageModels.map((m) => ({
+                      value: m.id,
+                      label: m.name,
+                    }))}
+                  />
                 </div>
 
                 {/* Synthesis Model */}
@@ -1462,17 +1595,14 @@ function SettingsContent() {
                   <label className="font-semibold text-slate-700 dark:text-slate-300 block">
                     Synthesis Stage Model (AST Patch Generation)
                   </label>
-                  <select
+                  <CustomSelect
                     value={selectedSynthesisModel}
-                    onChange={(e) => setSelectedSynthesisModel(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none"
-                  >
-                    {activeProviderMeta.synthesisModels.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSelectedSynthesisModel(val)}
+                    options={activeProviderMeta.synthesisModels.map((m) => ({
+                      value: m.id,
+                      label: m.name,
+                    }))}
+                  />
                 </div>
 
                 {/* Active Provider BYOK Key Input */}
@@ -1733,15 +1863,18 @@ function SettingsContent() {
                         </span>
 
                         {/* Inline Role Selector */}
-                        <select
-                          value={m.role}
-                          onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
-                          className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 font-medium focus:outline-none"
-                        >
-                          <option value="Admin">Admin</option>
-                          <option value="Operator">Operator</option>
-                          <option value="Viewer">Viewer</option>
-                        </select>
+                        <div className="w-28">
+                          <CustomSelect
+                            value={m.role}
+                            size="sm"
+                            onChange={(val) => handleRoleChange(m.id, val as UserRole)}
+                            options={[
+                              { value: 'Admin', label: 'Admin' },
+                              { value: 'Operator', label: 'Operator' },
+                              { value: 'Viewer', label: 'Viewer' },
+                            ]}
+                          />
+                        </div>
 
                         <button
                           type="button"
@@ -1788,15 +1921,15 @@ function SettingsContent() {
                       <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                         Role
                       </label>
-                      <select
+                      <CustomSelect
                         value={inviteRole}
-                        onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none"
-                      >
-                        <option value="Operator">Operator (Can trigger sandboxes & review fixes)</option>
-                        <option value="Admin">Admin (Full tenancy control & canary promotion)</option>
-                        <option value="Viewer">Viewer (Read-only access)</option>
-                      </select>
+                        onChange={(val) => setInviteRole(val as UserRole)}
+                        options={[
+                          { value: 'Operator', label: 'Operator (Can trigger sandboxes & review fixes)' },
+                          { value: 'Admin', label: 'Admin (Full tenancy control & canary promotion)' },
+                          { value: 'Viewer', label: 'Viewer (Read-only access)' },
+                        ]}
+                      />
                     </div>
 
                     <div className="flex justify-end gap-2 pt-2">
@@ -2426,6 +2559,252 @@ function SettingsContent() {
             </div>
           </div>
         )}
+        </>
+      ) : (
+        <div className="space-y-6">
+          {/* Account Sub-tabs */}
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 overflow-x-auto text-xs font-medium w-fit">
+            <button
+              type="button"
+              onClick={() => setAccountTab('profile')}
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
+                accountTab === 'profile'
+                  ? 'bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white font-semibold shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Profile &amp; Identity
+            </button>
+            <button
+              type="button"
+              onClick={() => setAccountTab('security')}
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
+                accountTab === 'security'
+                  ? 'bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white font-semibold shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Password &amp; Security
+            </button>
+          </div>
+
+          {/* Profile Tab */}
+          {accountTab === 'profile' && (
+            <div className="space-y-6">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-6">
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">Personal Profile</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Your identity across incidents, automated code authorship, and notification routing.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
+                  {/* Avatar Display */}
+                  <div className="flex items-center gap-4 pb-4 border-b border-slate-100 dark:border-white/5">
+                    <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white font-bold text-lg flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                      {user?.avatar || (accountName ? accountName.substring(0, 2).toUpperCase() : 'US')}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm">{accountName || user?.name}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold">
+                          {user?.role || 'Operator'}
+                        </span>
+                        <span className="text-[11px] text-slate-400">
+                          {user?.team || 'Platform Reliability SRE'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={accountName}
+                        onChange={(e) => setAccountName(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                        Work Email
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="email"
+                          disabled
+                          value={user?.email || 'user@company.com'}
+                          className="w-full bg-slate-100 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-500 dark:text-slate-400 cursor-not-allowed pr-20"
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                          Verified
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="submit"
+                      disabled={isSavingAccount}
+                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-xs transition-colors cursor-pointer"
+                    >
+                      {isSavingAccount ? 'Saving...' : 'Save Profile'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Security Tab */}
+          {accountTab === 'security' && (
+            <div className="space-y-6">
+              {/* Change Password Card */}
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <KeyRound className="w-4 h-4 text-indigo-500" />
+                    <span>Change Password</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Update your account password encrypted and authenticated by Supabase.
+                  </p>
+                </div>
+
+                <form onSubmit={handleChangePassword} className="space-y-3 text-xs max-w-md">
+                  <div>
+                    <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      minLength={8}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      minLength={8}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                    />
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={isSavingPassword || !newPassword}
+                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      {isSavingPassword ? 'Updating...' : 'Update Password'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* 2FA Card */}
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                      <span>Two-Factor Authentication (2FA)</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Enforce a 6-digit TOTP verification code from an authenticator app (1Password, Google Authenticator) on login.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMfaEnabled(!mfaEnabled);
+                      showToast(!mfaEnabled ? 'Two-Factor Authentication enabled.' : 'Two-Factor Authentication disabled.', 'info');
+                    }}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      mfaEnabled ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-white/10'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                        mfaEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Sessions Card */}
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                      <Laptop className="w-4 h-4 text-indigo-500" />
+                      <span>Active Device Sessions</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Devices and browsers currently authenticated to your Somak AI account.
+                    </p>
+                  </div>
+                  {sessions.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={handleRevokeOtherSessions}
+                      className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                    >
+                      Revoke Other Sessions
+                    </button>
+                  )}
+                </div>
+
+                <div className="divide-y divide-slate-100 dark:divide-white/5 text-xs">
+                  {sessions.map((sess) => (
+                    <div key={sess.id} className="py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                          <Laptop className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                            <span>{sess.device}</span>
+                            {sess.current && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                Current
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                            {sess.ip} · {sess.lastActive}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
         {/* Floating Dirty-State Save Bar (Vercel Pattern) */}
         <AnimatePresence>

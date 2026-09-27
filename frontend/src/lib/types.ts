@@ -82,6 +82,7 @@ export interface SetupChecklist {
   sentry_connected: boolean;
   sentry_dsn: string;
   sentry_inbound_url: string;
+  sentry_webhook_secret?: string;
   ai_connected: boolean;
   ai_api_key: string;
   nebius_api_key?: string;
@@ -106,6 +107,7 @@ export interface SetupChecklist {
   team_invited: boolean;
   sandbox_concurrency?: number;
   sandbox_timeout?: number;
+  onboarding_completed?: boolean;
 }
 
 export interface ProviderModelSummary {
@@ -176,6 +178,7 @@ export interface Organization {
   created_by: string;
   setup_checklist: SetupChecklist;
   mfa_enforced?: boolean;
+  onboarding_completed?: boolean;
 }
 
 export interface OrgMemberUser {

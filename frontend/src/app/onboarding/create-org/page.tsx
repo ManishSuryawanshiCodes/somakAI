@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useId } from 'react';
+import React, { useState, useEffect, useId, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Building2,
@@ -15,22 +15,29 @@ import {
   AlertCircle,
   Loader2,
   Shield,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useOrg } from '@/context/OrgContext';
 import { checkSlugAvailability } from '@/lib/api';
 import { analytics } from '@/lib/analytics';
+import { CustomSelect } from '@/components/CustomSelect';
 
-export default function CreateOrgPage() {
+function CreateOrgContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planParam = searchParams.get('plan');
   const { user } = useAuth();
-  const { createOrg } = useOrg();
+  const { createOrg, updateOrgPlan } = useOrg();
 
   const [orgName, setOrgName] = useState('');
   const [slug, setSlug] = useState('');
   const [isSlugCustomized, setIsSlugCustomized] = useState(false);
   const [teamSize, setTeamSize] = useState('2-10');
   const [primaryUseCase, setPrimaryUseCase] = useState('Autonomous Incident Remediation');
+  const [plan, setPlan] = useState<'free' | 'team' | 'enterprise'>(
+    planParam === 'team' || planParam === 'enterprise' ? planParam : 'free'
+  );
 
   const [slugChecking, setSlugChecking] = useState(false);
   const [isSlugAvailable, setIsSlugAvailable] = useState<boolean | null>(null);
@@ -116,15 +123,36 @@ export default function CreateOrgPage() {
         primary_use_case: primaryUseCase,
       });
 
+      if (plan !== 'free') {
+        try {
+          await updateOrgPlan(plan);
+        } catch (planErr) {
+          console.warn('Failed to persist plan:', planErr);
+        }
+      }
+
       analytics.track('org_created', {
         org_id: slug.trim(),
         slug: slug.trim(),
         team_size: teamSize,
       });
 
-      // Redirect directly to the guided setup checklist
+      analytics.track('plan_selected', {
+        plan,
+        org_id: slug.trim(),
+        slug: slug.trim(),
+        team_size: teamSize,
+      });
+
+      // Route paid to Dodo checkout, enterprise to contact, or free to setup
       setTimeout(() => {
-        router.push('/onboarding/setup');
+        if (plan === 'team') {
+          router.push(`/checkout?plan=team&org=${encodeURIComponent(slug.trim())}`);
+        } else if (plan === 'enterprise') {
+          router.push(`/contact?plan=enterprise&org=${encodeURIComponent(slug.trim())}`);
+        } else {
+          router.push('/onboarding/setup');
+        }
       }, 400);
     } catch (err: any) {
       setError(err?.message || 'Failed to create organization. Please try again.');
@@ -271,16 +299,16 @@ export default function CreateOrgPage() {
               <Users className="w-3.5 h-3.5 text-slate-400" />
               <span>Team Size (optional)</span>
             </label>
-            <select
+            <CustomSelect
               value={teamSize}
-              onChange={(e) => setTeamSize(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2.5 px-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="Just me">Just me (Solo engineer / eval)</option>
-              <option value="2-10">2 - 10 engineers</option>
-              <option value="11-50">11 - 50 engineers</option>
-              <option value="50+">50+ engineers (Enterprise SRE)</option>
-            </select>
+              onChange={setTeamSize}
+              options={[
+                { value: 'Just me', label: 'Just me (Solo engineer / eval)' },
+                { value: '2-10', label: '2 - 10 engineers' },
+                { value: '11-50', label: '11 - 50 engineers' },
+                { value: '50+', label: '50+ engineers (Enterprise SRE)' },
+              ]}
+            />
           </div>
 
           {/* Primary Use Case */}
@@ -289,24 +317,75 @@ export default function CreateOrgPage() {
               <Target className="w-3.5 h-3.5 text-slate-400" />
               <span>Primary Use Case (optional)</span>
             </label>
-            <select
+            <CustomSelect
               value={primaryUseCase}
-              onChange={(e) => setPrimaryUseCase(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2.5 px-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="Autonomous Incident Remediation">
-                Autonomous Incident Remediation (NVIDIA Nemotron AST fix)
-              </option>
-              <option value="Error Monitoring & Triage">
-                Error Monitoring & Telemetry Triage
-              </option>
-              <option value="SLO & Error Budget Tracking">
-                SLO & Error Budget Tracking
-              </option>
-              <option value="On-Call Escalation & Alerting">
-                On-Call Escalation & Paging
-              </option>
-            </select>
+              onChange={setPrimaryUseCase}
+              options={[
+                {
+                  value: 'Autonomous Incident Remediation',
+                  label: 'Autonomous Incident Remediation (NVIDIA Nemotron AST fix)',
+                },
+                {
+                  value: 'Error Monitoring & Triage',
+                  label: 'Error Monitoring & Telemetry Triage',
+                },
+                {
+                  value: 'SLO & Error Budget Tracking',
+                  label: 'SLO & Error Budget Tracking',
+                },
+                {
+                  value: 'On-Call Escalation & Alerting',
+                  label: 'On-Call Escalation & Paging',
+                },
+              ]}
+            />
+          </div>
+
+          {/* Plan Selection Tier */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Selected Plan</span>
+              </span>
+              <span className="text-[10px] text-slate-400">Can be upgraded anytime</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'free', label: 'Developer', price: '$0', desc: 'Free during eval' },
+                { id: 'team', label: 'Team', price: '$79/mo', desc: 'Canary & Nemotron', popular: true },
+                { id: 'enterprise', label: 'Enterprise', price: 'Custom', desc: 'Dedicated SLA' },
+              ].map((p) => {
+                const isSelected = plan === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setPlan(p.id as any);
+                      analytics.track('plan_selected', { plan: p.id, source: 'create_org_step' });
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition-all relative ${
+                      isSelected
+                        ? 'bg-indigo-600/10 border-indigo-500 text-white shadow-xs'
+                        : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200'
+                    }`}
+                  >
+                    {p.popular && (
+                      <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded-full text-[8px] font-mono font-bold bg-indigo-600 text-white uppercase">
+                        Popular
+                      </span>
+                    )}
+                    <div className="font-semibold text-xs text-white flex items-center justify-between">
+                      <span>{p.label}</span>
+                      {isSelected && <CheckCircle2 className="w-3 h-3 text-indigo-400" />}
+                    </div>
+                    <div className="text-[10px] font-mono font-bold text-indigo-400 mt-0.5">{p.price}</div>
+                    <div className="text-[9px] text-slate-400 truncate mt-0.5">{p.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Single primary button */}
@@ -314,7 +393,7 @@ export default function CreateOrgPage() {
             <button
               type="submit"
               disabled={isSubmitting || isSlugAvailable === false}
-              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 active:scale-98 btn-glow-primary disabled:opacity-50"
+              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 active:scale-98 btn-glow-primary disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -323,7 +402,13 @@ export default function CreateOrgPage() {
                 </>
               ) : (
                 <>
-                  <span>Create Organization</span>
+                  <span>
+                    {plan === 'team'
+                      ? 'Continue to Checkout ($79)'
+                      : plan === 'enterprise'
+                      ? 'Contact Sales & Enterprise SLA'
+                      : 'Create Organization'}
+                  </span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -340,5 +425,13 @@ export default function CreateOrgPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function CreateOrgPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#07090E]" />}>
+      <CreateOrgContent />
+    </Suspense>
   );
 }

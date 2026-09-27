@@ -44,6 +44,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { useAppShell } from './AppShell';
 import { useOrg } from '@/context/OrgContext';
+import Modal from './Modal';
 
 interface TopNavProps {
   onSimulate?: () => void;
@@ -66,6 +67,38 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [connectionModalOpen, setConnectionModalOpen] = useState(false);
   const [connectionState, setConnectionState] = useState<'connected' | 'reconnecting' | 'offline'>('connected');
+
+  // Real-time System Status Poll
+  useEffect(() => {
+    let isMounted = true;
+    const checkSystemHealth = async () => {
+      try {
+        const res = await fetch('/api/health');
+        if (!res.ok) {
+          if (isMounted) setConnectionState('offline');
+          return;
+        }
+        const data = await res.json();
+        if (!isMounted) return;
+        if (data.status === 'operational') {
+          setConnectionState('connected');
+        } else if (data.status === 'degraded') {
+          setConnectionState('reconnecting');
+        } else {
+          setConnectionState('offline');
+        }
+      } catch (err) {
+        if (isMounted) setConnectionState('offline');
+      }
+    };
+
+    checkSystemHealth();
+    const interval = setInterval(checkSystemHealth, 35000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const { currentOrg } = useOrg();
   const [streamPaused, setStreamPaused] = useState(false);
@@ -891,180 +924,174 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
       </AnimatePresence>
 
       {/* Live SSE Telemetry Terminal Card / Modal */}
-      <AnimatePresence>
-        {connectionModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-2xl bg-white dark:bg-[#0A0D14] border border-slate-200/90 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col text-slate-900 dark:text-slate-100"
-            >
-              {/* Terminal Window Header */}
-              <div className="px-5 py-3.5 bg-slate-100/90 dark:bg-black/60 border-b border-slate-200 dark:border-white/10 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-xs text-slate-900 dark:text-white">
-                        SOMAK AI LIVE TELEMETRY
-                      </span>
-                      <span className="px-1.5 py-0.2 rounded font-mono text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        SSE STREAM ACTIVE
-                      </span>
-                    </div>
-                    <p className="text-[10px] font-mono text-slate-400 mt-0.5">
-                      GET /api/incidents/stream • Protocol: HTTP/2 • Ingress: us-east-1
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setStreamPaused((p) => !p)}
-                    title={streamPaused ? 'Resume stream' : 'Pause stream'}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors flex items-center gap-1 text-[11px] font-semibold"
-                  >
-                    {streamPaused ? <Play className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500" /> : <Pause className="w-3.5 h-3.5 text-amber-500" />}
-                    <span className="hidden sm:inline">{streamPaused ? 'Resume' : 'Pause'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(streamLogs.join('\n'));
-                      setCopiedLogs(true);
-                      setTimeout(() => setCopiedLogs(false), 2000);
-                    }}
-                    title="Copy stream logs"
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors flex items-center gap-1 text-[11px]"
-                  >
-                    {copiedLogs ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span className="hidden sm:inline">{copiedLogs ? 'Copied' : 'Copy'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => setStreamLogs([`[${new Date().toLocaleTimeString()}] [SSE_CLEARED] Stream log cleared by operator`])}
-                    title="Clear stream logs"
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    onClick={() => setConnectionModalOpen(false)}
-                    aria-label="Close telemetry card"
-                    className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors ml-1"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
+      <Modal
+        isOpen={connectionModalOpen}
+        onClose={() => setConnectionModalOpen(false)}
+        maxWidth="max-w-2xl"
+        zIndex="z-50"
+      >
+        {/* Terminal Window Header */}
+        <div className="px-5 py-3.5 bg-slate-100/90 dark:bg-black/60 border-b border-slate-200 dark:border-white/10 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-bold text-xs text-slate-900 dark:text-white">
+                  SOMAK AI LIVE TELEMETRY
+                </span>
+                <span className="px-1.5 py-0.2 rounded font-mono text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  SSE STREAM ACTIVE
+                </span>
               </div>
-
-              {/* Streaming Monospace Terminal Body */}
-              <div className="p-4 bg-[#07090E] border-b border-slate-800">
-                <div className="font-mono text-xs text-slate-300 max-h-72 overflow-y-auto space-y-1.5 scrollbar-thin select-text">
-                  {streamLogs.map((log, index) => {
-                    const isHeartbeat = log.includes('[HEARTBEAT]');
-                    const isTelemetry = log.includes('[TELEMETRY]');
-                    const isIngest = log.includes('[INGEST]');
-                    const isSandbox = log.includes('[SANDBOX]');
-                    const isHandshake = log.includes('[SSE_HANDSHAKE]') || log.includes('[SSE_CONNECTED]');
-
-                    return (
-                      <div key={index} className="flex items-start gap-2 leading-relaxed">
-                        <span className="text-slate-600 select-none text-[10px] mt-0.5">❯</span>
-                        <span className={
-                          isHeartbeat
-                            ? 'text-emerald-400'
-                            : isTelemetry
-                            ? 'text-cyan-400'
-                            : isIngest
-                            ? 'text-indigo-300'
-                            : isSandbox
-                            ? 'text-amber-300'
-                            : isHandshake
-                            ? 'text-emerald-300 font-semibold'
-                            : 'text-slate-300'
-                        }>
-                          {log}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Live Metric Stats Bar & Controls */}
-              <div className="p-4 bg-slate-50/70 dark:bg-black/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="grid grid-cols-3 gap-4 font-mono text-[11px]">
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Latency RTT</span>
-                    <strong className="text-emerald-600 dark:text-emerald-400 font-bold">12ms</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Packet Loss</span>
-                    <strong className="text-slate-700 dark:text-slate-300 font-bold">0.00%</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Workspace</span>
-                    <strong className="text-slate-700 dark:text-slate-300 font-bold truncate block max-w-28">
-                      {currentOrg?.name || 'Workspace'}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex p-0.5 rounded-lg bg-slate-200/80 dark:bg-white/10 w-44">
-                    <button
-                      type="button"
-                      onClick={() => setConnectionState('connected')}
-                      className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${
-                        connectionState === 'connected'
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      Live
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConnectionState('reconnecting')}
-                      className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${
-                        connectionState === 'reconnecting'
-                          ? 'bg-amber-600 text-white shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      Reconn
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConnectionState('offline')}
-                      className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${
-                        connectionState === 'offline'
-                          ? 'bg-rose-600 text-white shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      Offline
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => setConnectionModalOpen(false)}
-                    className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 rounded-xl text-xs font-bold transition-colors shadow-2xs"
-                  >
-                    Done
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+              <p className="text-[10px] font-mono text-slate-400 mt-0.5">
+                GET /api/incidents/stream • Protocol: HTTP/2 • Ingress: us-east-1
+              </p>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setStreamPaused((p) => !p)}
+              title={streamPaused ? 'Resume stream' : 'Pause stream'}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors flex items-center gap-1 text-[11px] font-semibold cursor-pointer"
+            >
+              {streamPaused ? <Play className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500" /> : <Pause className="w-3.5 h-3.5 text-amber-500" />}
+              <span className="hidden sm:inline">{streamPaused ? 'Resume' : 'Pause'}</span>
+            </button>
+
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(streamLogs.join('\n'));
+                setCopiedLogs(true);
+                setTimeout(() => setCopiedLogs(false), 2000);
+              }}
+              title="Copy stream logs"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors flex items-center gap-1 text-[11px] cursor-pointer"
+            >
+              {copiedLogs ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{copiedLogs ? 'Copied' : 'Copy'}</span>
+            </button>
+
+            <button
+              onClick={() => setStreamLogs([`[${new Date().toLocaleTimeString()}] [SSE_CLEARED] Stream log cleared by operator`])}
+              title="Clear stream logs"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => setConnectionModalOpen(false)}
+              aria-label="Close telemetry card"
+              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors ml-1 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Streaming Monospace Terminal Body */}
+        <div className="p-4 bg-[#07090E] border-b border-slate-800">
+          <div className="font-mono text-xs text-slate-300 max-h-72 overflow-y-auto space-y-1.5 scrollbar-thin select-text">
+            {streamLogs.map((log, index) => {
+              const isHeartbeat = log.includes('[HEARTBEAT]');
+              const isTelemetry = log.includes('[TELEMETRY]');
+              const isIngest = log.includes('[INGEST]');
+              const isSandbox = log.includes('[SANDBOX]');
+              const isHandshake = log.includes('[SSE_HANDSHAKE]') || log.includes('[SSE_CONNECTED]');
+
+              return (
+                <div key={index} className="flex items-start gap-2 leading-relaxed">
+                  <span className="text-slate-600 select-none text-[10px] mt-0.5">❯</span>
+                  <span className={
+                    isHeartbeat
+                      ? 'text-emerald-400'
+                      : isTelemetry
+                      ? 'text-cyan-400'
+                      : isIngest
+                      ? 'text-indigo-300'
+                      : isSandbox
+                      ? 'text-amber-300'
+                      : isHandshake
+                      ? 'text-emerald-300 font-semibold'
+                      : 'text-slate-300'
+                  }>
+                    {log}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Live Metric Stats Bar & Controls */}
+        <div className="p-4 bg-slate-50/70 dark:bg-black/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="grid grid-cols-3 gap-4 font-mono text-[11px]">
+            <div>
+              <span className="text-slate-400 block text-[10px]">Latency RTT</span>
+              <strong className="text-emerald-600 dark:text-emerald-400 font-bold">12ms</strong>
+            </div>
+            <div>
+              <span className="text-slate-400 block text-[10px]">Packet Loss</span>
+              <strong className="text-slate-700 dark:text-slate-300 font-bold">0.00%</strong>
+            </div>
+            <div>
+              <span className="text-slate-400 block text-[10px]">Workspace</span>
+              <strong className="text-slate-700 dark:text-slate-300 font-bold truncate block max-w-28">
+                {currentOrg?.name || 'Workspace'}
+              </strong>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex p-0.5 rounded-lg bg-slate-200/80 dark:bg-white/10 w-44">
+              <button
+                type="button"
+                onClick={() => setConnectionState('connected')}
+                className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${
+                  connectionState === 'connected'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Live
+              </button>
+              <button
+                type="button"
+                onClick={() => setConnectionState('reconnecting')}
+                className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${
+                  connectionState === 'reconnecting'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Reconn
+              </button>
+              <button
+                type="button"
+                onClick={() => setConnectionState('offline')}
+                className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${
+                  connectionState === 'offline'
+                    ? 'bg-rose-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Offline
+              </button>
+            </div>
+
+            <button
+              onClick={() => setConnectionModalOpen(false)}
+              className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 rounded-xl text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

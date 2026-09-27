@@ -18,6 +18,7 @@ import {
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
 import { useOrg } from '@/context/OrgContext';
+import { CustomSelect } from '@/components/CustomSelect';
 
 interface HistoricalIncident {
   id: string;
@@ -429,34 +430,37 @@ export default function HistoryPage() {
           </div>
 
           {/* Date-Range Selector */}
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value as any)}
-            className="bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-800 dark:text-slate-200 font-medium focus:outline-none"
-            aria-label="Filter by time range"
-          >
-            <option value="all">Time: All History</option>
-            <option value="24h">Time: Last 24 Hours</option>
-            <option value="7d">Time: Last 7 Days</option>
-            <option value="30d">Time: Last 30 Days</option>
-          </select>
+          <div className="w-44">
+            <CustomSelect
+              value={dateRange}
+              onChange={(val) => setDateRange(val as any)}
+              options={[
+                { value: 'all', label: 'Time: All History' },
+                { value: '24h', label: 'Time: Last 24 Hours' },
+                { value: '7d', label: 'Time: Last 7 Days' },
+                { value: '30d', label: 'Time: Last 30 Days' },
+              ]}
+            />
+          </div>
 
           {/* Unified single filter dropdown */}
-          <select
-            value={selectedFilter}
-            onChange={(e) => setSelectedFilter(e.target.value)}
-            className="bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-xl py-2 px-3 text-xs text-slate-800 dark:text-slate-200 font-medium focus:outline-none"
-          >
-            <option value="ALL">All Categories</option>
-            <option value="sev:SEV-1">Severity: SEV-1</option>
-            <option value="sev:SEV-2">Severity: SEV-2</option>
-            <option value="svc:auth-service">auth-service</option>
-            <option value="svc:payment-gateway">payment-gateway</option>
-            <option value="svc:ingress-nginx">ingress-nginx</option>
-            <option value="svc:redis-cluster">redis-cluster</option>
-            <option value="svc:user-service">user-service</option>
-            <option value="svc:billing-api">billing-api</option>
-          </select>
+          <div className="w-48">
+            <CustomSelect
+              value={selectedFilter}
+              onChange={setSelectedFilter}
+              options={[
+                { value: 'ALL', label: 'All Categories' },
+                { value: 'sev:SEV-1', label: 'Severity: SEV-1' },
+                { value: 'sev:SEV-2', label: 'Severity: SEV-2' },
+                { value: 'svc:auth-service', label: 'auth-service' },
+                { value: 'svc:payment-gateway', label: 'payment-gateway' },
+                { value: 'svc:ingress-nginx', label: 'ingress-nginx' },
+                { value: 'svc:redis-cluster', label: 'redis-cluster' },
+                { value: 'svc:user-service', label: 'user-service' },
+                { value: 'svc:billing-api', label: 'billing-api' },
+              ]}
+            />
+          </div>
 
           {/* Export CSV Button */}
           <button

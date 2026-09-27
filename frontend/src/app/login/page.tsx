@@ -93,10 +93,12 @@ export default function LoginPage() {
       await refreshOrgData();
 
       setTimeout(() => {
-        if (res?.hasOrgs) {
-          router.push('/');
-        } else {
+        if (!res?.hasOrgs) {
           router.push('/onboarding/create-org');
+        } else if (res?.onboardingCompleted === false) {
+          router.push('/onboarding/setup');
+        } else {
+          router.push('/');
         }
       }, 400);
     } catch (err: unknown) {
@@ -120,13 +122,15 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const { hasOrgs } = await completeMfaLogin(mfaTicket, mfaCode.trim());
+      const { hasOrgs, onboardingCompleted } = await completeMfaLogin(mfaTicket, mfaCode.trim());
       await refreshOrgData();
       setTimeout(() => {
-        if (hasOrgs) {
-          router.push('/');
-        } else {
+        if (!hasOrgs) {
           router.push('/onboarding/create-org');
+        } else if (onboardingCompleted === false) {
+          router.push('/onboarding/setup');
+        } else {
+          router.push('/');
         }
       }, 400);
     } catch (err: unknown) {
@@ -139,13 +143,15 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
     try {
-      const { hasOrgs } = await login(emailStr, undefined, role, name);
+      const { hasOrgs, onboardingCompleted } = await login(emailStr, undefined, role, name);
       await refreshOrgData();
       setTimeout(() => {
-        if (hasOrgs) {
-          router.push('/');
-        } else {
+        if (!hasOrgs) {
           router.push('/onboarding/create-org');
+        } else if (onboardingCompleted === false) {
+          router.push('/onboarding/setup');
+        } else {
+          router.push('/');
         }
       }, 400);
     } catch (err: unknown) {
@@ -158,21 +164,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
     try {
-      if (signInWithOAuth) {
-        await signInWithOAuth(provider.toLowerCase() as 'google' | 'github');
-      } else {
-        const demoEmail = provider === 'Google' ? 'developer@google-workspace.io' : 'octocat@github-enterprise.io';
-        const demoName = provider === 'Google' ? 'Google Developer' : 'GitHub Engineer';
-        const { hasOrgs } = await login(demoEmail, undefined, 'Operator', demoName);
-        await refreshOrgData();
-        setTimeout(() => {
-          if (hasOrgs) {
-            router.push('/');
-          } else {
-            router.push('/onboarding/create-org');
-          }
-        }, 400);
-      }
+      await signInWithOAuth(provider.toLowerCase() as 'google' | 'github');
     } catch (err: unknown) {
       if ((err as Error)?.name === 'RateLimitError' || (err as { retryAfter?: number })?.retryAfter) {
         setError((err as Error).message);

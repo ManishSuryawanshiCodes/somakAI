@@ -11,6 +11,7 @@
 export type AnalyticsEvent =
   | 'signup_completed'
   | 'org_created'
+  | 'plan_selected'
   | 'integration_connected'
   | 'incident_viewed'
   | 'deploy_approved'
@@ -27,6 +28,13 @@ export interface AnalyticsProperties {
     org_id: string;
     slug: string;
     team_size?: string;
+  };
+  plan_selected: {
+    plan: string;
+    org_id?: string;
+    slug?: string;
+    team_size?: string;
+    source?: string;
   };
   integration_connected: {
     service: 'sentry' | 'datadog' | 'github' | 'gitlab' | 'slack' | 'pagerduty' | string;
