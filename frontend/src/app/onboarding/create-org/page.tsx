@@ -161,11 +161,7 @@ function CreateOrgContent() {
   };
 
   return (
-    <div className="min-h-screen bg-radial-gradient flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
-      {/* Background ambient lighting */}
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0A0A0A] text-slate-900 dark:text-slate-100 flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
       {/* Back to Radar Navigation */}
       <div className="w-full max-w-lg mb-4 flex items-center justify-between z-10">
         <Link
@@ -210,7 +206,7 @@ function CreateOrgContent() {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.35, delay: 0.08 }}
-        className="w-full max-w-lg glass-modal rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10"
+        className="w-full max-w-lg bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10"
       >
         {error && (
           <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
@@ -234,7 +230,7 @@ function CreateOrgContent() {
                 value={orgName}
                 onChange={handleNameChange}
                 placeholder="e.g. Acme Corp or Stark Industries"
-                className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
+                className="w-full bg-slate-50 dark:bg-[#0E0E10] border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all font-medium"
               />
             </div>
           </div>
@@ -247,7 +243,7 @@ function CreateOrgContent() {
               </label>
               {slugChecking ? (
                 <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                  <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />
+                  <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
                   Checking...
                 </span>
               ) : isSlugAvailable === true ? (
@@ -273,12 +269,12 @@ function CreateOrgContent() {
                 value={slug}
                 onChange={handleSlugChange}
                 placeholder="acme-corp"
-                className={`w-full bg-slate-50 dark:bg-slate-800/80 border rounded-xl py-2.5 pl-24 pr-3 text-xs font-mono text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                className={`w-full bg-slate-50 dark:bg-[#0E0E10] border rounded-xl py-2.5 pl-24 pr-3 text-xs font-mono text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 transition-all ${
                   isSlugAvailable === false
                     ? 'border-rose-500/50 focus:ring-rose-500'
                     : isSlugAvailable === true
                     ? 'border-emerald-500/50 focus:ring-emerald-500'
-                    : 'border-slate-200 dark:border-slate-700 focus:ring-indigo-500'
+                    : 'border-slate-200 dark:border-white/10 focus:ring-white/20'
                 }`}
               />
             </div>

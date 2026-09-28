@@ -95,8 +95,6 @@ export default function LoginPage() {
       setTimeout(() => {
         if (!res?.hasOrgs) {
           router.push('/onboarding/create-org');
-        } else if (res?.onboardingCompleted === false) {
-          router.push('/onboarding/setup');
         } else {
           router.push('/');
         }
@@ -127,8 +125,6 @@ export default function LoginPage() {
       setTimeout(() => {
         if (!hasOrgs) {
           router.push('/onboarding/create-org');
-        } else if (onboardingCompleted === false) {
-          router.push('/onboarding/setup');
         } else {
           router.push('/');
         }
@@ -196,7 +192,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between items-center p-6 sm:p-10 lg:p-12 bg-[#FAF8F5] dark:bg-[#070709] text-slate-900 dark:text-white relative overflow-y-auto">
+    <div className="min-h-screen w-full flex flex-col justify-between items-center p-6 sm:p-10 lg:p-12 bg-[#FAF8F5] dark:bg-[#0A0A0A] text-slate-900 dark:text-white relative overflow-y-auto">
       {/* Top Header: Brand + Back Button */}
       <div className="w-full max-w-md flex items-center justify-between mb-8">
         <Link href="/" className="inline-flex items-center gap-2.5 group">

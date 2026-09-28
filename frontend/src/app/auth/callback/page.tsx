@@ -83,17 +83,8 @@ function AuthCallbackContent() {
           // New user with no organization -> Go straight to Org Creation
           router.replace('/onboarding/create-org');
         } else {
-          // Existing user -> check if onboarding completed
-          const firstOrg = orgs[0];
-          const isCompleted =
-            firstOrg.onboarding_completed === true ||
-            firstOrg.setup_checklist?.onboarding_completed === true;
-
-          if (isCompleted) {
-            router.replace('/dashboard');
-          } else {
-            router.replace('/onboarding/setup');
-          }
+          // Existing user -> route directly to Dashboard
+          router.replace('/');
         }
       } catch (err: any) {
         if (isMounted) {
@@ -112,19 +103,19 @@ function AuthCallbackContent() {
 
   if (errorMsg) {
     return (
-      <div className="min-h-screen bg-[#06090F] flex items-center justify-center p-4">
-        <div className="max-w-md w-full p-6 rounded-2xl bg-[#0C1017] border border-rose-500/20 shadow-2xl text-center space-y-4">
+      <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0A0A0A] flex items-center justify-center p-4">
+        <div className="max-w-md w-full p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-rose-500/20 shadow-2xl text-center space-y-4">
           <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto text-rose-400">
             <AlertCircle className="w-6 h-6" />
           </div>
           <div className="space-y-1">
-            <h2 className="text-base font-bold text-white">Authentication Failed</h2>
-            <p className="text-xs text-slate-400 leading-relaxed">{errorMsg}</p>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">Authentication Failed</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{errorMsg}</p>
           </div>
           <div className="pt-2">
             <Link
-              href="/signin"
-              className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-colors"
+              href="/login"
+              className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-900 dark:text-white text-xs font-semibold border border-slate-200 dark:border-white/10 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Sign In</span>
@@ -136,8 +127,8 @@ function AuthCallbackContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#06090F] flex items-center justify-center p-4">
-      <div className="max-w-md w-full p-8 rounded-2xl bg-[#0C1017] border border-white/10 shadow-2xl text-center space-y-5">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0A0A0A] flex items-center justify-center p-4">
+      <div className="max-w-md w-full p-8 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 shadow-2xl text-center space-y-5">
         <div className="relative w-14 h-14 mx-auto flex items-center justify-center">
           <div className="absolute inset-0 rounded-2xl bg-indigo-500/10 animate-pulse border border-indigo-500/20" />
           <Loader2 className="w-7 h-7 text-indigo-400 animate-spin" />

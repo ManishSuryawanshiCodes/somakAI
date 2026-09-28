@@ -311,7 +311,7 @@ export default function Sidebar({
             <div className="relative mt-1" ref={workspaceRef}>
               <button
                 onClick={() => setWorkspaceOpen((prev) => !prev)}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 transition-all text-left"
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-all text-left"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <Building2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
@@ -351,8 +351,8 @@ export default function Sidebar({
                           }}
                           className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition-colors ${
                             isSelected
-                              ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold'
-                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                              ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-bold'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.04]'
                           }`}
                         >
                           <span className="truncate">{item.organization.name}</span>
@@ -366,14 +366,14 @@ export default function Sidebar({
                       );
                     })}
 
-                    <div className="pt-1 mt-1 border-t border-slate-100 dark:border-slate-800">
+                    <div className="pt-1 mt-1 border-t border-slate-100 dark:border-white/10">
                       <Link
                         href="/onboarding/create-org"
                         onClick={() => {
                           setWorkspaceOpen(false);
                           if (isMobileDrawer) onCloseMobileDrawer?.();
                         }}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors"
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-black dark:hover:text-white transition-colors"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>+ Create new organization</span>
@@ -597,8 +597,8 @@ export default function Sidebar({
                       }}
                       className={`w-full flex items-center justify-between px-2 py-1 rounded-lg text-xs ${
                         user?.role === r
-                          ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-bold'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.04]'
                       }`}
                     >
                       <span>{r}</span>
@@ -614,7 +614,7 @@ export default function Sidebar({
                       setTourOpen(true);
                       if (isMobileDrawer) onCloseMobileDrawer?.();
                     }}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 font-medium"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.04] hover:text-black dark:hover:text-white font-medium"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Product Tour</span>

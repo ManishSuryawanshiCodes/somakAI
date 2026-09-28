@@ -262,10 +262,10 @@ export default function OnboardingTour({
       </div>
 
       {/* Footer Controls */}
-      <div className="px-6 py-4 bg-slate-50/80 dark:bg-black/40 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-3">
+      <div className="px-6 py-4 bg-slate-50 dark:bg-[#0A0A0A] border-t border-slate-100 dark:border-white/10 flex items-center justify-between gap-3">
         <button
           onClick={() => jumpToScreen(step.route)}
-          className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white hover:underline transition-colors cursor-pointer"
         >
           <span>Navigate to screen</span>
           <ArrowUpRight className="w-3.5 h-3.5" />
@@ -284,7 +284,7 @@ export default function OnboardingTour({
 
           <button
             onClick={nextStep}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-200 dark:text-black transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-xs"
           >
             <span>{currentStep === steps.length - 1 ? 'Finish Tour' : 'Next Step'}</span>
             <ChevronRight className="w-3.5 h-3.5" />

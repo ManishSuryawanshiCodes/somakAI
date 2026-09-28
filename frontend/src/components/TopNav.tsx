@@ -544,7 +544,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 8 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-80 sm:w-96 glass-modal rounded-2xl overflow-hidden z-50 flex flex-col"
+                  className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden z-50 flex flex-col shadow-2xl backdrop-blur-xl"
                 >
                   <div className="px-4 py-3 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -600,7 +600,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                     </button>
                   </div>
 
-                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-white/5">
                     {notifications.filter((n) => {
                       if (notifFilter === 'unread') return !n.read;
                       if (notifFilter === 'critical') return n.severity === 'critical';
@@ -642,8 +642,8 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                                   router.push(notif.link);
                                 }
                               }}
-                              className={`p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors flex items-start gap-3 ${
-                                !notif.read ? 'bg-indigo-50/30 dark:bg-indigo-950/20' : ''
+                              className={`p-3.5 hover:bg-slate-50 dark:hover:bg-white/[0.04] cursor-pointer transition-colors flex items-start gap-3 ${
+                                !notif.read ? 'bg-slate-50 dark:bg-white/[0.03]' : ''
                               }`}
                             >
                               {iconMap[notif.severity]}
@@ -671,7 +671,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                     )}
                   </div>
 
-                  <div className="p-2.5 bg-slate-50/70 dark:bg-[#0A0A0A]/40 border-t border-slate-100 dark:border-white/10 flex items-center justify-between text-xs">
+                  <div className="p-2.5 bg-slate-50/70 dark:bg-[#0A0A0A] border-t border-slate-100 dark:border-white/10 flex items-center justify-between text-xs">
                     <Link
                       href="/history"
                       onClick={() => setNotifOpen(false)}

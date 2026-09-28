@@ -318,25 +318,44 @@ export default function AuditPage() {
             </p>
           </div>
 
-          {/* Mini Summary Card (Section 4 spec) */}
-          <div className="p-3 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center gap-4 shrink-0">
-            <div>
-              <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-                Audited Actions
+          {/* Mini Summary Card */}
+          {(() => {
+            const weeklyCount = isAcme ? 142 : events.length;
+            const sparklineData = isAcme
+              ? [12, 16, 19, 24, 28, 21, 22]
+              : weeklyCount === 0
+              ? [0, 0, 0, 0, 0, 0, 0]
+              : [
+                  Math.max(0, Math.floor(weeklyCount * 0.1)),
+                  Math.max(0, Math.floor(weeklyCount * 0.25)),
+                  Math.max(0, Math.floor(weeklyCount * 0.4)),
+                  Math.max(0, Math.floor(weeklyCount * 0.6)),
+                  Math.max(0, Math.floor(weeklyCount * 0.75)),
+                  Math.max(0, Math.floor(weeklyCount * 0.9)),
+                  weeklyCount,
+                ];
+
+            return (
+              <div className="p-3 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center gap-4 shrink-0">
+                <div>
+                  <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                    Audited Actions
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
+                      {weeklyCount} this week
+                    </span>
+                  </div>
+                </div>
+                <MiniSparkline
+                  data={sparklineData}
+                  color={weeklyCount > 0 ? 'emerald' : 'slate'}
+                  width={48}
+                  height={18}
+                />
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
-                  142 this week
-                </span>
-              </div>
-            </div>
-            <MiniSparkline
-              data={[12, 16, 19, 24, 28, 21, 22]}
-              color="indigo"
-              width={48}
-              height={18}
-            />
-          </div>
+            );
+          })()}
         </div>
 
         {/* Vercel Logs Top Bar: Search + Live Toggle + Export Button */}

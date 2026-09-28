@@ -156,7 +156,7 @@ function SignupContent() {
   };
 
   return (
-    <div className="min-h-screen w-full grid lg:grid-cols-12 bg-[#FAF8F5] dark:bg-[#070709] text-slate-900 dark:text-white">
+    <div className="min-h-screen w-full grid lg:grid-cols-12 bg-[#FAF8F5] dark:bg-[#0A0A0A] text-slate-900 dark:text-white">
       {/* Left Column: Sign Up Form Canvas */}
       <div className="lg:col-span-7 xl:col-span-6 flex flex-col justify-between p-6 sm:p-10 lg:p-12 relative overflow-y-auto">
         {/* Top Header: Brand + Back Button */}
@@ -436,11 +436,7 @@ function SignupContent() {
       </div>
 
       {/* Right Column: Split-screen Product Preview Panel (Hidden on Mobile) */}
-      <div className="hidden lg:flex lg:col-span-5 xl:col-span-6 flex-col justify-between p-12 bg-slate-900 dark:bg-[#04060A] text-white border-l border-slate-200/10 relative overflow-hidden">
-        {/* Background glow meshes */}
-        <div className="absolute top-1/4 -right-20 w-80 h-80 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 -left-20 w-80 h-80 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="hidden lg:flex lg:col-span-5 xl:col-span-6 flex-col justify-between p-12 bg-slate-900 dark:bg-[#0A0A0A] text-white border-l border-slate-200/10 relative overflow-hidden">
         {/* Top Badges */}
         <div className="flex items-center justify-between z-10">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-white/10 text-white border border-white/10 backdrop-blur-md">

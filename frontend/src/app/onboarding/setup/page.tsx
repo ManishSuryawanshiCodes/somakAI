@@ -247,10 +247,7 @@ export default function SetupChecklistPage() {
   const progressPercent = Math.round((completedCount / totalItems) * 100);
 
   return (
-    <div className="min-h-screen bg-radial-gradient flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
-      {/* Background ambient lighting */}
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0A0A0A] text-slate-900 dark:text-slate-100 flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
 
       {/* Back to Radar Navigation & Skip Option */}
       <div className="w-full max-w-2xl mb-4 flex items-center justify-between z-10">
@@ -326,7 +323,7 @@ export default function SetupChecklistPage() {
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.35, delay: 0.08 }}
-        className="w-full max-w-2xl glass-modal rounded-3xl p-6 shadow-2xl relative z-10 space-y-4"
+        className="w-full max-w-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 shadow-2xl relative z-10 space-y-4"
       >
         {/* Accordion Item 1: Connect Error Monitoring */}
         <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden bg-slate-50/50 dark:bg-[#0A0A0A]/50 transition-all">

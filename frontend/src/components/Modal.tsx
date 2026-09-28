@@ -68,7 +68,7 @@ export default function Modal({
               exit={{ opacity: 0, scale: 0.96, y: 12 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               onClick={(e) => e.stopPropagation()}
-              className={`w-full ${maxWidth} pointer-events-auto bg-white dark:bg-[#0A0D14] border border-slate-200/90 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col relative text-slate-900 dark:text-slate-100 ${className}`}
+              className={`w-full ${maxWidth} pointer-events-auto bg-white dark:bg-[#0A0A0A] border border-slate-200/90 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col relative text-slate-900 dark:text-slate-100 ${className}`}
             >
               {children}
             </motion.div>
