@@ -119,9 +119,33 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         combined = Array.from(map.values());
       }
 
+      // If user has no organizations (new signin / OAuth user), auto-initialize a default workspace
+      if (combined.length === 0) {
+        const defaultOrgName = user.name ? `${user.name.split(' ')[0]}'s Workspace` : 'Primary Workspace';
+        const defaultSlug = user.name ? user.name.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'workspace';
+        const defaultOrg: Organization = {
+          ...DEFAULT_ACME_ORG,
+          id: `org_${user.id.substring(0, 10).replace(/[^a-zA-Z0-9]/g, '') || 'default'}`,
+          name: defaultOrgName,
+          slug: defaultSlug,
+          onboarding_completed: true,
+          setup_checklist: {
+            ...DEFAULT_ACME_ORG.setup_checklist,
+            onboarding_completed: true,
+          },
+        };
+        const membership: UserOrgMembership = {
+          organization: defaultOrg,
+          role: user.role || 'Admin',
+        };
+        combined = [membership];
+      }
+
       setUserOrgs(combined);
       try {
         localStorage.setItem(`sentryops_orgs_${user.id}`, JSON.stringify(combined));
+        localStorage.setItem('somak_onboarding_completed', 'true');
+        localStorage.setItem('sentryops_onboarding_completed', 'true');
       } catch {}
 
       // Determine active org
@@ -223,7 +247,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         primary_use_case: data.primary_use_case || 'Autonomous Incident Remediation',
         created_at: new Date().toISOString(),
         created_by: user.id,
-        onboarding_completed: false,
+        onboarding_completed: true,
         setup_checklist: {
           sentry_connected: false,
           sentry_dsn: '',
@@ -237,7 +261,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
           slack_webhook: '',
           pagerduty_key: '',
           team_invited: false,
-          onboarding_completed: false,
+          onboarding_completed: true,
         },
       };
     }
@@ -287,6 +311,10 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       try {
         localStorage.setItem(`sentryops_orgs_${user.id}`, JSON.stringify(nextUserOrgs));
+        if (data.onboarding_completed) {
+          localStorage.setItem('somak_onboarding_completed', 'true');
+          localStorage.setItem('sentryops_onboarding_completed', 'true');
+        }
       } catch {}
     }
 

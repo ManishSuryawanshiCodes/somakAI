@@ -1740,63 +1740,68 @@ export default function LandingPage() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {PRICING_PLANS.map((plan, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.05 }}
-                transition={{ duration: 0.4, delay: idx * 0.1 }}
-                className={`liquid-glass p-8 rounded-3xl shadow-lg space-y-6 flex flex-col justify-between relative group transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 ${
-                  plan.highlighted
-                    ? 'border-indigo-500 ring-2 ring-indigo-500/30'
-                    : 'border-[#E8E3D9] dark:border-white/10 hover:border-indigo-500/40 dark:hover:border-indigo-400/40'
-                }`}
-              >
-                {plan.highlighted && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-indigo-600 text-white uppercase tracking-wider shadow-md">
-                    Most Popular
-                  </span>
-                )}
+            {PRICING_PLANS.map((plan, idx) => {
+              const targetHref =
+                plan.name === 'Team'
+                  ? '/checkout?plan=team'
+                  : plan.name === 'Enterprise'
+                  ? '/contact'
+                  : '/signup';
 
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-[#181614] dark:text-white">{plan.name}</h3>
-                    <div className="flex items-baseline gap-1 mt-2">
-                      <span className="text-3xl sm:text-4xl font-extrabold text-[#181614] dark:text-white">{plan.price}</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">{plan.period}</span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">{plan.desc}</p>
-                  </div>
-
-                  <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                    {plan.features.map((feat, fIdx) => (
-                      <div key={fIdx} className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
-                        <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        <span>{feat}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <Link
-                  href={
-                    plan.name === 'Team'
-                      ? '/checkout?plan=team&redirect=true'
-                      : plan.name === 'Enterprise'
-                      ? '/contact'
-                      : '/signup'
-                  }
-                  className={`w-full py-2.5 rounded-xl font-bold text-xs text-center transition-all ${
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.05 }}
+                  transition={{ duration: 0.4, delay: idx * 0.1 }}
+                  onClick={() => router.push(targetHref)}
+                  className={`liquid-glass p-8 rounded-3xl shadow-lg space-y-6 flex flex-col justify-between relative group transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 cursor-pointer ${
                     plan.highlighted
-                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/25 btn-glow-primary'
-                      : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200'
+                      ? 'border-indigo-500 ring-2 ring-indigo-500/30'
+                      : 'border-[#E8E3D9] dark:border-white/10 hover:border-indigo-500/40 dark:hover:border-indigo-400/40'
                   }`}
                 >
-                  {plan.cta}
-                </Link>
-              </motion.div>
-            ))}
+                  {plan.highlighted && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-indigo-600 text-white uppercase tracking-wider shadow-md">
+                      Most Popular
+                    </span>
+                  )}
+
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#181614] dark:text-white">{plan.name}</h3>
+                      <div className="flex items-baseline gap-1 mt-2">
+                        <span className="text-3xl sm:text-4xl font-extrabold text-[#181614] dark:text-white">{plan.price}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">{plan.period}</span>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">{plan.desc}</p>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                      {plan.features.map((feat, fIdx) => (
+                        <div key={fIdx} className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                          <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Link
+                    href={targetHref}
+                    onClick={(e) => e.stopPropagation()}
+                    className={`w-full py-2.5 rounded-xl font-bold text-xs text-center transition-all ${
+                      plan.highlighted
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/25 btn-glow-primary'
+                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200'
+                    }`}
+                  >
+                    {plan.cta}
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>

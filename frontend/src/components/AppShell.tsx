@@ -63,6 +63,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     pathname === '/' ||
     pathname === '/login' ||
     pathname === '/signup' ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/checkout') ||
+    pathname.startsWith('/pricing') ||
     pathname.startsWith('/docs') ||
     pathname.startsWith('/status') ||
     pathname.startsWith('/changelog') ||
@@ -75,7 +78,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Route protection for unauthenticated users accessing protected pages
   useEffect(() => {
-    if (mounted && !isAuthenticated && !isPublicPage) {
+    if (mounted && !isAuthenticated && !isPublicPage && !pathname.startsWith('/auth')) {
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
   }, [mounted, isAuthenticated, isPublicPage, pathname, router]);
@@ -83,6 +86,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isStandalonePage =
     pathname === '/login' ||
     pathname === '/signup' ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/checkout') ||
+    pathname.startsWith('/pricing') ||
     pathname.startsWith('/onboarding') ||
     pathname.startsWith('/invite') ||
     pathname.startsWith('/status') ||

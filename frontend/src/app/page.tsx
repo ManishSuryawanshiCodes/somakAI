@@ -62,6 +62,16 @@ export default function ExecutiveIncidentRadar() {
   const [serviceFilter, setServiceFilter] = useState<string>('ALL');
 
   useEffect(() => {
+    // If arriving from an OAuth redirect to root (e.g. /?code=... or /#access_token=...), forward to /auth/callback
+    if (typeof window !== 'undefined') {
+      const search = window.location.search;
+      const hash = window.location.hash;
+      if (search.includes('code=') || hash.includes('access_token=')) {
+        router.replace(`/auth/callback${search}${hash}`);
+        return;
+      }
+    }
+
     setMounted(true);
     if (!currentOrg) {
       setHealth(emptyHealth);

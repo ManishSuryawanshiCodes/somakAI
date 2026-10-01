@@ -144,14 +144,19 @@ function CreateOrgContent() {
         team_size: teamSize,
       });
 
-      // Route paid to Dodo checkout, enterprise to contact, or free to setup
+      try {
+        localStorage.setItem('somak_onboarding_completed', 'true');
+        localStorage.setItem('sentryops_onboarding_completed', 'true');
+      } catch {}
+
+      // Route paid to Dodo checkout, enterprise to contact, or free directly to Dashboard
       setTimeout(() => {
         if (plan === 'team') {
           router.push(`/checkout?plan=team&org=${encodeURIComponent(slug.trim())}`);
         } else if (plan === 'enterprise') {
           router.push(`/contact?plan=enterprise&org=${encodeURIComponent(slug.trim())}`);
         } else {
-          router.push('/onboarding/setup');
+          router.push('/');
         }
       }, 400);
     } catch (err: any) {

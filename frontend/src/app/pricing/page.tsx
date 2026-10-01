@@ -82,7 +82,10 @@ export default function PricingPage() {
           </div>
 
           {/* Team Tier (Dodo Payments $79) */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-[#111113] border-2 border-indigo-500 shadow-md flex flex-col justify-between space-y-6 relative">
+          <div
+            onClick={() => router.push('/checkout?plan=team')}
+            className="p-6 rounded-2xl bg-white dark:bg-[#111113] border-2 border-indigo-500 shadow-md flex flex-col justify-between space-y-6 relative cursor-pointer hover:shadow-xl hover:shadow-indigo-500/10 transition-all"
+          >
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-600 text-white uppercase tracking-wider">
               Most Popular
             </span>
@@ -122,7 +125,8 @@ export default function PricingPage() {
             </div>
 
             <Link
-              href="/signup?plan=team"
+              href="/checkout?plan=team"
+              onClick={(e) => e.stopPropagation()}
               className="w-full py-2.5 rounded-xl text-xs font-semibold text-center bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs transition-colors flex items-center justify-center gap-1.5"
             >
               <span>Get Started with Team</span>

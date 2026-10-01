@@ -125,6 +125,8 @@ export default function SetupChecklistPage() {
   const handleCompleteOrSkip = async () => {
     setIsCompleting(true);
     try {
+      localStorage.setItem('somak_onboarding_completed', 'true');
+      localStorage.setItem('sentryops_onboarding_completed', 'true');
       await updateChecklist({ onboarding_completed: true });
     } catch (e) {
       console.warn('Failed to persist onboarding_completed:', e);

@@ -27,65 +27,75 @@ function AuthCallbackContent() {
 
         const supabase = createClient();
         const code = searchParams.get('code');
+        let activeSession: any = null;
 
         if (code) {
           setStatusText('Exchanging authorization code with provider...');
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
             console.warn('[OAuth Callback] exchangeCodeForSession error:', exchangeError);
-            // Non-fatal if session already established
+          }
+          if (exchangeData?.session) {
+            activeSession = exchangeData.session;
           }
         }
 
-        setStatusText('Verifying session and identity...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError || !session?.user) {
-          // If hash contains access_token (implicit flow)
-          if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+        if (!activeSession) {
+          setStatusText('Verifying session and identity...');
+          const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+          if (currentSession) {
+            activeSession = currentSession;
+          } else if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
             setStatusText('Parsing authentication tokens...');
-            // Wait for onAuthStateChange to pick it up
             await new Promise((r) => setTimeout(r, 600));
-          } else {
-            throw new Error('No active session found after OAuth redirect. Please try signing in again.');
+            const { data: { session: hashSession } } = await supabase.auth.getSession();
+            activeSession = hashSession;
           }
         }
 
-        const user = session?.user;
-        const email = user?.email || '';
-        const name = user?.user_metadata?.full_name || user?.user_metadata?.name || email.split('@')[0];
+        if (!activeSession?.user) {
+          throw new Error('No active session found after OAuth redirect. Please try signing in again.');
+        }
 
-        // Sync with backend
-        setStatusText('Syncing workspace tenancy...');
+        const user = activeSession.user;
+        const email = user.email || '';
+        const name = user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0];
+        const role = (user.user_metadata?.role as any) || 'Admin';
+
+        // Store user and session immediately so app shells and guards recognize authentication
+        const parsedUser = {
+          id: user.id,
+          name,
+          email,
+          role,
+          avatar: name.substring(0, 2).toUpperCase(),
+          team: role === 'Admin' ? 'SecOps & Infrastructure' : 'Platform Reliability SRE',
+          email_verified: !!user.email_confirmed_at,
+          mfa_enabled: false,
+        };
+
         try {
-          await backendLogin({
+          localStorage.setItem('somak_user', JSON.stringify(parsedUser));
+          localStorage.setItem('sentryops_user', JSON.stringify(parsedUser));
+          localStorage.setItem('somak_session_token', activeSession.access_token);
+          localStorage.setItem('somak_onboarding_completed', 'true');
+          localStorage.setItem('sentryops_onboarding_completed', 'true');
+          document.cookie = `somak_session=${activeSession.access_token}; path=/; max-age=604800; SameSite=Lax`;
+        } catch {}
+
+        // Non-blocking sync with backend
+        try {
+          backendLogin({
             email,
             name,
             role: 'Admin',
-          });
-        } catch (syncErr) {
-          console.warn('[OAuth Callback] Backend sync non-fatal:', syncErr);
-        }
-
-        // Fetch user organizations to determine route
-        setStatusText('Determining onboarding state...');
-        let orgs: any[] = [];
-        try {
-          const res = await getUserOrganizations(user?.id, email);
-          orgs = res?.map((item) => item.organization) || [];
-        } catch (orgErr) {
-          console.warn('[OAuth Callback] Fetch orgs fallback:', orgErr);
-        }
+          }).catch((syncErr) => console.warn('[OAuth Callback] Backend sync non-fatal:', syncErr));
+        } catch {}
 
         if (!isMounted) return;
 
-        if (!orgs || orgs.length === 0) {
-          // New user with no organization -> Go straight to Org Creation
-          router.replace('/onboarding/create-org');
-        } else {
-          // Existing user -> route directly to Dashboard
-          router.replace('/');
-        }
+        // Route directly to Dashboard - no forced setup redirects
+        router.replace('/');
       } catch (err: any) {
         if (isMounted) {
           console.error('[OAuth Callback] Fatal error:', err);

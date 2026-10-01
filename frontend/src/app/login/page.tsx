@@ -91,13 +91,13 @@ export default function LoginPage() {
       }
 
       await refreshOrgData();
+      try {
+        localStorage.setItem('somak_onboarding_completed', 'true');
+        localStorage.setItem('sentryops_onboarding_completed', 'true');
+      } catch {}
 
       setTimeout(() => {
-        if (!res?.hasOrgs) {
-          router.push('/onboarding/create-org');
-        } else {
-          router.push('/');
-        }
+        router.push('/');
       }, 400);
     } catch (err: unknown) {
       if ((err as Error)?.name === 'AccountLockedError' || (err as Error)?.name === 'RateLimitError' || (err as { retryAfter?: number })?.retryAfter) {
@@ -120,14 +120,14 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const { hasOrgs, onboardingCompleted } = await completeMfaLogin(mfaTicket, mfaCode.trim());
+      await completeMfaLogin(mfaTicket, mfaCode.trim());
       await refreshOrgData();
+      try {
+        localStorage.setItem('somak_onboarding_completed', 'true');
+        localStorage.setItem('sentryops_onboarding_completed', 'true');
+      } catch {}
       setTimeout(() => {
-        if (!hasOrgs) {
-          router.push('/onboarding/create-org');
-        } else {
-          router.push('/');
-        }
+        router.push('/');
       }, 400);
     } catch (err: unknown) {
       setError((err as Error).message || 'Invalid two-factor authentication code.');
@@ -139,16 +139,14 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
     try {
-      const { hasOrgs, onboardingCompleted } = await login(emailStr, undefined, role, name);
+      await login(emailStr, undefined, role, name);
       await refreshOrgData();
+      try {
+        localStorage.setItem('somak_onboarding_completed', 'true');
+        localStorage.setItem('sentryops_onboarding_completed', 'true');
+      } catch {}
       setTimeout(() => {
-        if (!hasOrgs) {
-          router.push('/onboarding/create-org');
-        } else if (onboardingCompleted === false) {
-          router.push('/onboarding/setup');
-        } else {
-          router.push('/');
-        }
+        router.push('/');
       }, 400);
     } catch (err: unknown) {
       setError((err as Error).message || 'Demo sign-in failed.');
@@ -245,7 +243,12 @@ export default function LoginPage() {
 
               <form onSubmit={handleMfaSubmit} className="space-y-3">
                 <div>
+                  <label htmlFor="mfa-code" className="sr-only">
+                    Two-Factor Authentication Code
+                  </label>
                   <input
+                    id="mfa-code"
+                    name="mfa_code"
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
@@ -389,13 +392,16 @@ export default function LoginPage() {
 
               <form onSubmit={handleLogin} className="space-y-3.5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="work-email" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Work Email
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
+                      id="work-email"
+                      name="email"
                       type="email"
+                      autoComplete="email"
                       value={email}
                       onChange={(e) => {
                         setEmail(e.target.value);
@@ -417,7 +423,7 @@ export default function LoginPage() {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <label htmlFor="work-password" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                       Password
                     </label>
                     <button
@@ -431,7 +437,10 @@ export default function LoginPage() {
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
+                      id="work-password"
+                      name="password"
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
                       value={password}
                       onChange={(e) => {
                         setPassword(e.target.value);
@@ -548,8 +557,14 @@ export default function LoginPage() {
                     Enter your work email and we&apos;ll dispatch a secure recovery link.
                   </p>
                   <div>
+                    <label htmlFor="reset-email" className="sr-only">
+                      Reset Work Email
+                    </label>
                     <input
+                      id="reset-email"
+                      name="reset_email"
                       type="email"
+                      autoComplete="email"
                       required
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}

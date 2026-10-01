@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings,
@@ -215,6 +215,7 @@ function SettingsContent() {
   const { showToast } = useToast();
   const { currentOrg, updateChecklist, createInvites } = useOrg();
 
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SubTab>('general');
   const [scope, setScope] = useState<'organization' | 'account'>('organization');
@@ -2422,7 +2423,10 @@ function SettingsContent() {
                 Available Plans
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl border-2 border-indigo-500/80 bg-indigo-500/5 space-y-3">
+                <div
+                  onClick={() => router.push('/checkout?plan=team')}
+                  className="p-4 rounded-xl border-2 border-indigo-500/80 bg-indigo-500/5 space-y-3 cursor-pointer hover:shadow-md hover:border-indigo-500 transition-all"
+                >
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-bold text-sm text-slate-900 dark:text-white">Team Plan</h4>
@@ -2431,7 +2435,8 @@ function SettingsContent() {
                     <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">$79/mo</span>
                   </div>
                   <Link
-                    href="/checkout?plan=team&redirect=true"
+                    href="/checkout?plan=team"
+                    onClick={(e) => e.stopPropagation()}
                     className="inline-flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow-2xs"
                   >
                     <span>Checkout with Dodo</span>

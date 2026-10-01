@@ -361,12 +361,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithOAuth = async (provider: 'google' | 'github') => {
     try {
       const supabase = createClient();
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      let origin = typeof window !== 'undefined' ? window.location.origin : '';
+      if (!origin || origin === 'null') {
+        origin = process.env.NEXT_PUBLIC_APP_URL || 'https://somakai.vercel.app';
+      }
+      origin = origin.replace(/\/$/, '');
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${origin}/auth/callback`,
-          skipBrowserRedirect: true,
         },
       });
 
@@ -375,26 +379,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data?.url) {
-        // Pre-test the authorize endpoint to catch disabled/unsupported OAuth providers gracefully
-        try {
-          const testRes = await fetch(data.url, { method: 'GET', mode: 'cors' });
-          if (!testRes.ok && testRes.status === 400) {
-            const errJson = await testRes.json().catch(() => null);
-            if (errJson?.msg?.includes('Unsupported provider') || errJson?.error_code === 'validation_failed') {
-              throw new Error(
-                `${provider === 'google' ? 'Google' : 'GitHub'} OAuth is not enabled in your Supabase project settings. Please sign in with email/password or configure the provider in Supabase Auth.`
-              );
-            }
-          }
-        } catch (fetchErr: any) {
-          if (fetchErr.message?.includes('OAuth is not enabled')) {
-            throw fetchErr;
-          }
-          // CORS errors on subsequent 302 redirect indicate the endpoint attempted redirect to the provider, which means it is enabled!
-        }
-
-        window.location.href = data.url;
-        return;
+        window.location.assign(data.url);
       }
     } catch (err: any) {
       console.warn(`[OAuth] ${provider} signInWithOAuth error:`, err?.message || err);
