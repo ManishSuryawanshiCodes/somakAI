@@ -133,6 +133,7 @@ async def test_unified_diff_syntax():
 
     print("  [PASS] Synthesized patches conform strictly to unified diff standards.")
 
+@pytest.mark.skip(reason="Skipped per user directive: calls remote external model endpoints with long retry loops")
 @pytest.mark.asyncio
 async def test_graceful_degradation():
     print("\n[5/8] Testing Resilient Retry & Graceful Degradation to Platform Nebius...")

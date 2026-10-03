@@ -66,7 +66,9 @@ def test_concurrent_multi_tenant_isolation():
             severity="SEV-1",
             service=f"service-{slug}",
             timestamp=f"2026-09-23T20:00:00Z",
-            status="READY_FOR_DEPLOY"
+            status="READY_FOR_DEPLOY",
+            confidenceScore=98.5,
+            astValidated=True
         )
         incident_store.add_incident(inc)
 
@@ -100,7 +102,7 @@ def test_concurrent_multi_tenant_isolation():
 
         inc_list = res_inc.json()
         for inc in inc_list:
-            if inc.get("organization_id") != tenant_id and inc.get("id") != "INC-2041":
+            if inc.get("organization_id") != tenant_id:
                 errors.append(f"DATA LEAK DETECTED: Tenant {tenant_id} received incident from {inc.get('organization_id')}")
 
         # Request B: Audit events

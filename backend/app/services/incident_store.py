@@ -227,8 +227,8 @@ describe('TokenService Memory Management', () => {
             service=row.get("service", "unknown-service"),
             timestamp=row.get("timestamp", ""),
             status=row.get("status", "TRIAGING"),
-            confidenceScore=row.get("confidence_score", 99.4),
-            astValidated=row.get("ast_validated", True),
+            confidenceScore=row.get("confidence_score"),
+            astValidated=row.get("ast_validated"),
             correctionLoops=row.get("correction_loops", 0),
             rootCauseAnalysis=rca,
             patch=patch,
@@ -262,7 +262,7 @@ describe('TokenService Memory Management', () => {
         """Finds any active, unresolved incident matching organization and fingerprint."""
         active_statuses = ("TRIAGING", "SANDBOX_VERIFYING", "READY_FOR_DEPLOY", "CANARY_EVALUATING")
         for inc in self._incidents.values():
-            if getattr(inc, 'organization_id', 'org_acme') == org_id and inc.fingerprint == fingerprint and inc.status in active_statuses:
+            if getattr(inc, 'organization_id', None) == org_id and inc.fingerprint == fingerprint and inc.status in active_statuses:
                 return inc
 
         try:
@@ -319,7 +319,7 @@ describe('TokenService Memory Management', () => {
 
         mem_incidents = [
             i for i in self._incidents.values()
-            if getattr(i, 'organization_id', 'org_acme') == effective_org
+            if getattr(i, 'organization_id', None) == effective_org
         ]
 
         seen_ids = set()
@@ -340,6 +340,12 @@ describe('TokenService Memory Management', () => {
         self._sync_incident_to_db(incident)
 
     def _sync_incident_to_db(self, incident: Incident):
+        if incident.status in ("READY_FOR_DEPLOY", "DEPLOYED", "PROMOTED"):
+            if incident.confidenceScore is None:
+                raise ValueError(f"Incident {incident.id} marked {incident.status} without explicit confidenceScore")
+            if incident.astValidated is None:
+                raise ValueError(f"Incident {incident.id} marked {incident.status} without explicit astValidated")
+
         try:
             import json
             from app.core.database import db

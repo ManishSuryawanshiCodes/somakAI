@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { API_BASE } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -73,7 +74,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
     let isMounted = true;
     const checkSystemHealth = async () => {
       try {
-        const res = await fetch('/api/health');
+        const res = await fetch(`${API_BASE}/api/health`);
         if (!res.ok) {
           if (isMounted) setConnectionState('offline');
           return;

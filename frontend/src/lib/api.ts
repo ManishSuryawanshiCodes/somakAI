@@ -42,7 +42,7 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T | nul
     if (token && !headers['Authorization'] && !headers['authorization']) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    if (activeOrgId && !headers['x-org-id']) {
+    if (activeOrgId && !headers['x-org-id'] && !url.startsWith('/api/organizations?') && url !== '/api/organizations') {
       headers['x-org-id'] = activeOrgId;
     }
 
@@ -52,6 +52,13 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T | nul
       headers,
     });
     if (!res.ok) {
+      if (res.status === 403 && typeof window !== 'undefined' && activeOrgId) {
+        const stored = localStorage.getItem('sentryops_active_org') || localStorage.getItem('somak_active_org_id');
+        if (stored === activeOrgId) {
+          localStorage.removeItem('somak_active_org_id');
+          localStorage.removeItem('sentryops_active_org');
+        }
+      }
       if (res.status === 429) {
         const retryAfterHeader = res.headers.get('Retry-After');
         const retrySeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
@@ -229,7 +236,11 @@ export async function getUserOrganizations(userId?: string, email?: string): Pro
   const query = new URLSearchParams();
   if (userId) query.set('user_id', userId);
   if (email) query.set('email', email);
-  return fetchJSON(`/api/organizations?${query.toString()}`);
+  try {
+    return await fetchJSON(`/api/organizations?${query.toString()}`);
+  } catch {
+    return null;
+  }
 }
 
 export async function getOrganizationMembers(orgId: string): Promise<OrganizationMember[] | null> {
@@ -369,7 +380,7 @@ export async function getCanaryStatus(incidentId: string) {
 }
 
 export async function getPostMortem(incidentId: string) {
-  return fetchJSON<{ incidentId: string; markdown: string }>(`/api/incidents/${incidentId}/postmortem`);
+  return fetchJSON<{ incidentId: string; markdown: string }>(`/api/incidents/${incidentId}/post-mortem`);
 }
 
 export async function notifySlack(incidentId: string) {

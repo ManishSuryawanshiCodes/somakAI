@@ -30,7 +30,8 @@ interface SplitLine {
   rightType?: 'add' | 'context' | 'empty' | 'hunk';
 }
 
-function getLineAnnotation(lineText: string, isAddition: boolean): string {
+function getLineAnnotation(lineText?: string, isAddition?: boolean): string {
+  if (!lineText) return 'Reasoning Step 3 (AST Synthesis): AST patch verification.';
   if (lineText.includes('LRUCache') || lineText.includes('lru-cache')) {
     return 'Reasoning Step 3 (AST Synthesis): Imports bounded LRUCache to replace unbounded Map and cap V8 memory usage.';
   }
@@ -46,10 +47,13 @@ function getLineAnnotation(lineText: string, isAddition: boolean): string {
   if (!isAddition && lineText.includes('tokenCache')) {
     return 'Reasoning Step 1 & 3 (Root Cause): Removed unbounded Map that retained 2.3M JWT entries causing OOM kill.';
   }
+  if (lineText.includes('profile') || lineText.includes('fetchUserProfile')) {
+    return 'Reasoning Step 3 (Null Safety Guard): Defensive null check & fallback object prevents unhandled TypeError.';
+  }
   return 'Reasoning Step 3 (AST Synthesis): AST transformation synthesized by Nemotron-3-Ultra (550B) with zero regressions.';
 }
 
-export default function DiffViewer({ diff, targetFile }: DiffViewerProps) {
+export default function DiffViewer({ diff = '', targetFile }: DiffViewerProps) {
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState<'unified' | 'split'>('unified');
   const [collapseUnchanged, setCollapseUnchanged] = useState(false);
@@ -64,7 +68,7 @@ export default function DiffViewer({ diff, targetFile }: DiffViewerProps) {
     }));
   };
 
-  const lines = useMemo(() => diff.split('\n'), [diff]);
+  const lines = useMemo(() => (diff ? String(diff).split('\n') : []), [diff]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(diff);

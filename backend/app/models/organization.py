@@ -10,6 +10,8 @@ class SetupChecklist(BaseModel):
     sentry_dsn: str = ""
     sentry_inbound_url: str = ""
     sentry_webhook_secret: str = ""
+    sentry_project: Optional[str] = None
+    github_repo: Optional[str] = None
     ai_connected: bool = False
     ai_api_key: str = ""
     ai_model_tier: str = "nvidia/nemotron-3-nano-30b-a3b"

@@ -54,6 +54,8 @@ export async function updateSession(request: NextRequest) {
   // Define public routes that do not require an active session
   const isPublicRoute =
     pathname === '/' ||
+    pathname === '/manifest.webmanifest' ||
+    pathname.endsWith('.webmanifest') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/signup') ||
     pathname.startsWith('/docs') ||

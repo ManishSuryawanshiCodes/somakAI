@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 from typing import Literal
 
 class TavilyCitation(BaseModel):
@@ -34,9 +34,9 @@ class Incident(BaseModel):
     severity: Literal['SEV-1', 'SEV-2']
     service: str
     timestamp: str
-    status: Literal['TRIAGING', 'INVESTIGATING', 'SANDBOX_VERIFYING', 'READY_FOR_DEPLOY', 'DEPLOYED', 'FAILED', 'NEEDS_HUMAN_REVIEW']
-    confidenceScore: float = 99.4
-    astValidated: bool = True
+    status: Literal['TRIAGING', 'INVESTIGATING', 'SANDBOX_VERIFYING', 'READY_FOR_DEPLOY', 'DEPLOYED', 'FAILED', 'NEEDS_HUMAN_REVIEW', 'RESOLVED', 'PROMOTED']
+    confidenceScore: float | None = None
+    astValidated: bool | None = None
     correctionLoops: int = 0
     rootCauseAnalysis: RootCauseAnalysis | None = None
     patch: Patch | None = None
@@ -54,6 +54,15 @@ class Incident(BaseModel):
     fallback_occurred: bool = False
     fallback_message: str | None = None
     reasoning_steps: list[dict] = []
+
+    @model_validator(mode="after")
+    def validate_complete_state(self):
+        if self.status in ("READY_FOR_DEPLOY", "DEPLOYED", "PROMOTED"):
+            if self.confidenceScore is None:
+                raise ValueError("confidenceScore must be explicitly set before incident record is considered complete")
+            if self.astValidated is None:
+                raise ValueError("astValidated must be explicitly set before incident record is considered complete")
+        return self
 
 class CanaryStatus(BaseModel):
     incidentId: str

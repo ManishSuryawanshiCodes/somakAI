@@ -37,8 +37,8 @@ CREATE TABLE IF NOT EXISTS incidents (
     service TEXT NOT NULL,
     timestamp TEXT NOT NULL,
     status TEXT NOT NULL,
-    confidence_score DOUBLE PRECISION DEFAULT 99.4,
-    ast_validated BOOLEAN DEFAULT TRUE,
+    confidence_score DOUBLE PRECISION,
+    ast_validated BOOLEAN,
     correction_loops INTEGER DEFAULT 0,
     root_cause_analysis JSONB,
     patch JSONB,
@@ -225,6 +225,8 @@ class Database:
                     with conn.cursor() as cur:
                         cur.execute(SCHEMA_DDL)
                         cur.execute("ALTER TABLE organizations ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'business';")
+                        cur.execute("ALTER TABLE incidents ALTER COLUMN confidence_score DROP DEFAULT;")
+                        cur.execute("ALTER TABLE incidents ALTER COLUMN ast_validated DROP DEFAULT;")
                 self._connected = True
                 logger.info("Successfully connected to Supabase and verified PostgreSQL tables and indexes.")
                 return True

@@ -61,7 +61,25 @@ const DEFAULT_MAPPINGS: ServiceRepoMapping[] = [
     deployment_url: 'https://user-service.somakai.dev',
     connected_at: '2026-09-25',
   },
+  {
+    service_name: 'DESConnect',
+    repo_full_name: 'desconnect/desconnect-web',
+    default_branch: 'main',
+    auto_merge: false,
+    deployment_target: 'vercel',
+    deployment_url: 'https://desconnect.vercel.app',
+    connected_at: '2026-10-01',
+  },
 ];
+
+export function sanitizeRepoFullName(repo: string): string {
+  if (!repo) return '';
+  return repo
+    .trim()
+    .replace(/^https?:\/\/github\.com\//i, '')
+    .replace(/^github\.com\//i, '')
+    .replace(/^\/+|\/+$/g, '');
+}
 
 export function getServiceRepoMappings(): ServiceRepoMapping[] {
   if (typeof window === 'undefined') return DEFAULT_MAPPINGS;
@@ -71,26 +89,56 @@ export function getServiceRepoMappings(): ServiceRepoMapping[] {
       localStorage.setItem('somak_service_repo_map', JSON.stringify(DEFAULT_MAPPINGS));
       return DEFAULT_MAPPINGS;
     }
-    return JSON.parse(raw);
+    const parsed: ServiceRepoMapping[] = JSON.parse(raw);
+    // Automatically sanitize any full URLs present in storage
+    const sanitized = parsed.map(m => ({
+      ...m,
+      repo_full_name: sanitizeRepoFullName(m.repo_full_name)
+    }));
+    return sanitized;
   } catch {
     return DEFAULT_MAPPINGS;
   }
 }
 
-export function getServiceRepoMapping(serviceName: string): ServiceRepoMapping | null {
+export function getServiceRepoMapping(serviceName?: string | null): ServiceRepoMapping | null {
+  if (!serviceName || typeof serviceName !== 'string') return null;
   const mappings = getServiceRepoMappings();
+  if (!Array.isArray(mappings) || mappings.length === 0) return null;
   const normalized = serviceName.trim().toLowerCase();
-  return mappings.find((m) => m.service_name.toLowerCase() === normalized) || null;
+
+  // 1. Exact match on service_name
+  const exact = mappings.find((m) => m && typeof m.service_name === 'string' && m.service_name.toLowerCase() === normalized);
+  if (exact) return exact;
+
+  // 2. Match by repository name (e.g., if service is "desconnect" and repo is "manishSuryawanshiCodes/desconnect")
+  const repoMatch = mappings.find((m) => {
+    if (!m || !m.repo_full_name) return false;
+    const parts = m.repo_full_name.split('/');
+    const repoSlug = (parts[1] || parts[0]).toLowerCase();
+    return repoSlug === normalized || normalized.includes(repoSlug) || repoSlug.includes(normalized);
+  });
+  if (repoMatch) return repoMatch;
+
+  // 3. Fallback: If user has a custom-mapped repo (not a demo somak-org repo), prefer it
+  const customMapping = mappings.find(m => m && !m.repo_full_name.startsWith('somak-org/'));
+  if (customMapping) return customMapping;
+
+  return null;
 }
 
 export function saveServiceRepoMapping(mapping: ServiceRepoMapping): void {
   if (typeof window === 'undefined') return;
   const current = getServiceRepoMappings();
-  const index = current.findIndex((m) => m.service_name.toLowerCase() === mapping.service_name.toLowerCase());
+  const sanitized: ServiceRepoMapping = {
+    ...mapping,
+    repo_full_name: sanitizeRepoFullName(mapping.repo_full_name)
+  };
+  const index = current.findIndex((m) => m.service_name.toLowerCase() === sanitized.service_name.toLowerCase());
   if (index >= 0) {
-    current[index] = mapping;
+    current[index] = sanitized;
   } else {
-    current.push(mapping);
+    current.push(sanitized);
   }
   try {
     localStorage.setItem('somak_service_repo_map', JSON.stringify(current));
@@ -122,6 +170,90 @@ export function setGitHubConnected(connected: boolean): void {
   try {
     localStorage.setItem('somak_github_connected', connected ? 'true' : 'false');
   } catch {}
+}
+
+export function getGitHubToken(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return localStorage.getItem('somak_github_token') || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setGitHubToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem('somak_github_token', token.trim());
+  } catch {}
+}
+
+export async function verifyGitHubToken(token?: string): Promise<{ success: boolean; user?: string; error?: string }> {
+  const activeToken = (token ?? getGitHubToken()).trim();
+  if (!activeToken) {
+    return { success: false, error: 'No GitHub token provided.' };
+  }
+  try {
+    const res = await fetch('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${activeToken}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+    if (res.status === 200) {
+      const data = await res.json();
+      return { success: true, user: data.login };
+    }
+    if (res.status === 401) {
+      return { success: false, error: 'Invalid or expired GitHub Personal Access Token.' };
+    }
+    return { success: false, error: `GitHub API returned status ${res.status}` };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Network error verifying GitHub token.' };
+  }
+}
+
+export async function verifyRepoAccess(
+  repoFullName: string,
+  token?: string
+): Promise<{ success: boolean; isPrivate?: boolean; defaultBranch?: string; error?: string }> {
+  const cleanRepo = sanitizeRepoFullName(repoFullName);
+  if (!cleanRepo || !cleanRepo.includes('/')) {
+    return { success: false, error: 'Invalid repository format. Use owner/repo (e.g. manishSuryawanshiCodes/desconnect).' };
+  }
+  const activeToken = (token ?? getGitHubToken()).trim();
+  const headers: Record<string, string> = {
+    Accept: 'application/vnd.github.v3+json',
+  };
+  if (activeToken) {
+    headers['Authorization'] = `Bearer ${activeToken}`;
+  }
+
+  try {
+    const res = await fetch(`https://api.github.com/repos/${cleanRepo}`, { headers });
+    if (res.status === 200) {
+      const data = await res.json();
+      return {
+        success: true,
+        isPrivate: Boolean(data.private),
+        defaultBranch: data.default_branch || 'main',
+      };
+    }
+    if (res.status === 404) {
+      return {
+        success: false,
+        error: activeToken
+          ? 'Repository not found or token lacks access to this private repository.'
+          : 'Repository not found or private. Please provide a GitHub Personal Access Token (PAT) with repo scope.',
+      };
+    }
+    if (res.status === 401) {
+      return { success: false, error: 'Bad GitHub credentials. Please check your Personal Access Token.' };
+    }
+    return { success: false, error: `GitHub API returned ${res.status}` };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Network error reaching GitHub.' };
+  }
 }
 
 export function getIncidentDeployRecord(incidentId: string): IncidentDeployRecord | null {

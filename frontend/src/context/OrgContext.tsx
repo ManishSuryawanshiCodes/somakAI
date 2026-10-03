@@ -100,45 +100,57 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
       }
 
       // If user is a demo user, ensure Acme Corp is present
-      const isDemoUser = ['usr_mv492', 'usr_elena', 'usr_observer'].includes(user.id) ||
+      const isDemoUser = ['usr_mv492', 'usr_elena', 'usr_observer', 'usr_demo_admin', 'usr_demo_operator', 'usr_demo_viewer'].includes(user.id) ||
         user.email.includes('somak.internal') ||
-        user.email.includes('sentryops.internal');
+        user.email.includes('sentryops.internal') ||
+        user.email.includes('demo-');
       
-      if (isDemoUser && !localOrgs.some((o) => o.organization.id === DEFAULT_ACME_ORG.id)) {
-        localOrgs = [{ organization: DEFAULT_ACME_ORG, role: user.role }, ...localOrgs];
-      }
-
-      // 2. Try fetching from backend API
+      // 2. Fetch authoritative organizations from backend API
       const remoteOrgs = await api.getUserOrganizations(user.id, user.email);
-      let combined: UserOrgMembership[] = localOrgs;
+      let combined: UserOrgMembership[] = [];
+
       if (remoteOrgs && remoteOrgs.length > 0) {
-        // Merge without duplicates
-        const map = new Map<string, UserOrgMembership>();
-        localOrgs.forEach((o) => map.set(o.organization.id, o));
-        remoteOrgs.forEach((o) => map.set(o.organization.id, o));
-        combined = Array.from(map.values());
+        combined = remoteOrgs;
+        if (isDemoUser && !combined.some((o) => o.organization.id === DEFAULT_ACME_ORG.id)) {
+          combined = [{ organization: DEFAULT_ACME_ORG, role: user.role || 'Admin' }, ...combined];
+        }
+      } else if (isDemoUser) {
+        combined = [{ organization: DEFAULT_ACME_ORG, role: user.role || 'Admin' }];
+      } else if (localOrgs.length > 0) {
+        combined = localOrgs;
       }
 
-      // If user has no organizations (new signin / OAuth user), auto-initialize a default workspace
+      // If user has no organizations, auto-provision on backend
       if (combined.length === 0) {
         const defaultOrgName = user.name ? `${user.name.split(' ')[0]}'s Workspace` : 'Primary Workspace';
-        const defaultSlug = user.name ? user.name.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'workspace';
-        const defaultOrg: Organization = {
-          ...DEFAULT_ACME_ORG,
-          id: `org_${user.id.substring(0, 10).replace(/[^a-zA-Z0-9]/g, '') || 'default'}`,
-          name: defaultOrgName,
-          slug: defaultSlug,
-          onboarding_completed: true,
-          setup_checklist: {
-            ...DEFAULT_ACME_ORG.setup_checklist,
+        const defaultSlug = (user.name ? user.name.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'workspace') + '-' + Math.random().toString(36).substring(2, 6);
+        let createdBackendOrg: Organization | null = null;
+        try {
+          createdBackendOrg = await api.createOrganization({
+            name: defaultOrgName,
+            slug: defaultSlug,
+            user_id: user.id,
+            user_name: user.name,
+            user_email: user.email,
+          });
+        } catch {}
+
+        if (createdBackendOrg) {
+          combined = [{ organization: createdBackendOrg, role: 'Admin' }];
+        } else {
+          const defaultOrg: Organization = {
+            ...DEFAULT_ACME_ORG,
+            id: `org_${user.id.substring(0, 10).replace(/[^a-zA-Z0-9]/g, '') || 'default'}`,
+            name: defaultOrgName,
+            slug: defaultSlug,
             onboarding_completed: true,
-          },
-        };
-        const membership: UserOrgMembership = {
-          organization: defaultOrg,
-          role: user.role || 'Admin',
-        };
-        combined = [membership];
+            setup_checklist: {
+              ...DEFAULT_ACME_ORG.setup_checklist,
+              onboarding_completed: true,
+            },
+          };
+          combined = [{ organization: defaultOrg, role: user.role || 'Admin' }];
+        }
       }
 
       setUserOrgs(combined);
@@ -148,42 +160,37 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('sentryops_onboarding_completed', 'true');
       } catch {}
 
-      // Determine active org
-      const savedOrgId = localStorage.getItem(`sentryops_active_org_${user.id}`);
+      // Determine active org (only accept if present in combined orgs)
+      const savedOrgId = localStorage.getItem(`sentryops_active_org_${user.id}`) ||
+        localStorage.getItem('somak_active_org_id') ||
+        localStorage.getItem('sentryops_active_org');
       const matched = combined.find((o) => o.organization.id === savedOrgId);
+      const activeMembership = matched || combined[0] || null;
 
-      if (matched) {
-        setCurrentOrg(matched.organization);
+      if (activeMembership) {
+        setCurrentOrg(activeMembership.organization);
         try {
-          localStorage.setItem('somak_active_org_id', matched.organization.id);
-          localStorage.setItem('sentryops_active_org', matched.organization.id);
-        } catch {}
-      } else if (combined.length > 0) {
-        setCurrentOrg(combined[0].organization);
-        try {
-          localStorage.setItem(`sentryops_active_org_${user.id}`, combined[0].organization.id);
-          localStorage.setItem('somak_active_org_id', combined[0].organization.id);
-          localStorage.setItem('sentryops_active_org', combined[0].organization.id);
+          localStorage.setItem(`sentryops_active_org_${user.id}`, activeMembership.organization.id);
+          localStorage.setItem('somak_active_org_id', activeMembership.organization.id);
+          localStorage.setItem('sentryops_active_org', activeMembership.organization.id);
         } catch {}
       } else {
         setCurrentOrg(null);
+        try {
+          localStorage.removeItem(`sentryops_active_org_${user.id}`);
+          localStorage.removeItem('somak_active_org_id');
+          localStorage.removeItem('sentryops_active_org');
+        } catch {}
       }
 
-      // Load invites for the current org
-      const activeId = matched?.organization.id || (combined[0]?.organization.id);
-      if (activeId) {
-        const orgInvites = await api.getOrganizationInvites(activeId);
-        if (orgInvites) {
-          setInvites(orgInvites);
-        } else {
-          // fallback to localStorage invites
-          const storedInvites = localStorage.getItem(`sentryops_invites_${activeId}`);
-          if (storedInvites) {
-            try {
-              setInvites(JSON.parse(storedInvites));
-            } catch {}
+      // Load invites for the current org safely
+      if (activeMembership?.organization?.id) {
+        try {
+          const orgInvites = await api.getOrganizationInvites(activeMembership.organization.id);
+          if (orgInvites) {
+            setInvites(orgInvites);
           }
-        }
+        } catch {}
       }
     } catch (e) {
       console.warn('Failed to load org data', e);
@@ -278,6 +285,8 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem(`sentryops_orgs_${user.id}`, JSON.stringify(updatedOrgs));
       localStorage.setItem(`sentryops_active_org_${user.id}`, newOrg.id);
+      localStorage.setItem('somak_active_org_id', newOrg.id);
+      localStorage.setItem('sentryops_active_org', newOrg.id);
     } catch {}
 
     return newOrg;

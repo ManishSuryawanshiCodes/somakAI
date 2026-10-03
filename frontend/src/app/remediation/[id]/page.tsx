@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -32,7 +32,7 @@ import { mockIncident, mockIncident2 } from '@/lib/mock-data';
 import { Incident } from '@/lib/types';
 import { getServiceRepoMapping, ServiceRepoMapping } from '@/lib/services-repo';
 
-export default function RemediationStudio() {
+function RemediationStudioContent() {
   const params = useParams();
   const id = (params?.id as string) || 'INC-2041';
   const router = useRouter();
@@ -44,7 +44,7 @@ export default function RemediationStudio() {
   const searchParams = useSearchParams();
   const patternParam = searchParams?.get('pattern');
 
-  const [incident, setIncident] = useState<Incident | null>(isAcme && id === 'INC-2041' ? mockIncident : null);
+  const [incident, setIncident] = useState<Incident | null>(id === 'INC-2041' ? mockIncident : null);
   const [loading, setLoading] = useState(true);
   const [deploying, setDeploying] = useState(false);
   const [retrying, setRetrying] = useState(false);
@@ -62,7 +62,7 @@ export default function RemediationStudio() {
         if (active) {
           if (data) {
             setIncident(data as Incident);
-          } else if (isAcme && id === 'INC-2041') {
+          } else if (id === 'INC-2041') {
             setIncident(mockIncident);
           } else {
             setIncident(null);
@@ -70,7 +70,7 @@ export default function RemediationStudio() {
         }
       })
       .catch(() => {
-        if (active && isAcme && id === 'INC-2041') {
+        if (active && id === 'INC-2041') {
           setIncident(mockIncident);
         } else if (active) {
           setIncident(null);
@@ -83,7 +83,7 @@ export default function RemediationStudio() {
     return () => {
       active = false;
     };
-  }, [id, isAcme]);
+  }, [id]);
 
   const handleDeploy = async () => {
     if (!incident) return;
@@ -93,7 +93,7 @@ export default function RemediationStudio() {
       addToast('Hotfix AST patch successfully routed to 5% canary traffic.', 'success');
       router.push(`/canary/${incident.id}`);
     } catch {
-      router.push(`/canary/${incident.id}`);
+      addToast('Failed to deploy remediation.', 'error');
     } finally {
       setDeploying(false);
     }
@@ -124,7 +124,7 @@ export default function RemediationStudio() {
     }
   };
 
-  const activeIncident = incident || (isAcme ? mockIncident : null);
+  const activeIncident = incident || (id === 'INC-2041' ? mockIncident : null);
 
   if (loading && !activeIncident) {
     return (
@@ -377,14 +377,39 @@ export default function RemediationStudio() {
         */}
         <div className="space-y-6">
           
-          {/* 1. Problem */}
-          <section className="bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-xs space-y-2">
-            <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">
-              1. What Broke
+          {/* 1. Problem / Sentry Telemetry */}
+          <section className="bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                <span>1. Sentry Telemetry & Error Trace</span>
+              </div>
+              {activeIncident.fingerprint && (
+                <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200/60 dark:border-white/10">
+                  Fingerprint: {activeIncident.fingerprint}
+                </span>
+              )}
             </div>
+
             <p className="text-sm sm:text-base text-slate-900 dark:text-slate-100 font-medium leading-relaxed">
               {plainProblem}
             </p>
+
+            {activeIncident.rootCauseAnalysis?.triggerMechanism && (
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-bold">
+                    Identified Trigger Mechanism & Root Cause
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    AST Grounded
+                  </span>
+                </div>
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-mono leading-relaxed bg-white dark:bg-black/30 p-2.5 rounded-lg border border-slate-200/40 dark:border-white/5">
+                  {activeIncident.rootCauseAnalysis.triggerMechanism}
+                </p>
+              </div>
+            )}
           </section>
 
           {/* 2. Fix */}
@@ -547,3 +572,18 @@ export default function RemediationStudio() {
     </div>
   );
 }
+
+export default function RemediationStudio() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0A0A0A] flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <RemediationStudioContent />
+    </Suspense>
+  );
+}
+

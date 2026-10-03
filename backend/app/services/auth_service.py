@@ -100,6 +100,40 @@ class AuthService:
                 mfa_enabled=False
             )
 
+        # Seed public demo accounts matching frontend quick login
+        u_admin = self.register_user(
+            name="Elena Rostova",
+            email="demo-admin@somakai.dev",
+            password_hash=default_pwd_hash,
+            role="Admin",
+            team="SecOps & Infrastructure",
+            email_verified=True,
+            mfa_enabled=False
+        )
+        u_admin.id = "usr_demo_admin"
+
+        u_op = self.register_user(
+            name="Marcus Vance",
+            email="demo-operator@somakai.dev",
+            password_hash=default_pwd_hash,
+            role="Operator",
+            team="Platform Reliability SRE",
+            email_verified=True,
+            mfa_enabled=False
+        )
+        u_op.id = "usr_demo_operator"
+
+        u_vw = self.register_user(
+            name="Sarah Connor",
+            email="demo-viewer@somakai.dev",
+            password_hash=default_pwd_hash,
+            role="Viewer",
+            team="Read-Only Compliance",
+            email_verified=True,
+            mfa_enabled=False
+        )
+        u_vw.id = "usr_demo_viewer"
+
         self.hydrate_from_db()
 
     def hydrate_from_db(self):

@@ -151,6 +151,54 @@ class OrgStore:
                         email_verified=True,
                     ),
                 ),
+                OrganizationMember(
+                    id="mem_demo_admin",
+                    organization_id="org_acme",
+                    user_id="usr_demo_admin",
+                    role="Admin",
+                    joined_at=datetime.now(timezone.utc).isoformat(),
+                    user=OrgMemberUser(
+                        id="usr_demo_admin",
+                        name="Elena Rostova",
+                        email="demo-admin@somakai.dev",
+                        avatar="ER",
+                        team="SecOps & Infrastructure",
+                        mfa_enabled=False,
+                        email_verified=True,
+                    ),
+                ),
+                OrganizationMember(
+                    id="mem_demo_operator",
+                    organization_id="org_acme",
+                    user_id="usr_demo_operator",
+                    role="Operator",
+                    joined_at=datetime.now(timezone.utc).isoformat(),
+                    user=OrgMemberUser(
+                        id="usr_demo_operator",
+                        name="Marcus Vance",
+                        email="demo-operator@somakai.dev",
+                        avatar="MV",
+                        team="Platform Reliability SRE",
+                        mfa_enabled=False,
+                        email_verified=True,
+                    ),
+                ),
+                OrganizationMember(
+                    id="mem_demo_viewer",
+                    organization_id="org_acme",
+                    user_id="usr_demo_viewer",
+                    role="Viewer",
+                    joined_at=datetime.now(timezone.utc).isoformat(),
+                    user=OrgMemberUser(
+                        id="usr_demo_viewer",
+                        name="Sarah Connor",
+                        email="demo-viewer@somakai.dev",
+                        avatar="SC",
+                        team="Read-Only Compliance",
+                        mfa_enabled=False,
+                        email_verified=True,
+                    ),
+                ),
             ]
         }
 
@@ -173,6 +221,7 @@ class OrgStore:
             status="pending"
         )
         self._invites_by_token[test_token] = sample_invite
+        self.hydrate_from_db()
 
     def is_slug_available(self, slug: str) -> bool:
         clean_slug = slug.strip().lower()
@@ -588,6 +637,8 @@ class OrgStore:
             enc_key = getattr(ch, "nvidia_nim_api_key", "")
         elif prov == "nebius":
             enc_key = ch.nebius_api_key or ch.ai_api_key
+        elif prov == "sentry_webhook_secret":
+            enc_key = ch.sentry_webhook_secret
 
         if not enc_key:
             return ""

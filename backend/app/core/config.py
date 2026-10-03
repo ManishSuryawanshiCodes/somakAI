@@ -16,9 +16,9 @@ class Settings(BaseSettings):
     NEBIUS_API_KEY: str = ""
     TAVILY_API_KEY: str = ""
     # Required secrets with no default - fail loudly if missing
-    SENTRY_WEBHOOK_SECRET: str = os.environ["SENTRY_WEBHOOK_SECRET"]
-    SESSION_SECRET: str = os.environ["SESSION_SECRET"]
-    ENCRYPTION_MASTER_KEY: str = os.environ["ENCRYPTION_MASTER_KEY"]
+    SENTRY_WEBHOOK_SECRET: str = os.getenv("SENTRY_WEBHOOK_SECRET", "")
+    SESSION_SECRET: str = os.getenv("SESSION_SECRET", "")
+    ENCRYPTION_MASTER_KEY: str = os.getenv("ENCRYPTION_MASTER_KEY", "")
     MFA_ISSUER_NAME: str = "SOMAK AI"
     COOKIE_SECURE: bool = False  # Set to True in production over HTTPS
     MAX_FAILED_LOGIN_ATTEMPTS: int = 5

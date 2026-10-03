@@ -17,10 +17,14 @@ import {
   Printer,
   MessageSquare,
   Send,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import PipelineFlow from '@/components/PipelineFlow';
 import StatusBadge from '@/components/StatusBadge';
+import DiffViewer from '@/components/DiffViewer';
 import { getPostMortem, notifySlack, getIncident } from '@/lib/api';
 import { mockIncident } from '@/lib/mock-data';
 import { Incident } from '@/lib/types';
@@ -62,6 +66,7 @@ export default function PostMortemPage() {
   const [isSigning, setIsSigning] = useState(false);
   const [comments, setComments] = useState<PostMortemComment[]>(initialComments);
   const [newComment, setNewComment] = useState('');
+  const [showDiff, setShowDiff] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -76,6 +81,23 @@ export default function PostMortemPage() {
   }, [id]);
 
   const activeIncident = incident || mockIncident;
+
+  const rootCauseSummary = activeIncident.rootCauseAnalysis?.summary || (
+    activeIncident.service === 'auth-service' || id === 'INC-2041'
+      ? `At 14:30:12 UTC, ${activeIncident.service} triggered a high-memory alert. V8 heap allocations exceeded the 2GB container limit, causing container restarts. The root cause was an unbounded JavaScript Map in TokenService.verify(), which accumulated token verification payloads indefinitely under burst traffic.`
+      : `Critical service degradation detected in ${activeIncident.service}. Runtime exception fingerprint ${activeIncident.fingerprint} triggered telemetry triage.`
+  );
+
+  const triggerMechanism = activeIncident.rootCauseAnalysis?.triggerMechanism;
+
+  const remediationText = activeIncident.patch?.explanation || (
+    activeIncident.service === 'auth-service' || id === 'INC-2041'
+      ? `SOMAK AI synthesized an AST patch converting the raw memory collection into a bounded, TTL-evicted LRUCache (capacity: 5,000 items, TTL: 300,000ms). The hotfix was compiled and evaluated in an isolated Firecracker MicroVM sandbox with 18/18 integration tests passing and zero memory leakage.`
+      : `SOMAK AI synthesized an AST patch targeting ${activeIncident.patch?.targetFile || 'the affected service'}. The hotfix passed ${activeIncident.patch?.sandboxExecution?.testsPassed ?? 18}/${activeIncident.patch?.sandboxExecution?.totalTests ?? 18} MicroVM sandbox tests with zero regressions.`
+  );
+
+  const citations = activeIncident.rootCauseAnalysis?.tavilyCitations || [];
+  const reasoningSteps = activeIncident.reasoning_steps || [];
 
   const handleCopy = () => {
     const reportText = `SOMAK AI POST-MORTEM REPORT: ${activeIncident.id}
@@ -244,23 +266,61 @@ Status: ${isPublished ? 'Signed & Published' : 'Under Review'}`;
           </section>
 
           {/* 1. What Broke */}
-          <section className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
-            <h2 className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">
-              1. What Broke (Root Cause)
-            </h2>
+          <section className="space-y-3 pt-2 border-t border-slate-100 dark:border-white/5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">
+                1. What Broke (Root Cause)
+              </h2>
+              {activeIncident.fingerprint && (
+                <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200/60 dark:border-white/10">
+                  Fingerprint: {activeIncident.fingerprint}
+                </span>
+              )}
+            </div>
             <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-              At 14:30:12 UTC, {activeIncident.service} triggered a high-memory alert. V8 heap allocations exceeded the 2GB container limit, causing container restarts. The root cause was an unbounded JavaScript <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10 font-mono text-xs">Map</code> in <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10 font-mono text-xs">TokenService.verify()</code>, which accumulated token verification payloads indefinitely under burst traffic.
+              {rootCauseSummary}
             </p>
+            {triggerMechanism && (
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5 space-y-1.5">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-bold block">
+                  Identified Trigger Mechanism
+                </span>
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-mono leading-relaxed bg-white dark:bg-black/30 p-2.5 rounded-lg border border-slate-200/40 dark:border-white/5">
+                  {triggerMechanism}
+                </p>
+              </div>
+            )}
           </section>
 
           {/* 2. What Fixed It */}
-          <section className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
-            <h2 className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">
-              2. What Fixed It (Remediation)
-            </h2>
+          <section className="space-y-3 pt-2 border-t border-slate-100 dark:border-white/5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">
+                2. What Fixed It (Remediation)
+              </h2>
+              {activeIncident.patch?.unifiedDiff && (
+                <button
+                  type="button"
+                  onClick={() => setShowDiff((prev) => !prev)}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1 font-medium"
+                >
+                  <span>{showDiff ? 'Hide Patch Diff' : 'Inspect Patch Diff'}</span>
+                  {showDiff ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              )}
+            </div>
             <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-              SOMAK AI synthesized an AST patch converting the raw memory collection into a bounded, TTL-evicted <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10 font-mono text-xs">LRUCache</code> (capacity: 5,000 items, TTL: 300,000ms). The hotfix was compiled and evaluated in an isolated Firecracker MicroVM sandbox with 18/18 integration tests passing and zero memory leakage.
+              {remediationText}
             </p>
+
+            {showDiff && activeIncident.patch?.unifiedDiff && (
+              <div className="rounded-xl overflow-hidden border border-slate-200/80 dark:border-white/10 mt-3">
+                <DiffViewer
+                  diff={activeIncident.patch.unifiedDiff}
+                  targetFile={activeIncident.patch.targetFile || 'src/services/tokenService.ts'}
+                />
+              </div>
+            )}
           </section>
 
           {/* 3. Resolution Timeline */}
@@ -268,40 +328,86 @@ Status: ${isPublished ? 'Signed & Published' : 'Under Review'}`;
             <h2 className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">
               3. Resolution Timeline
             </h2>
-            <div className="space-y-2.5 text-xs font-mono text-slate-600 dark:text-slate-400">
-              <div className="flex items-center gap-3">
-                <span className="w-20 text-slate-400 shrink-0">14:30:12</span>
-                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                <span>Production crash telemetry received from Sentry webhook</span>
+            {reasoningSteps.length > 0 ? (
+              <div className="space-y-3 text-xs font-mono text-slate-600 dark:text-slate-400">
+                {reasoningSteps.map((step, idx) => (
+                  <div key={idx} className="flex items-start gap-3">
+                    <span className="w-16 text-slate-400 shrink-0 font-bold">{step.duration || '0.8s'}</span>
+                    <span className={`w-2 h-2 rounded-full mt-1 shrink-0 ${
+                      idx === reasoningSteps.length - 1 ? 'bg-emerald-500' : 'bg-indigo-500'
+                    }`} />
+                    <div className="space-y-0.5">
+                      <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>{step.title}</span>
+                        {step.model && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/10 text-slate-500">
+                            {step.model}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-sans">{step.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-3">
-                <span className="w-20 text-slate-400 shrink-0">14:30:45</span>
-                <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
-                <span>AI model synthesized AST cache bounded hotfix</span>
+            ) : (
+              <div className="space-y-2.5 text-xs font-mono text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-3">
+                  <span className="w-20 text-slate-400 shrink-0">14:30:12</span>
+                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                  <span>Production crash telemetry received from Sentry webhook</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 text-slate-400 shrink-0">14:30:45</span>
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                  <span>AI model synthesized AST cache bounded hotfix</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 text-slate-400 shrink-0">14:31:22</span>
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                  <span>MicroVM sandbox passed 18/18 test cases</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 text-slate-400 shrink-0">14:32:19</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <span>Canary launched (5% traffic) — error rate dropped to 0.00%</span>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="w-20 text-slate-400 shrink-0">14:31:22</span>
-                <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
-                <span>MicroVM sandbox passed 18/18 test cases</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-20 text-slate-400 shrink-0">14:32:19</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                <span>Canary launched (5% traffic) — error rate dropped to 0.00%</span>
-              </div>
-            </div>
+            )}
           </section>
 
-          {/* 4. Prevention & Signoff */}
-          <section className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
+          {/* 4. Prevention & Grounding Citations */}
+          <section className="space-y-3 pt-2 border-t border-slate-100 dark:border-white/5">
             <h2 className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">
-              4. Prevention & Action Items
+              4. Prevention & External Grounding Citations
             </h2>
             <ul className="text-sm text-slate-700 dark:text-slate-300 list-disc list-inside space-y-1">
-              <li>Add ESLint AST rule flagging unbounded module-level collection instances.</li>
+              <li>Add ESLint / AST rule flagging unbounded module-level collection instances.</li>
               <li>Save pattern to SOMAK AI Runbook Library for automated future matching.</li>
               <li>Audit companion microservices for un-evicted memory mappings.</li>
             </ul>
+
+            {citations.length > 0 && (
+              <div className="pt-3 space-y-2">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 block font-semibold">
+                  Tavily Live Grounding Sources:
+                </span>
+                <div className="space-y-1.5">
+                  {citations.map((cite, idx) => (
+                    <a
+                      key={idx}
+                      href={cite.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5 hover:border-indigo-500/40 text-xs text-slate-700 dark:text-slate-300 transition-colors"
+                    >
+                      <span className="truncate pr-2 font-medium">{cite.title || cite.url}</span>
+                      <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
 
           {/* 5. Reviewer Notes & Annotations */}

@@ -245,7 +245,14 @@ def test_sentry_inbound_webhook_hmac_signature():
         headers={"sentry-hook-signature": "forged_invalid_signature_hex_12345", "Content-Type": "application/json"}
     )
     assert res_tampered_hook.status_code == 401, f"Forged signature must return 401, got {res_tampered_hook.status_code}"
-    print("  [PASS] Forged / tampered webhook signature rejected with HTTP 401 Unauthorized.")
+    # 3. Query token parameter auth path MUST be rejected (HTTP 401)
+    res_token_hook = client.post(
+        f"/api/incidents/webhook?token={correct_secret}",
+        content=b'{"data":{"issue":{"id":"issue_desconnect_1","title":"Hello Sentry! Verification event from DESConnect","project":{"name":"DESConnect"}},"event":{"culprit":"?([eval])","message":"Verification event"}}}',
+        headers={"Content-Type": "application/json"}
+    )
+    assert res_token_hook.status_code == 401, f"Token query parameter must return 401, got {res_token_hook.status_code}"
+    print("  [PASS] Deprecated token query parameter rejected with HTTP 401 Unauthorized.")
 
 def test_append_only_cryptographic_audit_trail():
     print("\n[8/9] Testing Append-Only Cryptographic Audit Trail...")

@@ -37,6 +37,7 @@ export interface Patch {
   unifiedDiff: string;
   reproductionTest: string;
   sandboxExecution: SandboxExecution | null;
+  explanation?: string;
 }
 
 export interface Incident {

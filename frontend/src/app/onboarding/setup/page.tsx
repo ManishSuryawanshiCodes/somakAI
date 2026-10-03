@@ -50,39 +50,8 @@ const AI_PROVIDERS: AiProviderConfig[] = [
     models: [
       { id: 'nvidia/nemotron-3-super-120b-a12b', name: 'Nemotron-3-Super (120B MoE — ultra-fast sub-100ms triage)' },
       { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'Nemotron-3-Ultra (550B MoE — deep AST code synthesis)' },
-    ],
-  },
-  {
-    id: 'nebius',
-    name: 'Nebius AI Studio',
-    badge: 'BYOK Enabled',
-    placeholder: 'neb-... or sk-neb-...',
-    hint: 'API key starts with neb- or sk-neb-',
-    models: [
-      { id: 'nvidia/nemotron-3-nano-30b-a3b', name: 'Nemotron-3-Nano (30B Dense)' },
-      { id: 'nvidia/nemotron-3-ultra-550b', name: 'Nemotron-3-Ultra (550B MoE)' },
-    ],
-  },
-  {
-    id: 'gemini',
-    name: 'Google Gemini',
-    badge: 'Server Fallback',
-    placeholder: 'AIzaSy...',
-    hint: 'API key starts with AIzaSy',
-    models: [
-      { id: 'gemini-flash-latest', name: 'Gemini 2.5 Flash (AST Reasoning & Low Latency)' },
-      { id: 'gemini-pro-latest', name: 'Gemini 2.5 Pro (Deep Code Synthesis)' },
-    ],
-  },
-  {
-    id: 'anthropic',
-    name: 'Anthropic Claude',
-    badge: 'BYOK Enabled',
-    placeholder: 'sk-ant-...',
-    hint: 'API key starts with sk-ant-',
-    models: [
-      { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (Fast Triage)' },
-      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Frontier AST Patching)' },
+      { id: 'nvidia/nemotron-3-nano-30b-a3b', name: 'Nemotron-3-Nano (30B Dense — lightweight)' },
+      { id: 'meta/llama-3.1-70b-instruct', name: 'Llama 3.1 70B Instruct (General Reasoning)' },
     ],
   },
   {
@@ -92,8 +61,46 @@ const AI_PROVIDERS: AiProviderConfig[] = [
     placeholder: 'sk-...',
     hint: 'API key starts with sk-',
     models: [
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Fast Log Classification)' },
-      { id: 'gpt-4o', name: 'GPT-4o (High-Precision Code Synthesis)' },
+      { id: 'gpt-4o', name: 'GPT-4o (Frontier Omnimodal AST Hotfix)' },
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Ultra-Fast Log Classifier)' },
+      { id: 'o1-mini', name: 'o1-mini (Frontier Reasoning & Complex Syntax Fixes)' },
+      { id: 'o1-preview', name: 'o1-preview (Deep Multi-Step Root Cause Analysis)' },
+    ],
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic Claude',
+    badge: 'BYOK Enabled',
+    placeholder: 'sk-ant-...',
+    hint: 'API key starts with sk-ant-',
+    models: [
+      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (State-of-the-Art Code Patches)' },
+      { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (Sub-80ms Rapid Triage)' },
+      { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus (Complex Legacy Refactoring)' },
+    ],
+  },
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    badge: 'Server Fallback',
+    placeholder: 'AIzaSy...',
+    hint: 'API key starts with AIzaSy',
+    models: [
+      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Next-Gen Sub-50ms Triage & AST)' },
+      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (2M Token Context AST Synthesis)' },
+      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Lightweight Hotfix)' },
+    ],
+  },
+  {
+    id: 'nebius',
+    name: 'Nebius AI Studio',
+    badge: 'BYOK Enabled',
+    placeholder: 'neb-... or sk-neb-...',
+    hint: 'API key starts with neb- or sk-neb-',
+    models: [
+      { id: 'nvidia/nemotron-3-nano-30b-a3b', name: 'Nemotron-3-Nano (30B Dense — Sub-100ms Triage)' },
+      { id: 'nvidia/nemotron-3-ultra-550b', name: 'Nemotron-3-Ultra (550B MoE — Precision AST Generation)' },
+      { id: 'nvidia/nemotron-3-super-120b-a12b', name: 'Nemotron-3-Super (120B MoE — Deep Fingerprinting)' },
     ],
   },
 ];
@@ -438,7 +445,7 @@ export default function SetupChecklistPage() {
         </div>
 
         {/* Accordion Item 2: Connect AI Provider */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 overflow-hidden bg-slate-50/50 dark:bg-[#0A0A0A]/50 transition-all">
+        <div className={`rounded-2xl border border-slate-200/80 dark:border-white/10 ${expandedId === 'ai' ? 'overflow-visible z-30' : 'overflow-hidden z-10'} bg-slate-50/50 dark:bg-[#0A0A0A]/50 transition-all`}>
           <button
             type="button"
             onClick={() => toggleExpand('ai')}

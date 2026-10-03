@@ -36,6 +36,8 @@ import {
   Laptop,
   KeyRound,
   ShieldCheck,
+  RefreshCw,
+  Activity,
 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import FloatingDock from '@/components/FloatingDock';
@@ -50,6 +52,11 @@ import {
   saveServiceRepoMapping,
   deleteServiceRepoMapping,
   ServiceRepoMapping,
+  getGitHubToken,
+  setGitHubToken,
+  verifyGitHubToken,
+  verifyRepoAccess,
+  sanitizeRepoFullName,
 } from '@/lib/services-repo';
 
 type SubTab = 'general' | 'keys' | 'members' | 'repositories' | 'notifications' | 'billing' | 'danger';
@@ -146,66 +153,83 @@ const BYOK_PROVIDERS = [
   {
     id: 'nvidia_nim',
     name: 'NVIDIA NIM',
-    description: 'Free tier available, hosts Nemotron models',
+    description: 'Free tier available, hosts Nemotron & Llama models',
     badge: 'Server Fallback #1 / BYOK',
     keyPrefix: 'nvapi-',
     triageModels: [
-      { id: 'nvidia/nemotron-3-super-120b-a12b', name: 'Nemotron-3-Super (120B MoE)' }
+      { id: 'nvidia/nemotron-3-super-120b-a12b', name: 'Nemotron-3-Super (120B MoE — Fast Sub-100ms Triage)' },
+      { id: 'nvidia/nemotron-3-nano-30b-a3b', name: 'Nemotron-3-Nano (30B Dense — Ultra Lightweight)' },
+      { id: 'meta/llama-3.1-70b-instruct', name: 'Llama 3.1 70B Instruct (General Log Fingerprint)' },
     ],
     synthesisModels: [
-      { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'Nemotron-3-Ultra (550B MoE)' }
-    ],
-  },
-  {
-    id: 'nebius',
-    name: 'Nebius AI Studio',
-    description: 'Dedicated GPU cloud hosting Nemotron models',
-    badge: 'BYOK Enabled',
-    keyPrefix: 'sk-neb-',
-    triageModels: [
-      { id: 'nvidia/nemotron-3-nano-30b-a3b', name: 'Nemotron-3-Nano (30B Dense)' }
-    ],
-    synthesisModels: [
-      { id: 'nvidia/nemotron-3-ultra-550b', name: 'Nemotron-3-Ultra (550B MoE)' }
-    ],
-  },
-  {
-    id: 'gemini',
-    name: 'Google Gemini',
-    description: 'Ultra-low latency, large context window',
-    badge: 'Server Fallback #2 / BYOK',
-    keyPrefix: 'AIzaSy',
-    triageModels: [
-      { id: 'gemini-flash-latest', name: 'Gemini 2.5 Flash' }
-    ],
-    synthesisModels: [
-      { id: 'gemini-flash-latest', name: 'Gemini 2.5 Flash (AST Reasoning)' }
-    ],
-  },
-  {
-    id: 'anthropic',
-    name: 'Anthropic',
-    description: 'Deep reasoning and frontier complexity',
-    badge: 'BYOK Enabled',
-    keyPrefix: 'sk-ant-',
-    triageModels: [
-      { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' }
-    ],
-    synthesisModels: [
-      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' }
+      { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'Nemotron-3-Ultra (550B MoE — Frontier Code Reasoning)' },
+      { id: 'nvidia/nemotron-3-super-120b-a12b', name: 'Nemotron-3-Super (120B MoE — High-Efficiency AST)' },
+      { id: 'meta/llama-3.1-70b-instruct', name: 'Llama 3.1 70B Instruct (AST Patch Synthesis)' },
     ],
   },
   {
     id: 'openai',
     name: 'OpenAI',
-    description: 'High-precision code synthesis and fast triage',
+    description: 'Industry standard for high-precision code synthesis & triage',
     badge: 'BYOK Enabled',
     keyPrefix: 'sk-',
     triageModels: [
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini' }
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Ultra Fast Sub-80ms Log Classifier)' },
+      { id: 'gpt-4o', name: 'GPT-4o (Omnimodal Log & Stack Triage)' },
     ],
     synthesisModels: [
-      { id: 'gpt-4o', name: 'GPT-4o' }
+      { id: 'gpt-4o', name: 'GPT-4o (Production AST Hotfix Benchmark)' },
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Cost-Optimized AST Patches)' },
+      { id: 'o1-mini', name: 'o1-mini (Frontier Reasoning & Complex Syntax Fixes)' },
+      { id: 'o1-preview', name: 'o1-preview (Deep Multi-Step Root Cause Analysis)' },
+    ],
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic Claude',
+    description: 'Deep architectural reasoning, safety, and frontier AST accuracy',
+    badge: 'BYOK Enabled',
+    keyPrefix: 'sk-ant-',
+    triageModels: [
+      { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (Sub-80ms Rapid Triage)' },
+      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Frontier Log Understanding)' },
+    ],
+    synthesisModels: [
+      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (State-of-the-Art Code Patches)' },
+      { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus (Complex Legacy Refactoring)' },
+      { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (High-Speed Patching)' },
+    ],
+  },
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    description: 'Ultra-low latency, large 2M context window for massive codebases',
+    badge: 'Server Fallback #2 / BYOK',
+    keyPrefix: 'AIzaSy',
+    triageModels: [
+      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Next-Gen Sub-50ms Triage)' },
+      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Fast Log Classifier)' },
+      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Deep Contextual Triage)' },
+    ],
+    synthesisModels: [
+      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (2M Token Context AST Synthesis)' },
+      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Rapid AST Hotfix)' },
+      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Lightweight Hotfix)' },
+    ],
+  },
+  {
+    id: 'nebius',
+    name: 'Nebius AI Studio',
+    description: 'Dedicated GPU cloud hosting ultra-fast Nemotron models',
+    badge: 'BYOK Enabled',
+    keyPrefix: 'sk-neb-',
+    triageModels: [
+      { id: 'nvidia/nemotron-3-nano-30b-a3b', name: 'Nemotron-3-Nano (30B Dense — Sub-100ms Triage)' },
+      { id: 'nvidia/nemotron-3-super-120b-a12b', name: 'Nemotron-3-Super (120B MoE — Deep Fingerprinting)' },
+    ],
+    synthesisModels: [
+      { id: 'nvidia/nemotron-3-ultra-550b', name: 'Nemotron-3-Ultra (550B MoE — Precision AST Generation)' },
+      { id: 'nvidia/nemotron-3-nano-30b-a3b', name: 'Nemotron-3-Nano (30B Dense — High-Speed Hotfix)' },
     ],
   },
 ];
@@ -301,6 +325,7 @@ function SettingsContent() {
   const [expandedSetupId, setExpandedSetupId] = useState<string | null>(null);
   const [setupSentryDsn, setSetupSentryDsn] = useState('');
   const [setupAiProvider, setSetupAiProvider] = useState('nvidia_nim');
+  const [setupAiModel, setSetupAiModel] = useState('nvidia/nemotron-3-super-120b-a12b');
   const [setupAiKey, setSetupAiKey] = useState('');
   const [setupTavilyKey, setSetupTavilyKey] = useState('');
   const [setupSlackWebhook, setSetupSlackWebhook] = useState('');
@@ -432,6 +457,11 @@ function SettingsContent() {
   const [newRepoFullName, setNewRepoFullName] = useState('');
   const [newDefaultBranch, setNewDefaultBranch] = useState('main');
   const [newAutoMerge, setNewAutoMerge] = useState(true);
+  const [githubToken, setGithubTokenState] = useState('');
+  const [isVerifyingGithub, setIsVerifyingGithub] = useState(false);
+  const [githubUser, setGithubUser] = useState<string | null>(null);
+  const [testingRepo, setTestingRepo] = useState<string | null>(null);
+  const [repoTestResults, setRepoTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
 
   useEffect(() => {
     if (!currentOrg) return;
@@ -531,6 +561,15 @@ function SettingsContent() {
 
   useEffect(() => {
     setRepoMappings(getServiceRepoMappings());
+    const token = getGitHubToken();
+    setGithubTokenState(token);
+    if (token) {
+      verifyGitHubToken(token).then((res) => {
+        if (res.success && res.user) {
+          setGithubUser(res.user);
+        }
+      });
+    }
   }, []);
 
   const handleToggleAutoMerge = (serviceName: string) => {
@@ -550,12 +589,55 @@ function SettingsContent() {
     showToast(`Removed repository mapping for ${serviceName}`, 'info');
   };
 
+  const handleSaveGithubToken = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsVerifyingGithub(true);
+    try {
+      const trimmed = githubToken.trim();
+      setGitHubToken(trimmed);
+      if (!trimmed) {
+        setGithubUser(null);
+        showToast('GitHub Personal Access Token removed.', 'info');
+        return;
+      }
+      const res = await verifyGitHubToken(trimmed);
+      if (res.success && res.user) {
+        setGithubUser(res.user);
+        showToast(`GitHub token verified successfully as @${res.user}`, 'success');
+      } else {
+        setGithubUser(null);
+        showToast(res.error || 'Failed to verify GitHub token', 'error');
+      }
+    } finally {
+      setIsVerifyingGithub(false);
+    }
+  };
+
+  const handleTestRepoAccess = async (repoName: string) => {
+    setTestingRepo(repoName);
+    try {
+      const res = await verifyRepoAccess(repoName, githubToken);
+      if (res.success) {
+        const msg = `Connected! ${res.isPrivate ? 'Private' : 'Public'} repository verified on branch "${res.defaultBranch}".`;
+        setRepoTestResults((prev) => ({ ...prev, [repoName]: { success: true, message: msg } }));
+        showToast(msg, 'success');
+      } else {
+        const msg = res.error || 'Cannot access repository';
+        setRepoTestResults((prev) => ({ ...prev, [repoName]: { success: false, message: msg } }));
+        showToast(msg, 'error');
+      }
+    } finally {
+      setTestingRepo(null);
+    }
+  };
+
   const handleAddRepoMappingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newServiceName.trim() || !newRepoFullName.trim()) return;
+    const sanitizedRepo = sanitizeRepoFullName(newRepoFullName.trim());
     saveServiceRepoMapping({
       service_name: newServiceName.trim(),
-      repo_full_name: newRepoFullName.trim(),
+      repo_full_name: sanitizedRepo,
       default_branch: newDefaultBranch.trim() || 'main',
       auto_merge: newAutoMerge,
     });
@@ -565,7 +647,7 @@ function SettingsContent() {
     setNewDefaultBranch('main');
     setNewAutoMerge(true);
     setShowAddRepoModal(false);
-    showToast(`Linked ${newServiceName} to ${newRepoFullName}`, 'success');
+    showToast(`Linked ${newServiceName} to ${sanitizedRepo}`, 'success');
   };
 
   // Notifications State
@@ -940,7 +1022,9 @@ function SettingsContent() {
                     </div>
 
                     {/* Step 2: Connect an AI provider */}
-                    <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] overflow-hidden transition-all">
+                    <div className={`rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] transition-all relative ${
+                      expandedSetupId === 'ai' ? 'overflow-visible z-30' : 'overflow-hidden z-10'
+                    }`}>
                       <button
                         type="button"
                         onClick={() => setExpandedSetupId(expandedSetupId === 'ai' ? null : 'ai')}
@@ -953,8 +1037,19 @@ function SettingsContent() {
                             {isAiDone ? <Check className="w-3.5 h-3.5" /> : '2'}
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-slate-900 dark:text-white">
-                              Connect an AI provider
+                            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                              <span>Connect an AI provider</span>
+                              {checklist && (
+                                (setupAiProvider === 'nvidia_nim' && checklist.nvidia_nim_connected) ||
+                                (setupAiProvider === 'nebius' && checklist.ai_connected) ||
+                                (setupAiProvider === 'gemini' && checklist.google_connected) ||
+                                (setupAiProvider === 'openai' && checklist.openai_connected) ||
+                                (setupAiProvider === 'anthropic' && checklist.anthropic_connected)
+                              ) && (
+                                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                  Connected & Online
+                                </span>
+                              )}
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400">
                               Powers automatic triage, root cause reasoning, and verified AST fix generation.
@@ -974,38 +1069,83 @@ function SettingsContent() {
                       </button>
 
                       {expandedSetupId === 'ai' && (
-                        <div className="p-4 pt-0 border-t border-slate-100 dark:border-white/5 space-y-3 text-xs">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                                Provider
-                              </label>
-                              <CustomSelect
-                                value={setupAiProvider}
-                                onChange={(val) => setSetupAiProvider(val)}
-                                options={[
-                                  { value: 'nvidia_nim', label: 'NVIDIA NIM (Nemotron 3 Super/Ultra)' },
-                                  { value: 'nebius', label: 'Nebius AI Studio' },
-                                  { value: 'gemini', label: 'Google Gemini 2.5 Flash / Pro' },
-                                  { value: 'openai', label: 'OpenAI (GPT-4o)' },
-                                  { value: 'anthropic', label: 'Anthropic (Claude 3.5 Sonnet)' },
-                                ]}
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                                API Key (BYOK)
-                              </label>
-                              <input
-                                type="password"
-                                placeholder={setupAiProvider === 'nvidia_nim' ? 'nvapi-...' : 'sk-...'}
-                                value={setupAiKey}
-                                onChange={(e) => setSetupAiKey(e.target.value)}
-                                className="w-full bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex justify-end">
+                        <div className="p-4 pt-0 border-t border-slate-100 dark:border-white/5 space-y-4 text-xs">
+                          {(() => {
+                            const curProv = BYOK_PROVIDERS.find((p) => p.id === setupAiProvider) || BYOK_PROVIDERS[0];
+                            const availableModels = [
+                              ...curProv.triageModels.map((m) => ({ value: m.id, label: m.name, hint: 'Triage Stage' })),
+                              ...curProv.synthesisModels
+                                .filter((sm) => !curProv.triageModels.some((tm) => tm.id === sm.id))
+                                .map((m) => ({ value: m.id, label: m.name, hint: 'Synthesis Stage' })),
+                            ];
+
+                            return (
+                              <>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                  {/* Provider Dropdown */}
+                                  <div>
+                                    <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                                      Provider
+                                    </label>
+                                    <CustomSelect
+                                      value={setupAiProvider}
+                                      onChange={(val) => {
+                                        setSetupAiProvider(val);
+                                        const p = BYOK_PROVIDERS.find((item) => item.id === val);
+                                        if (p && p.triageModels.length > 0) {
+                                          setSetupAiModel(p.triageModels[0].id);
+                                        }
+                                      }}
+                                      options={BYOK_PROVIDERS.map((p) => ({
+                                        value: p.id,
+                                        label: `${p.name} (${p.description})`,
+                                        badge: p.badge,
+                                      }))}
+                                    />
+                                  </div>
+
+                                  {/* Model Tier Dropdown */}
+                                  <div>
+                                    <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                                      Model Tier / Engine
+                                    </label>
+                                    <CustomSelect
+                                      value={setupAiModel}
+                                      onChange={(val) => setSetupAiModel(val)}
+                                      options={availableModels}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* API Key Input */}
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block">
+                                      {curProv.name} API Key (BYOK)
+                                    </label>
+                                    <span className="text-[10px] text-slate-400 font-mono">
+                                      Prefix format: <code className="text-slate-600 dark:text-slate-300">{curProv.keyPrefix}...</code>
+                                    </span>
+                                  </div>
+                                  <div className="relative">
+                                    <Key className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input
+                                      type="password"
+                                      placeholder={`Enter ${curProv.name} API Key (${curProv.keyPrefix}...)`}
+                                      value={setupAiKey}
+                                      onChange={(e) => setSetupAiKey(e.target.value)}
+                                      className="w-full bg-white dark:bg-black/50 border border-slate-200 dark:border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                                    If left empty, SOMAK AI routes requests through server-level platform-metered Nebius / Gemini inference fallbacks.
+                                  </p>
+                                </div>
+                              </>
+                            );
+                          })()}
+
+                          <div className="flex justify-end pt-1">
                             <button
                               type="button"
                               disabled={savingSetupId === 'ai'}
@@ -1015,6 +1155,9 @@ function SettingsContent() {
                                   const payload: Record<string, any> = {
                                     triage_provider: setupAiProvider,
                                     synthesis_provider: setupAiProvider,
+                                    triage_model: setupAiModel,
+                                    synthesis_model: setupAiModel,
+                                    ai_model_tier: setupAiModel,
                                   };
                                   if (setupAiKey.trim()) {
                                     if (setupAiProvider === 'nvidia_nim') {
@@ -1035,7 +1178,7 @@ function SettingsContent() {
                                     }
                                   }
                                   await updateChecklist(payload);
-                                  showToast('AI Provider credentials updated', 'success');
+                                  showToast('AI Provider & Model configuration saved successfully', 'success');
                                   setSetupAiKey('');
                                   setExpandedSetupId('tavily');
                                 } catch (err: any) {
@@ -1960,8 +2103,8 @@ function SettingsContent() {
         {/* ======================================================== */}
         {activeTab === 'repositories' && (
           <div className="space-y-6">
-            {/* GitHub App Connection Card */}
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-4">
+            {/* GitHub App Connection & Authentication Card */}
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0A0A0A] border border-slate-200/80 dark:border-white/10 shadow-xs space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/5">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-slate-900/10 dark:bg-white/10 text-slate-900 dark:text-white flex items-center justify-center shrink-0">
@@ -1970,28 +2113,90 @@ function SettingsContent() {
                   <div>
                     <h3 className="font-semibold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                       <span>GitHub Integration</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        Connected (@acme-corp)
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-medium ${
+                        githubUser
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                          : isAcme
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                          : githubToken
+                          ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20'
+                          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                      }`}>
+                        {githubUser ? `Connected (@${githubUser})` : (isAcme ? 'Connected (@acme-corp)' : (githubToken ? 'PAT Configured' : 'Token Required for Private Repos'))}
                       </span>
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Somak AI GitHub App installed with scopes: <span className="font-mono">repo:status</span>, <span className="font-mono">pull_requests:write</span>, <span className="font-mono">checks:read</span>.
+                      Autonomous pull request synthesis with AST diffs, automated branch staging, and rollback guards.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
                   <a
-                    href="https://github.com/apps/somak-ai/installations"
+                    href="https://github.com/settings/tokens/new?scopes=repo&description=SomakAI-SentryOps"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
                   >
-                    <span>Manage on GitHub</span>
+                    <span>Generate GitHub PAT</span>
                     <ExternalLink className="w-3 h-3 text-slate-400" />
                   </a>
                 </div>
               </div>
+
+              {/* GitHub PAT Configuration Box */}
+              <form onSubmit={handleSaveGithubToken} className="p-4 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>GitHub Personal Access Token (for Private Repositories)</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Required for private repositories (e.g. <span className="font-mono text-slate-700 dark:text-slate-300">manishSuryawanshiCodes/desconnect</span>). Ensure your token has the <span className="font-mono text-indigo-600 dark:text-indigo-400">repo</span> scope.
+                    </p>
+                  </div>
+                  {githubUser && (
+                    <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 self-start sm:self-auto shrink-0">
+                      ✓ Authenticated as @{githubUser}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    type="password"
+                    value={githubToken}
+                    onChange={(e) => setGithubTokenState(e.target.value)}
+                    placeholder="ghp_••••••••••••••••••••••••••••••••••••"
+                    className="flex-1 bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="submit"
+                      disabled={isVerifyingGithub}
+                      className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {isVerifyingGithub && <RefreshCw className="w-3 h-3 animate-spin" />}
+                      <span>{isVerifyingGithub ? 'Verifying...' : 'Save & Verify Token'}</span>
+                    </button>
+                    {githubToken && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGithubTokenState('');
+                          setGitHubToken('');
+                          setGithubUser(null);
+                          showToast('GitHub token cleared', 'info');
+                        }}
+                        className="px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 dark:hover:bg-rose-950/20 text-xs font-semibold text-slate-500 transition-colors shrink-0"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </form>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
@@ -2043,65 +2248,96 @@ function SettingsContent() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100 dark:divide-white/5">
-                  {repoMappings.map((mapping) => (
-                    <div
-                      key={mapping.service_name}
-                      className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                          <GitBranch className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 dark:text-white font-mono">
-                              {mapping.service_name}
-                            </span>
-                            <span className="text-slate-300 dark:text-slate-700">&rarr;</span>
-                            <span className="font-mono text-slate-700 dark:text-slate-300">
-                              {mapping.repo_full_name}
-                            </span>
-                          </div>
-                          <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                            Target Branch: <span className="font-semibold text-slate-600 dark:text-slate-300">{mapping.default_branch}</span>
-                          </div>
-                        </div>
-                      </div>
+                  {repoMappings.map((mapping) => {
+                    const testResult = repoTestResults[mapping.repo_full_name];
+                    const isTestingThis = testingRepo === mapping.repo_full_name;
 
-                      <div className="flex items-center gap-4 shrink-0 self-start sm:self-center">
-                        {/* Auto-merge toggle */}
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleAutoMerge(mapping.service_name)}
-                            className={`w-9 h-5 rounded-full transition-colors relative flex items-center ${
-                              mapping.auto_merge ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-white/10'
-                            }`}
-                            title="Auto-merge PR once 100% canary verification passes"
-                          >
-                            <span
-                              className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                                mapping.auto_merge ? 'translate-x-4.5' : 'translate-x-1'
-                              }`}
-                            />
-                          </button>
-                          <span className="text-[11px] text-slate-600 dark:text-slate-300">
-                            {mapping.auto_merge ? 'Auto-merge ON' : 'Auto-merge OFF'}
-                          </span>
+                    return (
+                      <div key={mapping.service_name} className="py-4 space-y-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                              <GitBranch className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-900 dark:text-white font-mono">
+                                  {mapping.service_name}
+                                </span>
+                                <span className="text-slate-300 dark:text-slate-700">&rarr;</span>
+                                <span className="font-mono text-slate-700 dark:text-slate-300 font-medium">
+                                  {mapping.repo_full_name}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-2">
+                                <span>Target Branch: <strong className="text-slate-600 dark:text-slate-300">{mapping.default_branch}</strong></span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-3 shrink-0 self-start sm:self-center">
+                            {/* Test Access Button */}
+                            <button
+                              type="button"
+                              disabled={isTestingThis}
+                              onClick={() => handleTestRepoAccess(mapping.repo_full_name)}
+                              className="px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 font-medium text-[11px] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                            >
+                              <Activity className={`w-3 h-3 text-indigo-500 ${isTestingThis ? 'animate-spin' : ''}`} />
+                              <span>{isTestingThis ? 'Checking...' : 'Test Access'}</span>
+                            </button>
+
+                            {/* Auto-merge toggle */}
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleAutoMerge(mapping.service_name)}
+                                className={`w-8 h-4.5 rounded-full transition-colors relative flex items-center ${
+                                  mapping.auto_merge ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-white/10'
+                                }`}
+                                title="Auto-merge PR once 100% canary verification passes"
+                              >
+                                <span
+                                  className={`w-3 h-3 rounded-full bg-white transition-transform ${
+                                    mapping.auto_merge ? 'translate-x-4' : 'translate-x-0.5'
+                                  }`}
+                                />
+                              </button>
+                              <span className="text-[11px] text-slate-600 dark:text-slate-300">
+                                {mapping.auto_merge ? 'Auto-merge ON' : 'Auto-merge OFF'}
+                              </span>
+                            </div>
+
+                            {/* Remove button */}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveRepoMapping(mapping.service_name)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                              title="Remove repository mapping"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
 
-                        {/* Remove button */}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveRepoMapping(mapping.service_name)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
-                          title="Remove repository mapping"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {/* Inline Test Result Feedback */}
+                        {testResult && (
+                          <div className={`p-2 rounded-lg text-[11px] font-mono flex items-center gap-2 ${
+                            testResult.success
+                              ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                              : 'bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400'
+                          }`}>
+                            {testResult.success ? (
+                              <Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                            ) : (
+                              <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                            )}
+                            <span className="break-all">{testResult.message}</span>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -2129,23 +2365,28 @@ function SettingsContent() {
                         required
                         value={newServiceName}
                         onChange={(e) => setNewServiceName(e.target.value)}
-                        placeholder="e.g. auth-service, order-service, api-gateway"
+                        placeholder="e.g. auth-service, desconnect, api-gateway"
                         className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none"
                       />
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                        GitHub Repository (Org/Repo)
+                        GitHub Repository (Org/Repo or full URL)
                       </label>
                       <input
                         type="text"
                         required
                         value={newRepoFullName}
                         onChange={(e) => setNewRepoFullName(e.target.value)}
-                        placeholder="e.g. acme-corp/auth-service"
+                        placeholder="e.g. manishSuryawanshiCodes/desconnect"
                         className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none"
                       />
+                      {newRepoFullName.trim() && (
+                        <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                          Target slug: <span className="font-semibold text-indigo-600 dark:text-indigo-400">{sanitizeRepoFullName(newRepoFullName)}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div>

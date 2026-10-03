@@ -938,7 +938,21 @@ def resolve_provider_and_key(org_id: str, task: str) -> ProviderConfig:
                 model_display_name=mdl_disp
             )
 
-    # 2. Server-level fallback: NVIDIA NIM
+    # 2. Server-level fallback: Nebius AI Studio (Nemotron-3)
+    nebius_key = getattr(settings, "NEBIUS_API_KEY", None)
+    if nebius_key and not is_placeholder(nebius_key):
+        mdl = PROVIDER_REGISTRY["nebius"]["models"][task]
+        return ProviderConfig(
+            provider="nebius",
+            key=nebius_key,
+            mode="live",
+            source="server_fallback",
+            model=mdl,
+            display_name=PROVIDER_REGISTRY["nebius"]["display_name"],
+            model_display_name=get_model_display_name("nebius", mdl)
+        )
+
+    # 3. Server-level fallback: NVIDIA NIM
     nim_key = settings.NVIDIA_NIM_API_KEY
     if nim_key and not is_placeholder(nim_key):
         mdl = PROVIDER_REGISTRY["nvidia_nim"]["models"][task]

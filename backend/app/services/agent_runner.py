@@ -100,10 +100,25 @@ class AgentRunner:
         # 4. Fallback chain progression
         clean_err = self._sanitize_error(last_error or "Service unavailable")
 
-        # Fallback Level A: If BYOK failed, fall back to NVIDIA NIM (if configured and different from failed provider)
-        if config.source == "byok" and settings.NVIDIA_NIM_API_KEY and config.provider != "nvidia_nim":
+        # Fallback Level A: Nebius AI Studio (Nemotron-3)
+        nebius_key = getattr(settings, "NEBIUS_API_KEY", None)
+        if nebius_key and config.provider != "nebius":
+            neb_model = PROVIDER_REGISTRY["nebius"]["models"][stage]
+            fallback_msg = f"{config.display_name} unavailable ({clean_err}), falling back to Nebius AI Studio"
+            logger.warning(f"[Fallback Chain] {fallback_msg}")
+            try:
+                neb_prov = get_provider("nebius", api_key=nebius_key, model=neb_model)
+                neb_func = getattr(neb_prov, exec_func_name)
+                result = await asyncio.wait_for(neb_func(*args, **kwargs), timeout=stage_timeout)
+                return result, "nebius", neb_model, "server_fallback", "live", True, fallback_msg
+            except Exception as nbe:
+                logger.warning(f"[Fallback Chain] Nebius fallback failed: {nbe}")
+                clean_err = self._sanitize_error(str(nbe))
+
+        # Fallback Level B: NVIDIA NIM
+        if settings.NVIDIA_NIM_API_KEY and config.provider != "nvidia_nim":
             nim_model = PROVIDER_REGISTRY["nvidia_nim"]["models"][stage]
-            fallback_msg = f"{config.display_name} BYOK unavailable ({clean_err}), falling back to NVIDIA NIM server fallback"
+            fallback_msg = f"{config.display_name} unavailable ({clean_err}), falling back to NVIDIA NIM"
             logger.warning(f"[Fallback Chain] {fallback_msg}")
             try:
                 nim_prov = get_provider("nvidia_nim", api_key=settings.NVIDIA_NIM_API_KEY, model=nim_model)
@@ -174,8 +189,8 @@ class AgentRunner:
                 service=service,
                 timestamp=start_time.isoformat(),
                 status="TRIAGING",
-                confidenceScore=99.4,
-                astValidated=True,
+                confidenceScore=None,
+                astValidated=None,
                 correctionLoops=0,
                 triage_provider=req_triage_provider,
                 triage_model=req_triage_model,
@@ -381,7 +396,11 @@ class AgentRunner:
                 max_loops = getattr(checklist, "sandbox_concurrency", 3) or 3
                 timeout_sec = float(getattr(checklist, "sandbox_timeout", 10.0) or 10.0)
 
-            effective_synth_key = synth_key or (settings.NVIDIA_NIM_API_KEY if actual_synth_prov == "nvidia_nim" else (settings.GEMINI_API_KEY if actual_synth_prov == "gemini" else ""))
+            effective_synth_key = synth_key or (
+                getattr(settings, "NEBIUS_API_KEY", "") if actual_synth_prov == "nebius"
+                else (settings.NVIDIA_NIM_API_KEY if actual_synth_prov == "nvidia_nim"
+                else (settings.GEMINI_API_KEY if actual_synth_prov == "gemini" else ""))
+            )
             synth_prov_instance = get_provider(actual_synth_prov, api_key=effective_synth_key, model=actual_synth_mdl)
             incident = await asyncio.wait_for(
                 sandbox_manager.execute_with_feedback_loop(
@@ -453,6 +472,8 @@ class AgentRunner:
         except Exception as e:
             logger.error(f"[AgentRunner] Pipeline failure for {incident.id}: {e}")
             incident.status = "FAILED"
+            incident.confidenceScore = 0.0
+            incident.astValidated = False
             incident.fallback_occurred = True
             incident.fallback_message = f"Autonomous pipeline execution interrupted: {str(e)}"
             fail_step = {

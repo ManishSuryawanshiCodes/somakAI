@@ -276,10 +276,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { user: demoUser, hasOrgs: true, onboardingCompleted: true };
     }
 
-    // 1. Try Supabase Auth login
+    // 1. Call backend endpoint with actual credentials
+    let backendRes: any = null;
+    let backendError: Error | null = null;
+    try {
+      backendRes = await backendLogin({ email: cleanEmail, password, role, name: defaultName });
+    } catch (err: any) {
+      backendError = err;
+    }
+
+    if (backendRes?.status === 'mfa_required' && backendRes.mfa_ticket) {
+      return { mfaRequired: true, mfaTicket: backendRes.mfa_ticket };
+    }
+
+    // 2. If backend did not succeed, try Supabase Auth login as fallback
     let supabaseUser = null;
     let supabaseToken = '';
-    if (password) {
+    if (!backendRes?.user && password) {
       try {
         const supabase = createClient();
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -291,29 +304,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           supabaseToken = data.session?.access_token || '';
         }
       } catch (sbErr) {
-        console.warn('[Supabase Auth] sign-in fallback:', sbErr);
+        // Silent fallback
       }
     }
 
-    // 2. Call backend endpoint with actual credentials
-    let backendRes: any = null;
-    let backendError: Error | null = null;
-    try {
-      backendRes = await backendLogin({ email: cleanEmail, password, role, name: defaultName });
-    } catch (err: any) {
-      backendError = err;
-    }
-
-    // Strictly enforce credential check: if user supplied a password, both Supabase and Backend failed, reject!
+    // Strictly enforce credential check: if user supplied a password, both backend and Supabase failed, reject!
     if (password) {
       if (!supabaseUser && (!backendRes || !backendRes.user)) {
         if (backendError) throw backendError;
         throw new Error('Invalid email or password. Please verify credentials.');
       }
-    }
-
-    if (backendRes?.status === 'mfa_required' && backendRes.mfa_ticket) {
-      return { mfaRequired: true, mfaTicket: backendRes.mfa_ticket };
     }
 
     const u = (backendRes as any)?.user;
