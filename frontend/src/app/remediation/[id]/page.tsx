@@ -44,7 +44,7 @@ function RemediationStudioContent() {
   const searchParams = useSearchParams();
   const patternParam = searchParams?.get('pattern');
 
-  const [incident, setIncident] = useState<Incident | null>(id === 'INC-2041' );
+  const [incident, setIncident] = useState<Incident | null>(null);
   const [loading, setLoading] = useState(true);
   const [deploying, setDeploying] = useState(false);
   const [retrying, setRetrying] = useState(false);
@@ -124,7 +124,7 @@ function RemediationStudioContent() {
     }
   };
 
-  const activeIncident = incident || (id === 'INC-2041' );
+  const activeIncident = incident;
 
   if (loading && !activeIncident) {
     return (

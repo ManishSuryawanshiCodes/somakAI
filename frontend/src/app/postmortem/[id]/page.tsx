@@ -60,7 +60,7 @@ export default function PostMortemPage() {
   const isDemo = id === 'INC-2041';
   const router = useRouter();
 
-  const [incident, setIncident] = useState<Incident | null>(isDemo );
+  const [incident, setIncident] = useState<Incident | null>(null);
   const [copied, setCopied] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
