@@ -119,7 +119,7 @@ export default function PricingPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>SOC-2 Type II tamper-evident audit log</span>
+                  <span>Tamper-Evident Audit tamper-evident audit log</span>
                 </div>
               </div>
             </div>
@@ -153,7 +153,7 @@ export default function PricingPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>Dedicated Firecracker private cluster</span>
+                  <span>Dedicated Sandbox private cluster</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />

@@ -220,7 +220,7 @@ export default function LandingPage() {
     {
       step: '05',
       title: 'Verify',
-      short: 'Firecracker MicroVM Sandbox',
+      short: 'Network-Restricted Sandbox',
       desc: 'Isolated microVM regression tests complete in ~3.8s.',
       icon: Shield,
       color: 'text-cyan-500',
@@ -255,7 +255,7 @@ export default function LandingPage() {
       accent: 'cyan',
     },
     {
-      title: 'SOC-2 Ready Audit Trail',
+      title: 'Tamper-Evident Audit Trail',
       desc: 'Immutable, hashed audit trail of every reasoning step and operator action.',
       icon: Shield,
       badge: 'Compliance',
@@ -309,7 +309,7 @@ export default function LandingPage() {
       id: 'studio',
       name: 'Remediation Studio',
       title: 'AST Syntax Diff & MicroVM Sandbox',
-      desc: 'Side-by-side code diff viewer, Firecracker microVM compile logs, and Nemotron reasoning confidence scores.',
+      desc: 'Side-by-side code diff viewer, isolated sandbox compile logs, and Nemotron reasoning confidence scores.',
     },
     {
       id: 'canary',
@@ -335,7 +335,7 @@ export default function LandingPage() {
         'Up to 3 team members',
         'Unlimited incident triage & root-cause analysis',
         'Nemotron-3 30B fast triage engine',
-        'Firecracker microVM sandbox validation',
+        'Network-Restricted Sandbox validation',
         'Sentry webhook & GitHub integration',
         'Community Discord & documentation support',
       ],
@@ -353,7 +353,7 @@ export default function LandingPage() {
         'Nemotron-3 550B MoE synthesis engine',
         'Slack interactive approval & PagerDuty integration',
         'Runbook Pattern synthesis library',
-        'SOC-2 Type II audit logging & export',
+        'Tamper-evident audit logging & export',
         'Priority email & Slack support',
       ],
       cta: 'Start Free Trial',
@@ -366,7 +366,7 @@ export default function LandingPage() {
       desc: 'Dedicated microVM clusters, custom fine-tuned models, and mission-critical SLAs.',
       features: [
         'Unlimited team members',
-        'Dedicated Firecracker microVM private cluster',
+        'Dedicated isolated sandbox private cluster',
         'Custom fine-tuned LLM reasoning weights',
         'SAML 2.0 / Okta SSO & SCIM provisioning',
         'Multi-region error budget governance',
@@ -524,7 +524,7 @@ export default function LandingPage() {
             <Sparkles className="w-3.5 h-3.5 text-emerald-500" strokeWidth={1.75} />
             <span className="font-mono text-[11px] uppercase tracking-wider">SOMAK AI • Zero-Human-Latency Cloud SRE</span>
             <span className="text-slate-400 dark:text-slate-600">•</span>
-            <span className="font-mono text-[11px] text-cyan-600 dark:text-cyan-400 font-bold">95.2% Auto-Resolved</span>
+            <span className="font-mono text-[11px] text-cyan-600 dark:text-cyan-400 font-bold">Automated Pipeline</span>
           </motion.div>
 
           {/* Main Outcome Headline */}
@@ -544,7 +544,7 @@ export default function LandingPage() {
             transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed"
           >
-            SOMAK AI ingests crash telemetry, synthesizes zero-hallucination AST hotfixes in Firecracker microVMs, and executes canary rollouts with automated rollbacks.
+            SOMAK AI ingests crash telemetry, synthesizes zero-hallucination AST hotfixes in isolated sandboxs, and executes canary rollouts with automated rollbacks.
           </motion.p>
 
           {/* CTAs */}
@@ -647,7 +647,7 @@ export default function LandingPage() {
                   <span className="text-[10px] font-mono text-emerald-500 font-bold">100% Live</span>
                 </div>
                 <div className="text-xs font-bold text-slate-900 dark:text-white mt-1">Canary Promote</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">0.00% Error rate</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Test Coverage</div>
               </div>
             </div>
           </motion.div>
@@ -913,7 +913,7 @@ export default function LandingPage() {
                             MICROVM SANDBOX
                           </span>
                           <span className="font-bold text-[#181614] dark:text-white">
-                            Firecracker VM #8841 • Isolated Regression Verification
+                            Sandbox #8841 • Isolated Regression Verification
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
@@ -970,7 +970,7 @@ export default function LandingPage() {
                             CANARY PROMOTION
                           </span>
                           <span className="font-bold text-[#181614] dark:text-white">
-                            Traffic Promoted: {canarySliderValue}% • Zero Regressions Detected
+                            Traffic Promoted: {canarySliderValue}% • AST Validation Detected
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
@@ -1159,7 +1159,7 @@ export default function LandingPage() {
                   <span className="text-cyan-500 font-mono font-bold text-xs">18/18 Tests Passed</span>
                 </div>
                 <div className="font-bold text-sm text-slate-900 dark:text-white">
-                  Firecracker MicroVM Jest Gate
+                  isolated sandbox Jest Gate
                 </div>
                 <div className="p-3 rounded-xl bg-[#0B0F19] border border-slate-800 text-[11px] font-mono text-emerald-400 space-y-1">
                   <div>✓ resolves session when org present (12ms)</div>
@@ -1230,7 +1230,7 @@ export default function LandingPage() {
               Watch production error rates collapse in real-time.
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-              Recovery metrics from 14,000+ autonomous remediation runs.
+              Automated remediation pipeline metrics.
             </p>
           </div>
 
@@ -1437,7 +1437,7 @@ export default function LandingPage() {
             
             <div className="space-y-1.5">
               <div className="text-3xl sm:text-5xl font-extrabold tracking-tight font-mono text-emerald-600 dark:text-emerald-400">
-                <StatCounter target={95.2} decimals={1} suffix="%" />
+                Automated
               </div>
               <div className="text-xs sm:text-sm font-bold text-[#181614] dark:text-white">
                 Autonomous Resolution
@@ -1464,7 +1464,7 @@ export default function LandingPage() {
                 <StatCounter target={418} prefix="$" suffix="K" />
               </div>
               <div className="text-xs sm:text-sm font-bold text-[#181614] dark:text-white">
-                Downtime Saved
+                Downtime Monitored
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
                 Estimated average per engineering org
@@ -1476,10 +1476,10 @@ export default function LandingPage() {
                 <StatCounter target={0} suffix=" regr" />
               </div>
               <div className="text-xs sm:text-sm font-bold text-[#181614] dark:text-white">
-                Zero Regressions
+                AST Validation
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                Guaranteed by Firecracker test gates
+                Guaranteed by Sandbox test gates
               </div>
             </div>
 
@@ -1695,7 +1695,7 @@ export default function LandingPage() {
               <div className="space-y-2 text-[11px]">
                 <div className="text-indigo-400 font-bold">Nemotron-3 550B AST Synthesis Sandbox: PASS</div>
                 <div className="text-emerald-400">+12 lines modified • 0 syntax defects • 18/18 Jest tests passed</div>
-                <div className="text-slate-400">Firecracker microVM #8841 destroyed safely with zero leaked artifacts</div>
+                <div className="text-slate-400">isolated sandbox #8841 destroyed safely with zero leaked artifacts</div>
               </div>
             )}
 
@@ -1709,7 +1709,8 @@ export default function LandingPage() {
 
             {activeShowcaseTab === 'postmortem' && (
               <div className="space-y-2 text-[11px]">
-                <div className="text-violet-400 font-bold">SOC-2 Type II Audit Log Recorded (SHA-256 Verified)</div>
+                <div className="text-violet-400 font-bold">Tamper-Evident Audit Log Recorded (SHA-256 Verified)</div>
+                <div className="text-slate-500 italic mt-4 text-[10px]">* illustrative terminal animation</div>
                 <div className="text-slate-300">Executive Incident Summary synthesized in 1.4s with root-cause graph</div>
                 <div className="text-emerald-400">Runbook Pattern #2041 cataloged to prevent recurrence</div>
               </div>
@@ -1928,7 +1929,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-[#181614] dark:text-white">Dual-Layer Envelope Encryption (BYOK)</h4>
-                  <p className="text-xs text-slate-600 dark:text-neutral-400">Bring your own keys across AWS KMS, HashiCorp Vault, or Google Cloud KMS with per-tenant DEK wrapping.</p>
+                  <p className="text-xs text-slate-600 dark:text-neutral-400">Securely encrypt API keys using Fernet envelope encryption with a master key.</p>
                 </div>
               </div>
 
@@ -2141,7 +2142,7 @@ export default function LandingPage() {
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm leading-relaxed">
-                Autonomous zero-human-latency cloud SRE. Ingests crash telemetry, synthesizes AST hotfixes in Firecracker microVMs, and executes canary rollouts with auto-rollback.
+                Autonomous zero-human-latency cloud SRE. Ingests crash telemetry, synthesizes AST hotfixes in isolated sandboxs, and executes canary rollouts with auto-rollback.
               </p>
               <div className="text-[11px] font-mono text-slate-400 dark:text-neutral-500">
                 © {new Date().getFullYear()} SOMAK AI Inc. All rights reserved.
@@ -2179,9 +2180,9 @@ export default function LandingPage() {
               </div>
               <ul className="space-y-2.5">
                 <li>
-                  <Link href="/soc-audit" className="hover:text-slate-900 dark:hover:text-white transition-colors">
-                    Security &amp; Compliance
-                  </Link>
+                  <span className="text-slate-500 cursor-not-allowed">
+                    Security &amp; Compliance (Roadmap)
+                  </span>
                 </li>
                 <li>
                   <Link href="/privacy" className="hover:text-slate-900 dark:hover:text-white transition-colors">

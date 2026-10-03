@@ -251,7 +251,7 @@ export default function UsageClient() {
     },
     {
       id: 'sandbox',
-      title: 'Nebius Firecracker MicroVM Runs',
+      title: 'Nebius isolated sandbox Runs',
       shortLabel: 'Sandbox Runs',
       current: sandboxUsed.toLocaleString(),
       currentNum: sandboxUsed,
@@ -657,7 +657,7 @@ export default function UsageClient() {
             },
             {
               id: 'nebius',
-              name: 'Nebius Firecracker MicroVM',
+              name: 'Nebius isolated sandbox',
               type: 'Isolated AST Sandbox Execution',
               icon: Zap,
               connected: Boolean(ch?.ai_connected || ch?.nebius_api_key || isAcme),

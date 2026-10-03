@@ -75,7 +75,7 @@ const DOCS_NAV: DocItem[] = [
       { id: 'arch-overview', title: 'End-to-End Pipeline Overview' },
       { id: 'arch-sentry', title: 'Stage 1: Production Crash & Webhook' },
       { id: 'arch-ast', title: 'Stage 2: AST Patch Synthesis (BYOK)' },
-      { id: 'arch-microvm', title: 'Stage 3: Firecracker MicroVM Sandbox' },
+      { id: 'arch-microvm', title: 'Stage 3: isolated sandbox Sandbox' },
       { id: 'arch-canary', title: 'Stage 4: Progressive Canary (5% → 100%)' },
       { id: 'arch-guarantees', title: 'Zero-Hallucination Guarantees' },
     ],
@@ -140,7 +140,7 @@ const DOCS_NAV: DocItem[] = [
     subsections: [
       { id: 'faq-hallucinations', title: 'Hallucination Prevention' },
       { id: 'faq-rollback', title: 'Automated Rollback Triggers' },
-      { id: 'faq-microvm', title: 'Firecracker MicroVM Isolation' },
+      { id: 'faq-microvm', title: 'isolated sandbox Isolation' },
       { id: 'faq-privacy', title: 'Source Code & Data Privacy' },
       { id: 'faq-override', title: 'Human SRE Overrides' },
       { id: 'faq-selfhost', title: 'Self-Hosted Sentry Support' },
@@ -517,7 +517,7 @@ export default function DocsPage() {
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
                   <span>
-                    <strong>Zero-Hallucination Guarantee:</strong> Somak AI AST patches are verified in Firecracker sandboxes before canary promotion. LLM output that does not compile or pass tests is rejected immediately.
+                    <strong>Zero-Hallucination Guarantee:</strong> Somak AI AST patches are verified in Sandbox sandboxes before canary promotion. LLM output that does not compile or pass tests is rejected immediately.
                   </span>
                 </div>
               </section>
@@ -601,7 +601,7 @@ export default function DocsPage() {
                     <div>
                       <span className="text-[10px] font-mono text-cyan-400 font-bold">04. ISOLATE</span>
                       <h4 className="text-xs font-bold text-white mt-1">MicroVM Sandbox</h4>
-                      <p className="text-[11px] text-slate-400 mt-1">Firecracker compiles & executes test harness</p>
+                      <p className="text-[11px] text-slate-400 mt-1">Sandbox compiles & executes test harness</p>
                     </div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex flex-col justify-between">
@@ -649,10 +649,10 @@ export default function DocsPage() {
                 <section id="arch-microvm" className="space-y-3 pt-6">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-cyan-500" />
-                    <span>Stage 3: Firecracker MicroVM Sandbox Verification</span>
+                    <span>Stage 3: isolated sandbox Sandbox Verification</span>
                   </h3>
                   <p className="text-slate-600 dark:text-slate-300">
-                    Zero AI code is ever shipped to production unverified. SOMAK AI spins up an ephemeral, hardware-isolated Firecracker microVM in approximately 50 milliseconds. The patched code is compiled, dependencies are installed, and unit and regression tests are executed in complete isolation with no network egress.
+                    Zero AI code is ever shipped to production unverified. SOMAK AI spins up an ephemeral, hardware-isolated isolated sandbox in approximately 50 milliseconds. The patched code is compiled, dependencies are installed, and unit and regression tests are executed in complete isolation with no network egress.
                   </p>
                 </section>
 
@@ -729,7 +729,7 @@ export default function DocsPage() {
                     </span>
                   </div>
                   <p className="text-slate-600 dark:text-slate-300">
-                    Where AI-generated fixes are inspected. Features an interactive code diff viewer (unified or split side-by-side), Firecracker microVM test output logs, and human approval controls.
+                    Where AI-generated fixes are inspected. Features an interactive code diff viewer (unified or split side-by-side), isolated sandbox test output logs, and human approval controls.
                   </p>
                   <ul className="list-disc pl-5 space-y-1 text-slate-600 dark:text-slate-300 text-xs">
                     <li><strong>Diff Inspection:</strong> Highlighting added and removed lines with syntax highlighting.</li>
@@ -805,7 +805,7 @@ export default function DocsPage() {
                       <span>Cryptographic Audit Log (/audit)</span>
                     </h3>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold border border-purple-500/20">
-                      SOC-2 / ISO 27001
+                      Tamper-Evident Security
                     </span>
                   </div>
                   <p className="text-slate-600 dark:text-slate-300">
@@ -822,7 +822,7 @@ export default function DocsPage() {
                     </h3>
                   </div>
                   <p className="text-slate-600 dark:text-slate-300">
-                    Tracks LLM token consumption across providers, Firecracker microVM compute minutes, avoided downtime dollar savings, and integrated Dodo Payments billing subscriptions.
+                    Tracks LLM token consumption across providers, isolated sandbox compute minutes, avoided downtime dollar savings, and integrated Dodo Payments billing subscriptions.
                   </p>
                 </section>
 
@@ -882,7 +882,7 @@ export default function DocsPage() {
                     <span>Blast Radius & MicroVM Sandboxing</span>
                   </h3>
                   <p className="text-slate-600 dark:text-slate-300">
-                    The <strong>blast radius</strong> is the maximum possible impact an error or deployment can have on your users. Somak AI limits blast radius to zero during code synthesis by booting an ephemeral <strong>Firecracker microVM</strong> in ~50ms, compiling the patched service, and running integration tests before any code touches production.
+                    The <strong>blast radius</strong> is the maximum possible impact an error or deployment can have on your users. Somak AI limits blast radius to zero during code synthesis by booting an ephemeral <strong>isolated sandbox</strong> in ~50ms, compiling the patched service, and running integration tests before any code touches production.
                   </p>
                 </section>
 
@@ -1019,7 +1019,7 @@ export default function DocsPage() {
                   Roles & Access Control (RBAC)
                 </h1>
                 <p className="text-base text-slate-600 dark:text-slate-300">
-                  Granular multi-tenant permission controls designed for enterprise security audits and SOC-2 compliance.
+                  Granular multi-tenant permission controls designed for enterprise security audits and tamper-evident audit compliance.
                 </p>
               </header>
 
@@ -1066,7 +1066,7 @@ export default function DocsPage() {
                       <td className="py-3 px-4 text-red-500 font-bold">✕ Restricted</td>
                     </tr>
                     <tr>
-                      <td className="py-3 px-4 font-sans font-semibold text-slate-900 dark:text-white">Export SOC-2 Cryptographic Audit Logs</td>
+                      <td className="py-3 px-4 font-sans font-semibold text-slate-900 dark:text-white">Export Cryptographic Audit Logs</td>
                       <td className="py-3 px-4 text-emerald-600 font-bold">✓ Allowed</td>
                       <td className="py-3 px-4 text-emerald-600 font-bold">✓ Allowed</td>
                       <td className="py-3 px-4 text-red-500 font-bold">✕ Restricted</td>
@@ -1093,14 +1093,14 @@ export default function DocsPage() {
                 {[
                   {
                     q: 'How does Somak AI guarantee the AI will not hallucinate broken code?',
-                    a: 'Somak AI does not rely on open-loop code generation. All synthesized fixes are structured as Abstract Syntax Tree modifications and immediately built inside an ephemeral Firecracker microVM. If compilation fails or any regression tests break, the fix is instantly discarded.',
+                    a: 'Somak AI does not rely on open-loop code generation. All synthesized fixes are structured as Abstract Syntax Tree modifications and immediately built inside an ephemeral isolated sandbox. If compilation fails or any regression tests break, the fix is instantly discarded.',
                   },
                   {
                     q: 'What triggers an automatic canary rollback?',
                     a: 'A canary rollback is triggered if the 5-minute rolling error rate exceeds your service threshold (e.g. > 0.5%), if p99 latency spikes by more than 25%, or if an Operator clicks "Rollback" in the UI or Slack.',
                   },
                   {
-                    q: 'Are Firecracker microVM sandboxes completely isolated?',
+                    q: 'Are isolated sandbox sandboxes completely isolated?',
                     a: 'Yes. Each microVM runs on dedicated hardware virtualization with zero network egress to internal production assets. The sandbox only executes the local test suite specified in your repo.',
                   },
                   {

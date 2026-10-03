@@ -223,59 +223,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ? cleanEmail.split('@')[0].replace('.', ' ').replace(/(^\w|\s\w)/g, (m) => m.toUpperCase())
       : 'Demo Operator');
 
-    // Dedicated Seeded Demo Users (No raw credentials exposed)
-    const isDemo =
-      cleanEmail === 'demo-admin@somakai.dev' ||
-      cleanEmail === 'demo-operator@somakai.dev' ||
-      cleanEmail === 'demo-viewer@somakai.dev' ||
-      cleanEmail.includes('somak.internal') ||
-      cleanEmail.includes('sentryops.internal');
-
-    if (isDemo) {
-      let demoRole: UserRole = role;
-      let demoName = name || 'Demo Operator';
-      let demoId = 'usr_demo_operator';
-      let demoTeam = 'Platform Reliability SRE';
-
-      if (cleanEmail.includes('admin') || cleanEmail.includes('elena')) {
-        demoRole = 'Admin';
-        demoName = 'Elena Rostova';
-        demoId = 'usr_demo_admin';
-        demoTeam = 'SecOps & Infrastructure';
-      } else if (cleanEmail.includes('viewer') || cleanEmail.includes('observer')) {
-        demoRole = 'Viewer';
-        demoName = 'Audit Observer';
-        demoId = 'usr_demo_viewer';
-        demoTeam = 'Read-Only Compliance';
-      } else {
-        demoRole = 'Operator';
-        demoName = 'Marcus Vance';
-        demoId = 'usr_demo_operator';
-        demoTeam = 'Platform Reliability SRE';
-      }
-
-      const demoUser: User = {
-        id: demoId,
-        name: demoName,
-        email: cleanEmail,
-        role: demoRole,
-        avatar: demoName.substring(0, 2).toUpperCase(),
-        team: demoTeam,
-        email_verified: true,
-        mfa_enabled: false,
-      };
-
-      setUser(demoUser);
-      setSessionCookie('demo_session_' + demoRole.toLowerCase());
-      try {
-        localStorage.setItem('somak_user', JSON.stringify(demoUser));
-        localStorage.setItem('sentryops_user', JSON.stringify(demoUser));
-        localStorage.setItem('somak_session_token', 'demo_session_' + demoRole.toLowerCase());
-      } catch {}
-
-      return { user: demoUser, hasOrgs: true, onboardingCompleted: true };
-    }
-
     // 1. Call backend endpoint with actual credentials
     let backendRes: any = null;
     let backendError: Error | null = null;

@@ -300,7 +300,7 @@ function CheckoutContent() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>SOC-2 Type II tamper-evident audit logs</span>
+                  <span>Tamper-Evident Audit tamper-evident audit logs</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />

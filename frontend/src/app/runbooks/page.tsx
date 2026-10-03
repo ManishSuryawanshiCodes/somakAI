@@ -51,7 +51,7 @@ const RUNBOOKS: RunbookPattern[] = [
     activeIncidentMatch: 'INC-2041',
     versions: [
       { version: 'v1.3', date: 'Today', note: 'Added 5,000-key capacity clamp and 5-min TTL default', isCurrent: true },
-      { version: 'v1.2', date: '3 weeks ago', note: 'Added Firecracker MicroVM regression test assertions' },
+      { version: 'v1.2', date: '3 weeks ago', note: 'Added isolated sandbox regression test assertions' },
       { version: 'v1.0', date: '2 months ago', note: 'Initial AST synthesis template for Node.js memory leaks' },
     ],
   },

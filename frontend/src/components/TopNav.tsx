@@ -110,7 +110,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
     `[ORG_CONTEXT] Active workspace: ${currentOrg?.name || 'Workspace'} (id: ${currentOrg?.id || 'org_acme'})`,
     `[INGEST] Sentry webhook subscription: ACTIVE • 0 dropped packets`,
     `[HEARTBEAT] Ping seq #1024 • RTT: 12.4ms • Health: 100% NOMINAL`,
-    `[SANDBOX] MicroVM Firecracker pool: 4 warm containers standby`,
+    `[SANDBOX] MicroVM Sandbox pool: 4 warm containers standby`,
   ]);
 
   // Real-time live SSE stream simulation
@@ -123,7 +123,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
         `[${now}] [HEARTBEAT] Ping seq #${Math.floor(1000 + Math.random() * 9000)} • RTT: ${(10 + Math.random() * 4).toFixed(1)}ms • Zero packet loss`,
         `[${now}] [TELEMETRY] Ingest metrics: error_rate=0.00%, cpu=14.2%, memory=48.1%`,
         `[${now}] [INGEST] Inbound webhook buffer clear • 0 pending exceptions`,
-        `[${now}] [SANDBOX] Firecracker microVM gate: 4 warm, 0 failed, isolation: ACTIVE`,
+        `[${now}] [SANDBOX] isolated sandbox gate: 4 warm, 0 failed, isolation: ACTIVE`,
         `[${now}] [PROMOTION] Envoy mesh weight matrix validated • 0 canary regressions`,
       ];
       const ev = events[Math.floor(Math.random() * events.length)];
@@ -206,7 +206,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
     {
       id: 'nav-postmortem',
       category: 'Navigation',
-      title: 'SOC-2 Post-Mortem (INC-2041)',
+      title: 'Post-Mortem (INC-2041)',
       subtitle: 'Audit trail, timeline scrubber & PDF export',
       icon: ShieldCheck,
       action: () => router.push('/postmortem/INC-2041'),
@@ -394,7 +394,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
           {(() => {
             const getBreadcrumbs = () => {
               if (pathname.startsWith('/remediation/')) {
-                const id = pathname.split('/')[2] || 'INC-2041';
+                const id = pathname.split('/')[2] ;
                 return [
                   { label: 'Radar', href: '/' },
                   { label: id, href: `/remediation/${id}` },
@@ -402,7 +402,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                 ];
               }
               if (pathname.startsWith('/canary/')) {
-                const id = pathname.split('/')[2] || 'INC-2041';
+                const id = pathname.split('/')[2] ;
                 return [
                   { label: 'Radar', href: '/' },
                   { label: id, href: `/remediation/${id}` },
@@ -410,7 +410,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                 ];
               }
               if (pathname.startsWith('/postmortem/')) {
-                const id = pathname.split('/')[2] || 'INC-2041';
+                const id = pathname.split('/')[2] ;
                 return [
                   { label: 'Radar', href: '/' },
                   { label: id, href: `/remediation/${id}` },
@@ -773,7 +773,7 @@ export default function TopNav({ onSimulate, isSimulating = false }: TopNavProps
                       className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
                     >
                       <ShieldCheck className="w-4 h-4 text-slate-400" />
-                      <span>SOC-2 Audit Log</span>
+                      <span>Audit Log</span>
                     </Link>
                     <Link
                       href="/docs"

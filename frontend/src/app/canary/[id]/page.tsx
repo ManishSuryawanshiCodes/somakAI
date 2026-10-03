@@ -90,7 +90,7 @@ const trafficStages = [5, 25, 50, 100];
 
 export default function CanaryRolloutMonitor() {
   const params = useParams();
-  const id = (params?.id as string) || 'INC-2041';
+  const id = (params?.id as string) ;
   const isDemo = id === 'INC-2041';
   const router = useRouter();
   const { user } = useAuth();
@@ -120,7 +120,7 @@ export default function CanaryRolloutMonitor() {
   // Post-approval deployment state
   const [deployRecord, setDeployRecord] = useState<IncidentDeployRecord | null>(null);
   const [mergingPR, setMergingPR] = useState(false);
-  const [incidentData, setIncidentData] = useState<Incident | null>(isDemo ? mockIncident : null);
+  const [incidentData, setIncidentData] = useState<Incident | null>(isDemo );
   const [showCodeDiff, setShowCodeDiff] = useState(true);
 
   const serviceName = incidentData?.service || (id.includes('2041') ? 'auth-service' : 'auth-service');
@@ -695,7 +695,7 @@ export default function CanaryRolloutMonitor() {
               <code className="font-mono text-xs px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-slate-200">
                 {incidentData?.patch?.targetFile || 'src/services/tokenService.ts'}
               </code>
-              {' '}&bull; Synthesized AST patch verified in Firecracker MicroVM with zero regressions before rollout.
+              {' '}&bull; Synthesized AST patch verified in isolated sandbox with zero regressions before rollout.
             </p>
 
             {showCodeDiff && (

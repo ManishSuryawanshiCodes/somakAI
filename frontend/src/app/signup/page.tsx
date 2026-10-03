@@ -416,7 +416,7 @@ function SignupContent() {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              SOC-2 Type II
+              Tamper-Evident Audit
             </span>
             <span>•</span>
             <span className="flex items-center gap-1">
@@ -466,7 +466,7 @@ function SignupContent() {
             </div>
 
             <div className="p-3 rounded-xl bg-[#07090E] border border-white/5 font-mono text-xs space-y-1.5">
-              <div className="text-slate-400 text-[10px]"># MicroVM Sandbox Dry-Run (Firecracker)</div>
+              <div className="text-slate-400 text-[10px]"># MicroVM Sandbox Dry-Run (Sandbox)</div>
               <div className="text-emerald-400 flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Zero syntax regression (AST verified)</span>

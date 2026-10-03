@@ -204,7 +204,7 @@ export default function PrivacyPolicyPage() {
               Data Protection & Cryptography
             </h2>
             <p>
-              All customer data is handled in alignment with SOC-2 Type II controls. We employ defense-in-depth safeguards across all layers:
+              All customer data is handled in alignment with Tamper-Evident Audit controls. We employ defense-in-depth safeguards across all layers:
             </p>
             <ul className="list-disc pl-5 space-y-2">
               <li>

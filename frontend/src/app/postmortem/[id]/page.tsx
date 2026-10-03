@@ -56,11 +56,11 @@ const initialComments: PostMortemComment[] = [
 
 export default function PostMortemPage() {
   const params = useParams();
-  const id = (params?.id as string) || 'INC-2041';
+  const id = (params?.id as string) ;
   const isDemo = id === 'INC-2041';
   const router = useRouter();
 
-  const [incident, setIncident] = useState<Incident | null>(isDemo ? mockIncident : null);
+  const [incident, setIncident] = useState<Incident | null>(isDemo );
   const [copied, setCopied] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
@@ -92,7 +92,7 @@ export default function PostMortemPage() {
 
   const remediationText = activeIncident.patch?.explanation || (
     activeIncident.service === 'auth-service' || id === 'INC-2041'
-      ? `SOMAK AI synthesized an AST patch converting the raw memory collection into a bounded, TTL-evicted LRUCache (capacity: 5,000 items, TTL: 300,000ms). The hotfix was compiled and evaluated in an isolated Firecracker MicroVM sandbox with 18/18 integration tests passing and zero memory leakage.`
+      ? `SOMAK AI synthesized an AST patch converting the raw memory collection into a bounded, TTL-evicted LRUCache (capacity: 5,000 items, TTL: 300,000ms). The hotfix was compiled and evaluated in an isolated isolated sandbox sandbox with 18/18 integration tests passing and zero memory leakage.`
       : `SOMAK AI synthesized an AST patch targeting ${activeIncident.patch?.targetFile || 'the affected service'}. The hotfix passed ${activeIncident.patch?.sandboxExecution?.testsPassed ?? 18}/${activeIncident.patch?.sandboxExecution?.totalTests ?? 18} MicroVM sandbox tests with zero regressions.`
   );
 
@@ -160,7 +160,7 @@ Status: ${isPublished ? 'Signed & Published' : 'Under Review'}`;
           {/* Small Compliance Tag (not a full-width banner) */}
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
             <Lock className="w-3 h-3 text-slate-400" />
-            <span>SOC-2 / ISO-27001 Certified</span>
+            <span>Tamper-Evident Security</span>
           </span>
         </div>
 

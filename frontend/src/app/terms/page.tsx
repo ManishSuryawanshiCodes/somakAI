@@ -252,7 +252,7 @@ export default function TermsOfServicePage() {
               </div>
               <div className="p-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 space-y-1">
                 <div className="font-bold text-slate-900 dark:text-white">Nebius AI Studio (Inference & Sandboxes)</div>
-                <p className="text-slate-500 dark:text-slate-400">Executes ephemeral Firecracker microVM test runs and model inference under zero-retention RAM-only contracts.</p>
+                <p className="text-slate-500 dark:text-slate-400">Executes ephemeral isolated sandbox test runs and model inference under zero-retention RAM-only contracts.</p>
               </div>
               <div className="p-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 space-y-1">
                 <div className="font-bold text-slate-900 dark:text-white">Tavily Search API (Grounding)</div>

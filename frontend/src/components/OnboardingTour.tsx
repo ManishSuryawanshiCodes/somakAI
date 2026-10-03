@@ -117,12 +117,12 @@ export default function OnboardingTour({
       badgeColor: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
     },
     {
-      title: 'SOC-2 Post-Mortem & Audit Trail',
+      title: 'Post-Mortem & Audit Trail',
       subtitle: 'Audit-Ready Executive Reports & Scrubbable Timeline',
       description:
         'Every incident automatically compiles into a full compliance-ready post-mortem with root cause citations, interactive scrubbable timeline, and one-click PDF export.',
       features: [
-        'SOC-2 / ISO 27001 review and sign-off state machine',
+        'Tamper-Evident Security review and sign-off state machine',
         'Interactive scrubbable sequence timeline with audio scrubber feel',
         'Historical MTTR reduction comparison (95.3% autonomous speedup)',
       ],

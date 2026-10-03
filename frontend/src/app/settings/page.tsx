@@ -1607,7 +1607,7 @@ function SettingsContent() {
                       }}
                       options={[
                         { value: '30', label: '30 Days (Developer Free Tier)' },
-                        { value: '90', label: '90 Days (SOC-2 Recommended)' },
+                        { value: '90', label: '90 Days (Security Recommended)' },
                         { value: '365', label: '1 Year (Enterprise)' },
                         { value: 'forever', label: 'Indefinite (Append-Only Immutable)' },
                       ]}
@@ -2795,7 +2795,7 @@ function SettingsContent() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => showToast('To delete, contact enterprise support to satisfy SOC-2 retention.', 'error')}
+                    onClick={() => showToast('To delete, contact enterprise support to satisfy data retention.', 'error')}
                     className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors shrink-0"
                   >
                     Delete Organization

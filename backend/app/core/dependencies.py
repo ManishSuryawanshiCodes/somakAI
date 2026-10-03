@@ -46,25 +46,7 @@ async def get_current_user(
             if user:
                 return user
 
-        # Demo session support
-        if token.startswith("demo_session_"):
-            role_part = token.replace("demo_session_", "").lower()
-            demo_email_map = {
-                "admin": "demo-admin@somakai.dev",
-                "operator": "demo-operator@somakai.dev",
-                "viewer": "demo-viewer@somakai.dev",
-            }
-            target_email = demo_email_map.get(role_part, "demo-admin@somakai.dev")
-            user = auth_service.get_user_by_email(target_email)
-            if not user:
-                fallback_map = {
-                    "admin": "elena.rostova@somak.internal",
-                    "operator": "marcus.vance@somak.internal",
-                    "viewer": "sarah.connor@somak.internal",
-                }
-                user = auth_service.get_user_by_email(fallback_map.get(role_part, "elena.rostova@somak.internal"))
-            if user:
-                return user
+
 
         # Support Supabase JWT tokens passed from the frontend
         if "." in token:

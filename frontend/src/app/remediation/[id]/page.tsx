@@ -34,7 +34,7 @@ import { getServiceRepoMapping, ServiceRepoMapping } from '@/lib/services-repo';
 
 function RemediationStudioContent() {
   const params = useParams();
-  const id = (params?.id as string) || 'INC-2041';
+  const id = (params?.id as string) ;
   const router = useRouter();
   const { addToast } = useToast();
   const { user } = useAuth();
@@ -44,7 +44,7 @@ function RemediationStudioContent() {
   const searchParams = useSearchParams();
   const patternParam = searchParams?.get('pattern');
 
-  const [incident, setIncident] = useState<Incident | null>(id === 'INC-2041' ? mockIncident : null);
+  const [incident, setIncident] = useState<Incident | null>(id === 'INC-2041' );
   const [loading, setLoading] = useState(true);
   const [deploying, setDeploying] = useState(false);
   const [retrying, setRetrying] = useState(false);
@@ -124,7 +124,7 @@ function RemediationStudioContent() {
     }
   };
 
-  const activeIncident = incident || (id === 'INC-2041' ? mockIncident : null);
+  const activeIncident = incident || (id === 'INC-2041' );
 
   if (loading && !activeIncident) {
     return (
@@ -281,7 +281,7 @@ function RemediationStudioContent() {
                           <span>40% weight</span>
                         </div>
                         <p className="text-[10px] text-slate-500 mt-0.5 font-sans">
-                          18/18 Firecracker microVM test assertions passed with zero regressions.
+                          18/18 isolated sandbox test assertions passed with zero regressions.
                         </p>
                       </div>
 

@@ -314,7 +314,7 @@ export default function AuditPage() {
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Cryptographically verified activity ledger for SOC-2 Type II compliance.
+              Cryptographically verified activity ledger for Tamper-Evident Audit compliance.
             </p>
           </div>
 
@@ -719,7 +719,7 @@ export default function AuditPage() {
                               </div>
                               <div>
                                 <span className="text-slate-500 block">Verification Scope:</span>
-                                <span className="text-slate-300">SOC-2 Type II Enforced Triggers</span>
+                                <span className="text-slate-300">Tamper-Evident Audit Enforced Triggers</span>
                               </div>
                             </div>
                           </motion.div>

@@ -506,7 +506,7 @@ export default function LoginPage() {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              SOC-2 Type II
+              Tamper-Evident Audit
             </span>
             <span>•</span>
             <span className="flex items-center gap-1">

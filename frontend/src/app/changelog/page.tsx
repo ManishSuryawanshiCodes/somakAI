@@ -73,7 +73,7 @@ const RELEASES: Release[] = [
     highlights: [
       'Added safety hold-to-confirm gate on 1-click canary rollbacks to prevent accidental production disruptions.',
       'Implemented real-time live telemetry event stream ticker on Canary monitor.',
-      'Introduced SOC-2 / ISO 27001 multi-step post-mortem workflow state machine (Draft -> Under Review -> Published).',
+      'Introduced Tamper-Evident Security multi-step post-mortem workflow state machine (Draft -> Under Review -> Published).',
       'Added inline section review notes and comments on post-mortem reports.',
     ],
   },

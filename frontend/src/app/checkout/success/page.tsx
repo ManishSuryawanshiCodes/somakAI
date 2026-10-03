@@ -91,7 +91,7 @@ function CheckoutSuccessContent() {
               </div>
               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                <span>SOC-2 Audit Log</span>
+                <span>Audit Log</span>
               </div>
               <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                 <CreditCard className="w-3.5 h-3.5 text-cyan-500" />
