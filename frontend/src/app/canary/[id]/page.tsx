@@ -120,7 +120,7 @@ export default function CanaryRolloutMonitor() {
   // Post-approval deployment state
   const [deployRecord, setDeployRecord] = useState<IncidentDeployRecord | null>(null);
   const [mergingPR, setMergingPR] = useState(false);
-  const [incidentData, setIncidentData] = useState<Incident | null>(isDemo );
+  const [incidentData, setIncidentData] = useState<Incident | null>(null);
   const [showCodeDiff, setShowCodeDiff] = useState(true);
 
   const serviceName = incidentData?.service || (id.includes('2041') ? 'auth-service' : 'auth-service');
